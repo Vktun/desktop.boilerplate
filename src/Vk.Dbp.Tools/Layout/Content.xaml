@@ -1,0 +1,27 @@
+﻿<UserControl x:Class="Dabp.Tools.Layout.Content"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:Dabp.Tools.Layout"
+             xmlns:prism="http://prismlibrary.com/"
+             prism:ViewModelLocator.AutoWireViewModel="True"
+             mc:Ignorable="d" 
+             d:DesignHeight="550" d:DesignWidth="900">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="20"></RowDefinition>
+            <RowDefinition Height="20"></RowDefinition>
+            <RowDefinition Height="*"></RowDefinition>
+        </Grid.RowDefinitions>
+        <StackPanel Grid.Row="0" Orientation="Horizontal">
+            <Button Content="SM4加密" Width="60" Command="{Binding Sm4Command}" CommandParameter="1"></Button>
+            <TextBlock Margin="10 0 10 0" Text="明文" ></TextBlock>
+            <TextBox x:Name="txb_encry" Width="300" Text="{Binding DenText}" />
+            <TextBlock Margin="10 0 10 0" Text="密文"></TextBlock>
+            <TextBox x:Name="txt_decry" Width="300" Text="{Binding EncText}"/>
+            <Button Content="SM4解密" Command="{Binding Sm4Command}" CommandParameter="2"></Button>
+        </StackPanel>
+        <TextBlock Grid.Row="2" Text="View Content" FontSize="38" />
+    </Grid>
+</UserControl>

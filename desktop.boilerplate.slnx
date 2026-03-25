@@ -1,0 +1,23 @@
+<Solution>
+  <Folder Name="/dbpApps/">
+    <Project Path="dbpApps/Dbp.Material.Forming/Dbp.Material.Forming.csproj" />
+    <Project Path="dbpApps/Dbp.Material.Mixing/Dbp.Material.Mixing.csproj" />
+  </Folder>
+  <Folder Name="/dbpframework/">
+    <Project Path="dbpframework/Vk.Dbp.Account/Vk.Dbp.Account.csproj" />
+    <Project Path="dbpframework/Vk.Dbp.Core/Vk.Dbp.Core.csproj" />
+  </Folder>
+  <Folder Name="/prismModules/">
+    <Project Path="prismModules/Vk.Dbp.AccountModule/Vk.Dbp.AccountModule.csproj" />
+    <Project Path="prismModules/Vk.Dbp.WorkshopModule/Vk.Dbp.WorkshopModule.csproj" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/Vk.Dbp.Domain/Vk.Dbp.Domain.csproj" />
+    <Project Path="src/Vk.Dbp.Infrastructure/Vk.Dbp.Infrastructure.csproj" />
+    <Project Path="src/Vk.Dbp.Services/Vk.Dbp.Service.csproj" />
+    <Project Path="src/Vk.Dbp.Tools/Vk.Dbp.Tools.csproj" />
+    <Project Path="src/Vk.Dbp.Utils/Vk.Dbp.Utils.csproj" />
+    <Project Path="src/Vk.Dbp.WpfWindow/Vk.Dbp.WpfWindow.csproj" />
+  </Folder>
+  <Folder Name="/test/" />
+</Solution>

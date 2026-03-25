@@ -1,0 +1,46 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- 暗色主题颜色定义 - 科技感蓝色 -->
+
+    <!-- 主要背景色 - 深蓝/黑色 -->
+    <Color x:Key="PrimaryBackgroundColor">#0a0e27</Color>
+    <SolidColorBrush x:Key="PrimaryBackgroundBrush" Color="{StaticResource PrimaryBackgroundColor}"/>
+
+    <!-- 次要背景色 - 深蓝 -->
+    <Color x:Key="SecondaryBackgroundColor">#1a2332</Color>
+    <SolidColorBrush x:Key="SecondaryBackgroundBrush" Color="{StaticResource SecondaryBackgroundColor}"/>
+
+    <!-- 边框色 - 青色 -->
+    <Color x:Key="BorderColor">#00d4ff</Color>
+    <SolidColorBrush x:Key="BorderBrush" Color="{StaticResource BorderColor}"/>
+
+    <!-- 主要文本色 - 浅蓝白 -->
+    <Color x:Key="PrimaryTextColor">#e0f7ff</Color>
+    <SolidColorBrush x:Key="PrimaryTextBrush" Color="{StaticResource PrimaryTextColor}"/>
+
+    <!-- 次要文本色 - 蓝灰色 -->
+    <Color x:Key="SecondaryTextColor">#90caf9</Color>
+    <SolidColorBrush x:Key="SecondaryTextBrush" Color="{StaticResource SecondaryTextColor}"/>
+
+    <!-- 强调色 - 青色 -->
+    <Color x:Key="AccentColor">#00d4ff</Color>
+    <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource AccentColor}"/>
+
+    <!-- 悬停色 - 深蓝绿 -->
+    <Color x:Key="HoverColor">#0f4c75</Color>
+    <SolidColorBrush x:Key="HoverBrush" Color="{StaticResource HoverColor}"/>
+
+    <!-- 成功色 - 绿色 -->
+    <Color x:Key="SuccessColor">#00ff88</Color>
+    <SolidColorBrush x:Key="SuccessBrush" Color="{StaticResource SuccessColor}"/>
+
+    <!-- 警告色 - 橙色 -->
+    <Color x:Key="WarningColor">#ffa500</Color>
+    <SolidColorBrush x:Key="WarningBrush" Color="{StaticResource WarningColor}"/>
+
+    <!-- 错误色 - 红色 -->
+    <Color x:Key="ErrorColor">#ff4444</Color>
+    <SolidColorBrush x:Key="ErrorBrush" Color="{StaticResource ErrorColor}"/>
+
+</ResourceDictionary>
