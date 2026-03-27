@@ -1,6 +1,8 @@
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Controls;
+using Dabp.Utils.Security;
 using Prism.Commands;
 using Prism.Mvvm;
 using Prism.Navigation.Regions;
@@ -15,7 +17,9 @@ namespace Vk.Dbp.AccountModule.ViewModels
     public class LoginViewModel : BindableBase, INavigationAware
     {
         private readonly IUserService _userService;
+        private readonly IPermissionService _permissionService;
         private readonly IRegionManager _regionManager;
+        private readonly IPasswordHasher _passwordHasher;
 
         private string _username = "admin";
         /// <summary>
@@ -69,10 +73,12 @@ namespace Vk.Dbp.AccountModule.ViewModels
 
         public DelegateCommand<PasswordBox> LoginCommand { get; }
 
-        public LoginViewModel(IUserService userService, IRegionManager regionManager)
+        public LoginViewModel(IUserService userService, IPermissionService permissionService, IRegionManager regionManager, IPasswordHasher passwordHasher)
         {
             _userService = userService ?? throw new ArgumentNullException(nameof(userService));
+            _permissionService = permissionService ?? throw new ArgumentNullException(nameof(permissionService));
             _regionManager = regionManager ?? throw new ArgumentNullException(nameof(regionManager));
+            _passwordHasher = passwordHasher ?? throw new ArgumentNullException(nameof(passwordHasher));
 
             LoginCommand = new DelegateCommand<PasswordBox>(async password => await Login(password), CanLogin);
         }
@@ -94,7 +100,6 @@ namespace Vk.Dbp.AccountModule.ViewModels
 
             try
             {
-                // 验证用户凭证 (这里简化处理，实际应该调用认证服务)
                 var user = await _userService.GetUserByUsernameAsync(Username);
 
                 if (user == null)
@@ -111,17 +116,17 @@ namespace Vk.Dbp.AccountModule.ViewModels
                     return;
                 }
 
-                // 验证密码 (简化实现，实际应该进行密码哈希验证)
                 if (ValidatePassword(passwordBox.Password, user.PasswordHash))
                 {
-                    // 登录成功，保存用户会话信息
                     var userSession = UserSession.Instance;
                     userSession.Login(user, GenerateToken());
 
-                    // 清除密码框
+                    var permissions = await _permissionService.GetUserPermissionsAsync(user.Id);
+                    var permissionCodes = permissions.Select(p => p.Code).ToList();
+                    userSession.SetPermissions(permissionCodes);
+
                     passwordBox.Clear();
 
-                    // 导航到主页面
                     _regionManager.RequestNavigate("ContentRegion", "Dashboard");
                 }
                 else
@@ -149,17 +154,12 @@ namespace Vk.Dbp.AccountModule.ViewModels
             return !IsLoading;
         }
 
-        /// <summary>
-        /// 验证密码 (简化实现)
-        /// </summary>
         private bool ValidatePassword(string inputPassword, string storedHash)
         {
-            // 实际应使用密码哈希验证
-            // 这里使用简单的演示实现
-            if (string.IsNullOrEmpty(storedHash))
-                return inputPassword == "123456"; // 默认密码用于演示
+            if (string.IsNullOrEmpty(inputPassword))
+                return false;
 
-            return inputPassword == storedHash; // 实际应该用安全的密码验证
+            return _passwordHasher.VerifyPassword(inputPassword, storedHash);
         }
 
         /// <summary>
@@ -167,13 +167,11 @@ namespace Vk.Dbp.AccountModule.ViewModels
         /// </summary>
         private string GenerateToken()
         {
-            // 实际应该从认证服务获取
             return Guid.NewGuid().ToString();
         }
 
         public void OnNavigatedTo(NavigationContext navigationContext)
         {
-            // 检查是否已经登录，如果已登录则直接导航到主页面
             if (UserSession.Instance.IsLoggedIn)
             {
                 _regionManager.RequestNavigate("ContentRegion", "Dashboard");

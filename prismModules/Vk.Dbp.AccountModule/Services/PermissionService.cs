@@ -2,64 +2,76 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using SqlSugar;
 using Vk.Dbp.AccountModule.Models;
 using Vk.Dbp.Core.Audit;
 using Vk.Dbp.Core.Audit.Extensions;
 using Vk.Dbp.Core.Audit.Interfaces;
+using Dabp.Infrastructure.Entities;
+using PermissionModel = Vk.Dbp.AccountModule.Models.Permission;
+using PermissionEntity = Dabp.Infrastructure.Entities.Permission;
 
 namespace Vk.Dbp.AccountModule.Services
 {
-    /// <summary>
-    /// 权限服务实现
-    /// </summary>
     public class PermissionService : IPermissionService
     {
-        private readonly List<Permission> _permissions = new();
+        private readonly ISqlSugarClient _db;
         private readonly IAuditLogService _auditLogService;
-        private int _nextPermissionId = 1;
 
-        public PermissionService(IAuditLogService auditLogService)
+        public PermissionService(ISqlSugarClient db, IAuditLogService auditLogService)
         {
+            _db = db ?? throw new ArgumentNullException(nameof(db));
             _auditLogService = auditLogService ?? throw new ArgumentNullException(nameof(auditLogService));
-            InitializeSampleData();
         }
 
-        public async Task<List<Permission>> GetAllPermissionsAsync()
+        public async Task<List<PermissionModel>> GetAllPermissionsAsync()
         {
-            return await Task.FromResult(_permissions.ToList());
+            var entities = await _db.Queryable<PermissionEntity>().ToListAsync();
+            return entities.Select(MapToModel).ToList();
         }
 
-        public async Task<List<Permission>> GetPermissionTreeAsync(PermissionType? type = null)
+        public async Task<List<PermissionModel>> GetPermissionTreeAsync(PermissionType? type = null)
         {
-            var permissions = _permissions.Where(p => type == null || p.Type == type).ToList();
-            var rootPermissions = permissions.Where(p => p.ParentId == null).ToList();
+            var entities = await _db.Queryable<PermissionEntity>().ToListAsync();
+
+            if (type.HasValue)
+            {
+                entities = entities.Where(e => e.ProviderId == (int)type.Value).ToList();
+            }
+
+            var models = entities.Select(MapToModel).ToList();
+            var rootPermissions = models.Where(p => string.IsNullOrEmpty(GetParentName(entities.First(e => e.Id == p.Id)))).ToList();
 
             foreach (var root in rootPermissions)
             {
-                BuildPermissionTree(root, permissions);
+                BuildPermissionTree(root, models, entities);
             }
 
-            return await Task.FromResult(rootPermissions);
+            return rootPermissions;
         }
 
-        public async Task<Permission> GetPermissionByIdAsync(int id)
+        public async Task<PermissionModel> GetPermissionByIdAsync(int id)
         {
-            return await Task.FromResult(_permissions.FirstOrDefault(p => p.Id == id));
+            var entity = await _db.Queryable<PermissionEntity>().InSingleAsync(id);
+            return entity == null ? null : MapToModel(entity);
         }
 
-        public async Task<bool> CreatePermissionAsync(Permission permission)
+        public async Task<bool> CreatePermissionAsync(PermissionModel permission)
         {
             try
             {
-                permission.Id = _nextPermissionId++;
-                permission.CreatedTime = DateTime.Now;
-                _permissions.Add(permission);
-
-                await _auditLogService.LogCreateAsync(
-                    1, "admin", "Account", "Permission", permission.Id, permission,
-                    $"创建权限: {permission.Name}");
-
-                return true;
+                var entity = MapToEntity(permission);
+                
+                var result = await _db.Insertable(entity).ExecuteCommandAsync();
+                if (result > 0)
+                {
+                    permission.Id = entity.Id;
+                    await _auditLogService.LogCreateAsync(
+                        1, "admin", "Account", "Permission", permission.Id, permission,
+                        $"创建权限: {permission.Name}");
+                    return true;
+                }
+                return false;
             }
             catch (Exception ex)
             {
@@ -70,41 +82,30 @@ namespace Vk.Dbp.AccountModule.Services
             }
         }
 
-        public async Task<bool> UpdatePermissionAsync(Permission permission)
+        public async Task<bool> UpdatePermissionAsync(PermissionModel permission)
         {
             try
             {
-                var existingPermission = _permissions.FirstOrDefault(p => p.Id == permission.Id);
-                if (existingPermission == null)
+                var existingEntity = await _db.Queryable<PermissionEntity>().InSingleAsync(permission.Id);
+                if (existingEntity == null)
                     return false;
 
-                var oldData = new
+                var oldData = new { existingEntity.DisplyName, existingEntity.ProviderKey };
+
+                existingEntity.DisplyName = permission.Name;
+                existingEntity.ProviderKey = permission.Code;
+                existingEntity.IsEnabled = permission.IsEnabled;
+
+                var result = await _db.Updateable(existingEntity).ExecuteCommandAsync();
+                if (result > 0)
                 {
-                    existingPermission.Name,
-                    existingPermission.Code,
-                    existingPermission.Description,
-                    existingPermission.Icon
-                };
-
-                existingPermission.Name = permission.Name;
-                existingPermission.Code = permission.Code;
-                existingPermission.Description = permission.Description;
-                existingPermission.Icon = permission.Icon;
-                existingPermission.SortOrder = permission.SortOrder;
-
-                var newData = new
-                {
-                    existingPermission.Name,
-                    existingPermission.Code,
-                    existingPermission.Description,
-                    existingPermission.Icon
-                };
-
-                await _auditLogService.LogUpdateAsync(
-                    1, "admin", "Account", "Permission", permission.Id, oldData, newData,
-                    $"更新权限: {permission.Name}");
-
-                return true;
+                    var newData = new { existingEntity.DisplyName, existingEntity.ProviderKey };
+                    await _auditLogService.LogUpdateAsync(
+                        1, "admin", "Account", "Permission", permission.Id, oldData, newData,
+                        $"更新权限: {permission.Name}");
+                    return true;
+                }
+                return false;
             }
             catch (Exception ex)
             {
@@ -119,17 +120,21 @@ namespace Vk.Dbp.AccountModule.Services
         {
             try
             {
-                var permission = _permissions.FirstOrDefault(p => p.Id == id);
-                if (permission == null)
+                var entity = await _db.Queryable<PermissionEntity>().InSingleAsync(id);
+                if (entity == null)
                     return false;
 
-                _permissions.Remove(permission);
+                await _db.Deleteable<RolePermission>().Where(rp => rp.PermissionId == id).ExecuteCommandAsync();
 
-                await _auditLogService.LogDeleteAsync(
-                    1, "admin", "Account", "Permission", id, permission,
-                    $"删除权限: {permission.Name}");
-
-                return true;
+                var result = await _db.Deleteable<PermissionEntity>().In(id).ExecuteCommandAsync();
+                if (result > 0)
+                {
+                    await _auditLogService.LogDeleteAsync(
+                        1, "admin", "Account", "Permission", id, entity,
+                        $"删除权限: {entity.DisplyName}");
+                    return true;
+                }
+                return false;
             }
             catch (Exception ex)
             {
@@ -140,107 +145,105 @@ namespace Vk.Dbp.AccountModule.Services
             }
         }
 
-        public async Task<List<Permission>> GetUserPermissionsAsync(int userId)
+        public async Task<List<PermissionModel>> GetUserPermissionsAsync(int userId)
         {
-            return await Task.FromResult(new List<Permission>());
+            var roleIds = await _db.Queryable<UserRole>()
+                .Where(ur => ur.UserId == userId)
+                .Select(ur => ur.RoleId)
+                .ToListAsync();
+
+            if (!roleIds.Any())
+                return new List<PermissionModel>();
+
+            var permissionIds = await _db.Queryable<RolePermission>()
+                .Where(rp => roleIds.Contains(rp.RoleId))
+                .Select(rp => rp.PermissionId)
+                .Distinct()
+                .ToListAsync();
+
+            if (!permissionIds.Any())
+                return new List<PermissionModel>();
+
+            var permissionEntities = await _db.Queryable<PermissionEntity>()
+                .Where(p => permissionIds.Contains(p.Id))
+                .ToListAsync();
+
+            return permissionEntities.Select(MapToModel).ToList();
         }
 
         public async Task<bool> HasPermissionAsync(int userId, string permissionCode)
         {
-            return await Task.FromResult(true);
+            var permissions = await GetUserPermissionsAsync(userId);
+            return permissions.Any(p => p.Code == permissionCode);
         }
 
         public async Task<bool> EnablePermissionAsync(int id, bool isEnabled)
         {
-            var permission = _permissions.FirstOrDefault(p => p.Id == id);
+            var permission = await _db.Queryable<PermissionEntity>().InSingleAsync(id);
             if (permission == null)
                 return false;
 
-            permission.IsEnabled = isEnabled;
-            await _auditLogService.LogOperationAsync(
-                1, "admin", AuditActionType.Update, "Account",
-                $"{(isEnabled ? "启用" : "禁用")}权限: {permission.Name}", "Permission", id);
+            var result = await _db.Updateable<PermissionEntity>()
+                .SetColumns(p => new PermissionEntity { IsEnabled = isEnabled })
+                .Where(p => p.Id == id)
+                .ExecuteCommandAsync();
 
-            return true;
+            if (result > 0)
+            {
+                await _auditLogService.LogOperationAsync(
+                    1, "admin", AuditActionType.Update, "Account",
+                    $"{(isEnabled ? "启用" : "禁用")}权限: {permission.DisplyName}", "Permission", id);
+                return true;
+            }
+            return false;
         }
 
-        private void BuildPermissionTree(Permission parent, List<Permission> allPermissions)
+        private static PermissionModel MapToModel(PermissionEntity entity)
         {
+            return new PermissionModel
+            {
+                Id = entity.Id,
+                Name = entity.DisplyName,
+                Code = entity.ProviderKey,
+                Type = (PermissionType)entity.ProviderId,
+                IsEnabled = entity.IsEnabled,
+                CreatedTime = DateTime.Now
+            };
+        }
+
+        private static PermissionEntity MapToEntity(PermissionModel model)
+        {
+            return new PermissionEntity
+            {
+                Id = model.Id,
+                DisplyName = model.Name,
+                ProviderKey = model.Code,
+                ProviderId = (int)model.Type,
+                IsEnabled = model.IsEnabled,
+                ParentName = model.ParentId.HasValue ? model.ParentId.ToString() : null
+            };
+        }
+
+        private static string GetParentName(PermissionEntity entity)
+        {
+            return entity.ParentName;
+        }
+
+        private void BuildPermissionTree(PermissionModel parent, List<PermissionModel> allPermissions, List<PermissionEntity> entities)
+        {
+            var parentEntity = entities.FirstOrDefault(e => e.Id == parent.Id);
+            if (parentEntity == null) return;
+
+            var childEntities = entities.Where(e => e.ParentName == parentEntity.DisplyName).ToList();
+            
             parent.Children = allPermissions
-                .Where(p => p.ParentId == parent.Id)
+                .Where(p => childEntities.Any(ce => ce.Id == p.Id))
                 .ToList();
 
             foreach (var child in parent.Children)
             {
-                BuildPermissionTree(child, allPermissions);
+                BuildPermissionTree(child, allPermissions, entities);
             }
-        }
-
-        private void InitializeSampleData()
-        {
-            _permissions.AddRange(new[]
-            {
-                new Permission
-                {
-                    Id = _nextPermissionId++,
-                    Name = "系统管理",
-                    Code = "system:manage",
-                    Type = PermissionType.Menu,
-                    Description = "系统管理模块",
-                    Module = "Account",
-                    SortOrder = 1,
-                    ParentId = null,
-                    IsEnabled = true
-                },
-                new Permission
-                {
-                    Id = _nextPermissionId++,
-                    Name = "用户管理",
-                    Code = "user:manage",
-                    Type = PermissionType.Menu,
-                    Description = "用户管理菜单",
-                    Module = "Account",
-                    SortOrder = 1,
-                    ParentId = 1,
-                    IsEnabled = true
-                },
-                new Permission
-                {
-                    Id = _nextPermissionId++,
-                    Name = "新增用户",
-                    Code = "user:create",
-                    Type = PermissionType.Button,
-                    Description = "新增用户按钮",
-                    Module = "Account",
-                    SortOrder = 1,
-                    ParentId = 2,
-                    IsEnabled = true
-                },
-                new Permission
-                {
-                    Id = _nextPermissionId++,
-                    Name = "角色管理",
-                    Code = "role:manage",
-                    Type = PermissionType.Menu,
-                    Description = "角色管理菜单",
-                    Module = "Account",
-                    SortOrder = 2,
-                    ParentId = 1,
-                    IsEnabled = true
-                },
-                new Permission
-                {
-                    Id = _nextPermissionId++,
-                    Name = "权限管理",
-                    Code = "permission:manage",
-                    Type = PermissionType.Menu,
-                    Description = "权限管理菜单",
-                    Module = "Account",
-                    SortOrder = 3,
-                    ParentId = 1,
-                    IsEnabled = true
-                }
-            });
         }
     }
 }

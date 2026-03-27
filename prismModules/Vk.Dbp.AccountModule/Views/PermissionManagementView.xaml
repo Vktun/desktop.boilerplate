@@ -3,12 +3,281 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:prism="http://prismlibrary.com/"
+    xmlns:hc="https://handyorg.github.io/handycontrol"
+    xmlns:models="clr-namespace:Vk.Dbp.AccountModule.Models"
     prism:ViewModelLocator.AutoWireViewModel="True">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/HandyControl;component/Themes/SkinDefault.xaml"/>
+                <ResourceDictionary Source="pack://application:,,,/HandyControl;component/Themes/Theme.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+    
     <Grid Background="{DynamicResource PrimaryBackgroundBrush}">
-        <StackPanel Margin="20">
-            <TextBlock Text="权限管理" FontSize="20" FontWeight="Bold" Foreground="{DynamicResource PrimaryTextBrush}" Margin="0,0,0,20"/>
-            <Button Content="加载权限" Command="{Binding LoadCommand}" Margin="0,0,0,10"/>
-            <DataGrid ItemsSource="{Binding Permissions}" Height="400"/>
-        </StackPanel>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0" Background="{DynamicResource SecondaryRegionBrush}" Padding="20,15" Margin="0,0,0,1">
+            <Grid>
+                <TextBlock Text="权限管理" FontSize="20" FontWeight="Bold" 
+                           Foreground="{DynamicResource PrimaryTextBrush}" VerticalAlignment="Center"/>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button Content="新增权限" Command="{Binding AddPermissionCommand}"
+                            Style="{StaticResource ButtonPrimary}" Padding="15,8"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <Border Grid.Row="1" Background="{DynamicResource SecondaryRegionBrush}" Padding="20,10" Margin="0,0,0,1">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="150"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="150"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="200"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Grid.Column="0" Text="权限类型:" VerticalAlignment="Center" 
+                           Foreground="{DynamicResource PrimaryTextBrush}" Margin="0,0,10,0"/>
+                <ComboBox Grid.Column="1" ItemsSource="{Binding PermissionTypes}" 
+                          SelectedItem="{Binding SelectedPermissionType}"
+                          DisplayMemberPath="." Width="140" Height="30"/>
+
+                <TextBlock Grid.Column="2" Text="所属模块:" VerticalAlignment="Center" 
+                           Foreground="{DynamicResource PrimaryTextBrush}" Margin="20,0,10,0"/>
+                <ComboBox Grid.Column="3" ItemsSource="{Binding Modules}" 
+                          SelectedItem="{Binding SelectedModule}"
+                          Width="140" Height="30"/>
+
+                <TextBlock Grid.Column="4" Text="搜索:" VerticalAlignment="Center" 
+                           Foreground="{DynamicResource PrimaryTextBrush}" Margin="20,0,10,0"/>
+                <hc:SearchBar Grid.Column="5" Width="180" Height="30"
+                              Text="{Binding SearchKeyword, UpdateSourceTrigger=PropertyChanged}"/>
+
+                <Button Grid.Column="6" Content="重置" Command="{Binding ResetFilterCommand}"
+                        Style="{StaticResource ButtonDefault}" Margin="15,0,0,0" Padding="15,8"/>
+            </Grid>
+        </Border>
+
+        <Grid Grid.Row="2" Background="{DynamicResource SecondaryRegionBrush}">
+            <DataGrid ItemsSource="{Binding FilteredPermissions}"
+                      SelectedItem="{Binding SelectedPermission}"
+                      AutoGenerateColumns="False"
+                      IsReadOnly="True"
+                      CanUserAddRows="False"
+                      CanUserDeleteRows="False"
+                      GridLinesVisibility="Horizontal"
+                      HeadersVisibility="Column"
+                      BorderThickness="0"
+                      RowHeaderWidth="0"
+                      Background="Transparent"
+                      RowBackground="Transparent"
+                      AlternatingRowBackground="{DynamicResource SecondaryRegionBrush}"
+                      HorizontalGridLinesBrush="{DynamicResource BorderBrush}">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="60"/>
+                    <DataGridTextColumn Header="权限名称" Binding="{Binding Name}" Width="150"/>
+                    <DataGridTextColumn Header="权限编码" Binding="{Binding Code}" Width="180"/>
+                    <DataGridTemplateColumn Header="权限类型" Width="100">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Type}" VerticalAlignment="Center">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding Type}" Value="{x:Static models:PermissionType.Menu}">
+                                                    <Setter Property="Foreground" Value="{StaticResource PrimaryBrush}"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding Type}" Value="{x:Static models:PermissionType.Button}">
+                                                    <Setter Property="Foreground" Value="{StaticResource SuccessBrush}"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding Type}" Value="{x:Static models:PermissionType.Api}">
+                                                    <Setter Property="Foreground" Value="{StaticResource WarningBrush}"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTextColumn Header="所属模块" Binding="{Binding Module}" Width="120"/>
+                    <DataGridTextColumn Header="描述" Binding="{Binding Description}" Width="*"/>
+                    <DataGridTextColumn Header="排序" Binding="{Binding SortOrder}" Width="60"/>
+                    <DataGridTemplateColumn Header="状态" Width="80">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding IsEnabled}" VerticalAlignment="Center" HorizontalAlignment="Center">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Text" Value="禁用"/>
+                                            <Setter Property="Foreground" Value="{StaticResource DangerBrush}"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsEnabled}" Value="True">
+                                                    <Setter Property="Text" Value="启用"/>
+                                                    <Setter Property="Foreground" Value="{StaticResource SuccessBrush}"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTextColumn Header="创建时间" Binding="{Binding CreatedTime, StringFormat='{}{0:yyyy-MM-dd HH:mm}'}" 
+                                        Width="140"/>
+                    <DataGridTemplateColumn Header="操作" Width="180">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal">
+                                    <Button Content="编辑" Command="{Binding DataContext.EditPermissionCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                            CommandParameter="{Binding}"
+                                            Style="{StaticResource ButtonDefault}" Padding="10,5" Margin="0,0,5,0"/>
+                                    <Button Content="删除" Command="{Binding DataContext.DeletePermissionCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                            CommandParameter="{Binding}"
+                                            Style="{StaticResource ButtonDanger}" Padding="10,5" Margin="0,0,5,0"/>
+                                    <Button Command="{Binding DataContext.ToggleEnabledCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                            CommandParameter="{Binding}"
+                                            Style="{StaticResource ButtonWarning}" Padding="10,5">
+                                        <Button.Content>
+                                            <TextBlock>
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock">
+                                                        <Setter Property="Text" Value="启用"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsEnabled}" Value="True">
+                                                                <Setter Property="Text" Value="禁用"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
+                                        </Button.Content>
+                                    </Button>
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                </DataGrid.Columns>
+            </DataGrid>
+
+            <hc:LoadingCircle Visibility="{Binding IsLoading, Converter={StaticResource Boolean2VisibilityConverter}}"
+                              VerticalAlignment="Center" HorizontalAlignment="Center"/>
+        </Grid>
+
+        <hc:Drawer IsOpen="{Binding IsDialogOpen}" Dock="Right" ShowMask="True" ShowMode="Push"
+                   MinWidth="400">
+            <Border Background="{DynamicResource SecondaryRegionBrush}" Padding="20">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Grid.Row="0" Text="{Binding DialogTitle}" FontSize="18" FontWeight="Bold"
+                               Foreground="{DynamicResource PrimaryTextBrush}" Margin="0,0,0,20"/>
+
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="80"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="权限名称" 
+                                       Foreground="{DynamicResource PrimaryTextBrush}" VerticalAlignment="Center" Margin="0,0,0,10"/>
+                            <TextBox Grid.Row="0" Grid.Column="1" 
+                                     Text="{Binding EditingPermission.Name, UpdateSourceTrigger=PropertyChanged}"
+                                     Padding="10,8" Margin="0,0,0,10"
+                                     Background="{DynamicResource SecondaryBackgroundBrush}"
+                                     Foreground="{DynamicResource PrimaryTextBrush}"
+                                     BorderBrush="{DynamicResource BorderBrush}"/>
+
+                            <TextBlock Grid.Row="1" Grid.Column="0" Text="权限编码" 
+                                       Foreground="{DynamicResource PrimaryTextBrush}" VerticalAlignment="Center" Margin="0,0,0,10"/>
+                            <TextBox Grid.Row="1" Grid.Column="1" 
+                                     Text="{Binding EditingPermission.Code, UpdateSourceTrigger=PropertyChanged}"
+                                     Padding="10,8" Margin="0,0,0,10"
+                                     Background="{DynamicResource SecondaryBackgroundBrush}"
+                                     Foreground="{DynamicResource PrimaryTextBrush}"
+                                     BorderBrush="{DynamicResource BorderBrush}"/>
+
+                            <TextBlock Grid.Row="2" Grid.Column="0" Text="权限类型" 
+                                       Foreground="{DynamicResource PrimaryTextBrush}" VerticalAlignment="Center" Margin="0,0,0,10"/>
+                            <ComboBox Grid.Row="2" Grid.Column="1" 
+                                      ItemsSource="{Binding PermissionTypes}"
+                                      SelectedItem="{Binding EditingPermission.Type}"
+                                      Padding="10,8" Margin="0,0,0,10"/>
+
+                            <TextBlock Grid.Row="3" Grid.Column="0" Text="所属模块" 
+                                       Foreground="{DynamicResource PrimaryTextBrush}" VerticalAlignment="Center" Margin="0,0,0,10"/>
+                            <ComboBox Grid.Row="3" Grid.Column="1" 
+                                      ItemsSource="{Binding Modules}"
+                                      Text="{Binding EditingPermission.Module, UpdateSourceTrigger=PropertyChanged}"
+                                      IsEditable="True"
+                                      Padding="10,8" Margin="0,0,0,10"/>
+
+                            <TextBlock Grid.Row="4" Grid.Column="0" Text="描述" 
+                                       Foreground="{DynamicResource PrimaryTextBrush}" VerticalAlignment="Top" Margin="0,8,0,10"/>
+                            <TextBox Grid.Row="4" Grid.Column="1" 
+                                     Text="{Binding EditingPermission.Description, UpdateSourceTrigger=PropertyChanged}"
+                                     Padding="10,8" Margin="0,0,0,10" Height="80" TextWrapping="Wrap"
+                                     AcceptsReturn="True" VerticalScrollBarVisibility="Auto"
+                                     Background="{DynamicResource SecondaryBackgroundBrush}"
+                                     Foreground="{DynamicResource PrimaryTextBrush}"
+                                     BorderBrush="{DynamicResource BorderBrush}"/>
+
+                            <TextBlock Grid.Row="5" Grid.Column="0" Text="图标" 
+                                       Foreground="{DynamicResource PrimaryTextBrush}" VerticalAlignment="Center" Margin="0,0,0,10"/>
+                            <TextBox Grid.Row="5" Grid.Column="1" 
+                                     Text="{Binding EditingPermission.Icon, UpdateSourceTrigger=PropertyChanged}"
+                                     Padding="10,8" Margin="0,0,0,10"
+                                     Background="{DynamicResource SecondaryBackgroundBrush}"
+                                     Foreground="{DynamicResource PrimaryTextBrush}"
+                                     BorderBrush="{DynamicResource BorderBrush}"/>
+
+                            <TextBlock Grid.Row="6" Grid.Column="0" Text="排序" 
+                                       Foreground="{DynamicResource PrimaryTextBrush}" VerticalAlignment="Center" Margin="0,0,0,10"/>
+                            <hc:NumericUpDown Grid.Row="6" Grid.Column="1"
+                                              Value="{Binding EditingPermission.SortOrder}"
+                                              Minimum="0" Maximum="9999" Margin="0,0,0,10"/>
+
+                            <TextBlock Grid.Row="7" Grid.Column="0" Text="是否启用" 
+                                       Foreground="{DynamicResource PrimaryTextBrush}" VerticalAlignment="Center" Margin="0,0,0,10"/>
+                            <CheckBox Grid.Row="7" Grid.Column="1" 
+                                      IsChecked="{Binding EditingPermission.IsEnabled}"
+                                      VerticalAlignment="Center" Margin="0,0,0,10"/>
+                        </Grid>
+                    </ScrollViewer>
+
+                    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
+                        <Button Content="取消" Command="{Binding CancelDialogCommand}"
+                                Style="{StaticResource ButtonDefault}" Padding="20,8" Margin="0,0,10,0"/>
+                        <Button Content="保存" Command="{Binding SavePermissionCommand}"
+                                Style="{StaticResource ButtonPrimary}" Padding="20,8"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </hc:Drawer>
     </Grid>
 </UserControl>

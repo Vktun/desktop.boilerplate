@@ -1,4 +1,4 @@
-﻿using HandyControl.Controls;
+using HandyControl.Controls;
 using HandyControl.Data;
 using System;
 using System.Collections.Generic;
@@ -17,6 +17,7 @@ namespace Vk.Dbp.WpfWindow.ViewModels
     {
         private readonly IRegionManager _regionManager;
         private readonly IThemeService _themeService;
+        private readonly IMenuPermissionFilter _menuPermissionFilter;
 
         private string _userName = "未登录";
         public string UserName
@@ -46,47 +47,106 @@ namespace Vk.Dbp.WpfWindow.ViewModels
             set { SetProperty(ref _currentTheme, value); }
         }
 
+        private bool _isDashboardVisible = true;
+        public bool IsDashboardVisible
+        {
+            get { return _isDashboardVisible; }
+            set { SetProperty(ref _isDashboardVisible, value); }
+        }
+
+        private bool _isSelfCheckVisible;
+        public bool IsSelfCheckVisible
+        {
+            get { return _isSelfCheckVisible; }
+            set { SetProperty(ref _isSelfCheckVisible, value); }
+        }
+
+        private bool _isProductionVisible;
+        public bool IsProductionVisible
+        {
+            get { return _isProductionVisible; }
+            set { SetProperty(ref _isProductionVisible, value); }
+        }
+
+        private bool _isProductionRecordVisible;
+        public bool IsProductionRecordVisible
+        {
+            get { return _isProductionRecordVisible; }
+            set { SetProperty(ref _isProductionRecordVisible, value); }
+        }
+
+        private bool _isAlarmRecordVisible;
+        public bool IsAlarmRecordVisible
+        {
+            get { return _isAlarmRecordVisible; }
+            set { SetProperty(ref _isAlarmRecordVisible, value); }
+        }
+
+        private bool _isAuditRecordVisible;
+        public bool IsAuditRecordVisible
+        {
+            get { return _isAuditRecordVisible; }
+            set { SetProperty(ref _isAuditRecordVisible, value); }
+        }
+
+        private bool _isAdminSettingVisible;
+        public bool IsAdminSettingVisible
+        {
+            get { return _isAdminSettingVisible; }
+            set { SetProperty(ref _isAdminSettingVisible, value); }
+        }
+
         public DelegateCommand<string> NavigateCommand { get; private set; }
         public DelegateCommand NotificationCommand { get; private set; }
         public DelegateCommand<string> AccountCommand { get; private set; }
         public DelegateCommand<string> ToggleThemeCommand { get; private set; }
+        public DelegateCommand LoginCommand { get; private set; }
 
         public HeaderViewModel(IRegionManager regionManager, IThemeService themeService)
         {
             _regionManager = regionManager;
             _themeService = themeService ?? throw new ArgumentNullException(nameof(themeService));
+            _menuPermissionFilter = new MenuPermissionFilter();
 
             NavigateCommand = new DelegateCommand<string>(navigate);
             NotificationCommand = new DelegateCommand(appNotification);
             AccountCommand = new DelegateCommand<string>(handleAccountAction);
             ToggleThemeCommand = new DelegateCommand<string>(handleToggleTheme);
+            LoginCommand = new DelegateCommand(handleLogin);
 
-            // 初始化当前主题
             CurrentTheme = _themeService.CurrentTheme;
 
-            // 订阅主题变更事件
             _themeService.ThemeChanged += (s, e) =>
             {
                 CurrentTheme = e.NewTheme;
             };
 
-            // 订阅用户会话变更事件
             var userSession = UserSession.Instance;
             userSession.PropertyChanged += (s, e) =>
             {
-                if (e.PropertyName == nameof(UserSession.IsLoggedIn))
+                if (e.PropertyName == nameof(UserSession.IsLoggedIn) ||
+                    e.PropertyName == nameof(UserSession.Permissions))
                 {
                     UpdateUserInfo();
+                    UpdateMenuVisibility();
                 }
             };
 
-            // 初始化用户信息
             UpdateUserInfo();
+            UpdateMenuVisibility();
         }
 
-        /// <summary>
-        /// 更新用户信息显示
-        /// </summary>
+        private void UpdateMenuVisibility()
+        {
+            IsDashboardVisible = _menuPermissionFilter.IsMenuVisible("Dashboard");
+            IsSelfCheckVisible = _menuPermissionFilter.IsMenuVisible("SelfCheck");
+            IsProductionVisible = _menuPermissionFilter.IsMenuVisible("Production");
+            IsProductionRecordVisible = _menuPermissionFilter.IsMenuVisible("ProductionRecord");
+            IsAlarmRecordVisible = _menuPermissionFilter.IsMenuVisible("AlarmRecord");
+            IsAuditRecordVisible = _menuPermissionFilter.IsMenuVisible("AuditRecord");
+            IsAdminSettingVisible = _menuPermissionFilter.IsMenuVisible("AdminSettingView");
+        }
+
         private void UpdateUserInfo()
         {
             var userSession = UserSession.Instance;
@@ -112,12 +172,9 @@ namespace Vk.Dbp.WpfWindow.ViewModels
 
         private void appNotification()
         {
-            Notification.Show(new AppNotificationView(), ShowAnimation.Fade, true);
+            HandyControl.Controls.Notification.Show(new AppNotificationView(), ShowAnimation.Fade, true);
         }
 
-        /// <summary>
-        /// 处理账户相关操作
-        /// </summary>
         private void handleAccountAction(string action)
         {
             if (string.IsNullOrEmpty(action)) return;
@@ -141,15 +198,11 @@ namespace Vk.Dbp.WpfWindow.ViewModels
             }
         }
 
-        /// <summary>
-        /// 处理主题切换
-        /// </summary>
         private void handleToggleTheme(string theme)
         {
             if (string.IsNullOrEmpty(theme))
                 return;
 
-            // 如果传递的是当前主题，则切换到另一个主题
             if (theme == _themeService.CurrentTheme)
             {
                 theme = _themeService.CurrentTheme == "Light" ? "Dark" : "Light";
@@ -160,24 +213,25 @@ namespace Vk.Dbp.WpfWindow.ViewModels
 
         private void handleLogout()
         {
-            // 清除用户会话信息
             var userSession = UserSession.Instance;
             userSession.Logout();
 
-            // 更新显示
             UpdateUserInfo();
+            UpdateMenuVisibility();
 
-            // 导航到登录页面
+            _regionManager.RequestNavigate("ContentRegion", "LoginView");
+        }
+
+        private void handleLogin()
+        {
             _regionManager.RequestNavigate("ContentRegion", "LoginView");
         }
 
         private void handleShutdown()
         {
-            // TODO: 实现系统关机逻辑
             var result = System.Windows.MessageBox.Show("确认要关机吗？", "提示", System.Windows.MessageBoxButton.OKCancel);
             if (result == System.Windows.MessageBoxResult.OK)
             {
-                // 调用系统关机命令
                 System.Diagnostics.Process.Start("shutdown", "/s /t 30");
             }
         }

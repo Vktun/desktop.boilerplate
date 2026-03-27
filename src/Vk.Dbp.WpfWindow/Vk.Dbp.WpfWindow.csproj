@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 	<Import Project="..\..\common.props" />
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
@@ -34,6 +34,7 @@
 	<ItemGroup>
 	  <ProjectReference Include="..\..\prismModules\Vk.Dbp.AccountModule\Vk.Dbp.AccountModule.csproj" />
 	  <ProjectReference Include="..\..\prismModules\Vk.Dbp.WorkshopModule\Vk.Dbp.WorkshopModule.csproj" />
+	  <ProjectReference Include="..\Vk.Dbp.Infrastructure\Vk.Dbp.Infrastructure.csproj" />
 	  <ProjectReference Include="..\VK.Dbp.Domain\Vk.Dbp.Domain.csproj" />
 	  <ProjectReference Include="..\VK.Dbp.Services\Vk.Dbp.Service.csproj" />
 	  <ProjectReference Include="..\VK.Dbp.Utils\Vk.Dbp.Utils.csproj" />

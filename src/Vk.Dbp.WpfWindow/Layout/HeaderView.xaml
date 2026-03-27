@@ -1,15 +1,21 @@
-﻿<UserControl x:Class="Dabp.WpfWindow.Layout.HeaderView"
+<UserControl x:Class="Dabp.WpfWindow.Layout.HeaderView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:Dabp.WpfWindow.Layout"
+             xmlns:converters="clr-namespace:Dabp.WpfWindow.Converters"
              xmlns:prism="http://prismlibrary.com/"
              prism:ViewModelLocator.AutoWireViewModel="True"
              xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
              xmlns:hc="https://handyorg.github.io/handycontrol"
              mc:Ignorable="d" 
              d:DesignHeight="70" d:DesignWidth="1200">
+    
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+        <converters:InverseBooleanToVisibilityConverter x:Key="InverseBooleanToVisibilityConverter"/>
+    </UserControl.Resources>
     <Grid Background="{DynamicResource PrimaryBackgroundBrush}">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="150"/>
@@ -28,17 +34,23 @@
         <!-- 导航菜单区域 -->
         <StackPanel Orientation="Horizontal" Margin="5 5 0 0" Grid.Column="1" >
             <ToggleButton Style="{StaticResource ToggleButtonSuccess}" Command="{Binding NavigateCommand}" 
-                         CommandParameter="Dashboard" Margin="5">驾驶舱</ToggleButton>
+                         CommandParameter="Dashboard" Margin="5"
+                         Visibility="{Binding IsDashboardVisible, Converter={StaticResource BooleanToVisibilityConverter}}">驾驶舱</ToggleButton>
             <ToggleButton Style="{StaticResource ToggleButtonSuccess}" Command="{Binding NavigateCommand}" 
-                         CommandParameter="SelfCheck" Margin="5">自检</ToggleButton>
+                         CommandParameter="SelfCheck" Margin="5"
+                         Visibility="{Binding IsSelfCheckVisible, Converter={StaticResource BooleanToVisibilityConverter}}">自检</ToggleButton>
             <ToggleButton Style="{StaticResource ToggleButtonSuccess}" Command="{Binding NavigateCommand}" 
-                         CommandParameter="Production" Margin="5">生产信息</ToggleButton>
+                         CommandParameter="Production" Margin="5"
+                         Visibility="{Binding IsProductionVisible, Converter={StaticResource BooleanToVisibilityConverter}}">生产信息</ToggleButton>
             <ToggleButton Style="{StaticResource ToggleButtonSuccess}" Command="{Binding NavigateCommand}" 
-                         CommandParameter="ProductionRecord" Margin="5">生产记录</ToggleButton>
+                         CommandParameter="ProductionRecord" Margin="5"
+                         Visibility="{Binding IsProductionRecordVisible, Converter={StaticResource BooleanToVisibilityConverter}}">生产记录</ToggleButton>
             <ToggleButton Style="{StaticResource ToggleButtonSuccess}" Command="{Binding NavigateCommand}" 
-                         CommandParameter="AlarmRecord" Margin="5">报警记录</ToggleButton>
+                         CommandParameter="AlarmRecord" Margin="5"
+                         Visibility="{Binding IsAlarmRecordVisible, Converter={StaticResource BooleanToVisibilityConverter}}">报警记录</ToggleButton>
             <ToggleButton Style="{StaticResource ToggleButtonSuccess}" Command="{Binding NavigateCommand}" 
-                         CommandParameter="AuditRecord" Margin="5">审计追踪</ToggleButton>
+                         CommandParameter="AuditRecord" Margin="5"
+                         Visibility="{Binding IsAuditRecordVisible, Converter={StaticResource BooleanToVisibilityConverter}}">审计追踪</ToggleButton>
         </StackPanel>
         
         <!-- 右侧工具栏区域 -->
@@ -106,7 +118,8 @@
 
             <!-- 后台管理按钮 -->
             <Button Margin="10 8 10 5" Height="50" Width="42" Command="{Binding NavigateCommand}" 
-                   CommandParameter="AdminSettingView" >
+                   CommandParameter="AdminSettingView"
+                   Visibility="{Binding IsAdminSettingVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
                 <Button.Template>
                     <ControlTemplate TargetType="Button">
                         <StackPanel Orientation="Vertical">
@@ -119,8 +132,25 @@
                 </Button.Template>
             </Button>
             
-            <!-- 账户下拉菜单 -->
-            <ToggleButton x:Name="Tbtn_Account" Margin="10 8 10 5" Height="50" Width="42" >
+            <!-- 登录按钮 (未登录时显示) -->
+            <Button Margin="10 8 10 5" Height="50" Width="60" 
+                   Command="{Binding LoginCommand}"
+                   Visibility="{Binding IsLoggedIn, Converter={StaticResource InverseBooleanToVisibilityConverter}}">
+                <Button.Template>
+                    <ControlTemplate TargetType="Button">
+                        <StackPanel Orientation="Vertical">
+                            <TextBlock Text="🔐" HorizontalAlignment="Center" FontSize="20" />
+                            <TextBlock Text="登录" HorizontalAlignment="Center" 
+                                      Foreground="{DynamicResource SecondaryTextBrush}" 
+                                      FontSize="9" Margin="0 5 0 0" />
+                        </StackPanel>
+                    </ControlTemplate>
+                </Button.Template>
+            </Button>
+            
+            <!-- 账户下拉菜单 (已登录时显示) -->
+            <ToggleButton x:Name="Tbtn_Account" Margin="10 8 10 5" Height="50" Width="42"
+                         Visibility="{Binding IsLoggedIn, Converter={StaticResource BooleanToVisibilityConverter}}" >
                 <ToggleButton.Template>
                     <ControlTemplate TargetType="ToggleButton">
                         <StackPanel Orientation="Vertical">

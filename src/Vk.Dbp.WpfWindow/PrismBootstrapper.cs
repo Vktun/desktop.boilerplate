@@ -1,5 +1,7 @@
-﻿using Dabp.Infrastructure.OrmSetting;
+using Dabp.Infrastructure;
+using Dabp.Infrastructure.OrmSetting;
 using Dabp.Utils.Algorithm;
+using Dabp.Utils.Security;
 using Dabp.WpfWindow.Layout;
 using Dabp.WpfWindow.Services;
 using Microsoft.Extensions.Configuration;
@@ -28,31 +30,43 @@ namespace Dabp.WpfWindow
         {
             base.InitializeShell(shell);
 
-            // 初始化导航到登录页面
+            InitializeDatabaseAsync().GetAwaiter().GetResult();
+
             var regionManager = Container.Resolve<IRegionManager>();
             var userSession = Vk.Dbp.AccountModule.Models.UserSession.Instance;
 
             if (userSession.IsLoggedIn)
             {
-                // 如果已登录，导航到仪表板
                 regionManager.RequestNavigate("ContentRegion", "Dashboard");
             }
             else
             {
-                // 未登录，导航到登录页面
                 regionManager.RequestNavigate("ContentRegion", "LoginView");
+            }
+        }
+
+        private async Task InitializeDatabaseAsync()
+        {
+            try
+            {
+                var initializer = Container.Resolve<IDatabaseInitializer>();
+                await initializer.InitializeAsync();
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "数据库初始化失败");
             }
         }
 
         protected override void RegisterTypes(IContainerRegistry containerRegistry)
         {
-            // 注册全局服务
             var config = ConfigConfiguration();
             ConfigureLogging();
             ConfigureSqlSugarDb(containerRegistry, config);
 
             containerRegistry.RegisterSingleton<IThemeService, ThemeService>();
-
+            containerRegistry.RegisterSingleton<IPasswordHasher, PasswordHasher>();
+            containerRegistry.RegisterSingleton<IDatabaseInitializer, DatabaseInitializer>();
         }
         protected override void ConfigureViewModelLocator()
         {

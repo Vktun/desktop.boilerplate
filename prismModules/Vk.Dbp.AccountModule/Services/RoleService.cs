@@ -2,51 +2,58 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Vk.Dbp.AccountModule.Models;
+using SqlSugar;
 using Vk.Dbp.Core.Audit;
 using Vk.Dbp.Core.Audit.Extensions;
 using Vk.Dbp.Core.Audit.Interfaces;
+using Dabp.Infrastructure.Entities;
+using RoleModel = Vk.Dbp.AccountModule.Models.Role;
+using PermissionModel = Vk.Dbp.AccountModule.Models.Permission;
+using RoleEntity = Dabp.Infrastructure.Entities.Role;
+using PermissionEntity = Dabp.Infrastructure.Entities.Permission;
 
 namespace Vk.Dbp.AccountModule.Services
 {
-    /// <summary>
-    /// 角色服务实现
-    /// </summary>
     public class RoleService : IRoleService
     {
-        private readonly List<Role> _roles = new();
+        private readonly ISqlSugarClient _db;
         private readonly IAuditLogService _auditLogService;
-        private int _nextRoleId = 1;
 
-        public RoleService(IAuditLogService auditLogService)
+        public RoleService(ISqlSugarClient db, IAuditLogService auditLogService)
         {
+            _db = db ?? throw new ArgumentNullException(nameof(db));
             _auditLogService = auditLogService ?? throw new ArgumentNullException(nameof(auditLogService));
-            InitializeSampleData();
         }
 
-        public async Task<List<Role>> GetAllRolesAsync()
+        public async Task<List<RoleModel>> GetAllRolesAsync()
         {
-            return await Task.FromResult(_roles.ToList());
+            var entities = await _db.Queryable<RoleEntity>().ToListAsync();
+            return entities.Select(MapToModel).ToList();
         }
 
-        public async Task<Role> GetRoleByIdAsync(int id)
+        public async Task<RoleModel> GetRoleByIdAsync(int id)
         {
-            return await Task.FromResult(_roles.FirstOrDefault(r => r.Id == id));
+            var entity = await _db.Queryable<RoleEntity>().InSingleAsync(id);
+            return entity == null ? null : MapToModel(entity);
         }
 
-        public async Task<bool> CreateRoleAsync(Role role)
+        public async Task<bool> CreateRoleAsync(RoleModel role)
         {
             try
             {
-                role.Id = _nextRoleId++;
-                role.CreatedTime = DateTime.Now;
-                _roles.Add(role);
-
-                await _auditLogService.LogCreateAsync(
-                    1, "admin", "Account", "Role", role.Id, role,
-                    $"创建角色: {role.Name}");
-
-                return true;
+                var entity = MapToEntity(role);
+                entity.RoleLevel = 0;
+                
+                var result = await _db.Insertable(entity).ExecuteCommandAsync();
+                if (result > 0)
+                {
+                    role.Id = entity.Id;
+                    await _auditLogService.LogCreateAsync(
+                        1, "admin", "Account", "Role", role.Id, role,
+                        $"创建角色: {role.Name}");
+                    return true;
+                }
+                return false;
             }
             catch (Exception ex)
             {
@@ -57,28 +64,28 @@ namespace Vk.Dbp.AccountModule.Services
             }
         }
 
-        public async Task<bool> UpdateRoleAsync(Role role)
+        public async Task<bool> UpdateRoleAsync(RoleModel role)
         {
             try
             {
-                var existingRole = _roles.FirstOrDefault(r => r.Id == role.Id);
-                if (existingRole == null)
+                var existingEntity = await _db.Queryable<RoleEntity>().InSingleAsync(role.Id);
+                if (existingEntity == null)
                     return false;
 
-                var oldData = new { existingRole.Name, existingRole.Description };
+                var oldData = new { existingEntity.Name };
 
-                existingRole.Name = role.Name;
-                existingRole.Description = role.Description;
-                existingRole.LastModifiedTime = DateTime.Now;
-                existingRole.Remarks = role.Remarks;
-
-                var newData = new { existingRole.Name, existingRole.Description };
-
-                await _auditLogService.LogUpdateAsync(
-                    1, "admin", "Account", "Role", role.Id, oldData, newData,
-                    $"更新角色: {role.Name}");
-
-                return true;
+                existingEntity.Name = role.Name;
+                
+                var result = await _db.Updateable(existingEntity).ExecuteCommandAsync();
+                if (result > 0)
+                {
+                    var newData = new { existingEntity.Name };
+                    await _auditLogService.LogUpdateAsync(
+                        1, "admin", "Account", "Role", role.Id, oldData, newData,
+                        $"更新角色: {role.Name}");
+                    return true;
+                }
+                return false;
             }
             catch (Exception ex)
             {
@@ -93,17 +100,21 @@ namespace Vk.Dbp.AccountModule.Services
         {
             try
             {
-                var role = _roles.FirstOrDefault(r => r.Id == id);
-                if (role == null)
+                var entity = await _db.Queryable<RoleEntity>().InSingleAsync(id);
+                if (entity == null)
                     return false;
 
-                _roles.Remove(role);
+                await _db.Deleteable<RolePermission>().Where(rp => rp.RoleId == id).ExecuteCommandAsync();
 
-                await _auditLogService.LogDeleteAsync(
-                    1, "admin", "Account", "Role", id, role,
-                    $"删除角色: {role.Name}");
-
-                return true;
+                var result = await _db.Deleteable<RoleEntity>().In(id).ExecuteCommandAsync();
+                if (result > 0)
+                {
+                    await _auditLogService.LogDeleteAsync(
+                        1, "admin", "Account", "Role", id, entity,
+                        $"删除角色: {entity.Name}");
+                    return true;
+                }
+                return false;
             }
             catch (Exception ex)
             {
@@ -116,58 +127,107 @@ namespace Vk.Dbp.AccountModule.Services
 
         public async Task<bool> AssignPermissionsToRoleAsync(int roleId, List<int> permissionIds)
         {
-            var role = _roles.FirstOrDefault(r => r.Id == roleId);
+            var role = await _db.Queryable<RoleEntity>().InSingleAsync(roleId);
             if (role == null)
                 return false;
 
-            role.PermissionIds = permissionIds ?? new List<int>();
-            await _auditLogService.LogOperationAsync(
-                1, "admin", AuditActionType.Update, "Account",
-                $"修改角色权限: {role.Name}", "Role", roleId);
+            try
+            {
+                await _db.Deleteable<RolePermission>().Where(rp => rp.RoleId == roleId).ExecuteCommandAsync();
 
-            return true;
+                if (permissionIds != null && permissionIds.Any())
+                {
+                    var rolePermissions = permissionIds.Select(permissionId => new RolePermission
+                    {
+                        RoleId = roleId,
+                        PermissionId = permissionId,
+                        CreationTime = DateTime.Now,
+                        CreatorId = 1
+                    }).ToList();
+
+                    await _db.Insertable(rolePermissions).ExecuteCommandAsync();
+                }
+
+                await _auditLogService.LogOperationAsync(
+                    1, "admin", AuditActionType.Update, "Account",
+                    $"修改角色权限: {role.Name}", "Role", roleId);
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                await _auditLogService.LogFailureAsync(
+                    1, "admin", AuditActionType.Update, "Account",
+                    $"分配权限失败", ex.Message, "Role", roleId);
+                return false;
+            }
         }
 
-        public async Task<List<Permission>> GetRolePermissionsAsync(int roleId)
+        public async Task<List<PermissionModel>> GetRolePermissionsAsync(int roleId)
         {
-            return await Task.FromResult(new List<Permission>());
+            var permissionIds = await _db.Queryable<RolePermission>()
+                .Where(rp => rp.RoleId == roleId)
+                .Select(rp => rp.PermissionId)
+                .ToListAsync();
+
+            if (!permissionIds.Any())
+                return new List<PermissionModel>();
+
+            var permissionEntities = await _db.Queryable<PermissionEntity>()
+                .Where(p => permissionIds.Contains(p.Id))
+                .ToListAsync();
+
+            return permissionEntities.Select(p => new PermissionModel
+            {
+                Id = p.Id,
+                Name = p.DisplyName,
+                Code = p.ProviderKey,
+                IsEnabled = p.IsEnabled
+            }).ToList();
         }
 
         public async Task<bool> EnableRoleAsync(int id, bool isEnabled)
         {
-            var role = _roles.FirstOrDefault(r => r.Id == id);
+            var role = await _db.Queryable<RoleEntity>().InSingleAsync(id);
             if (role == null)
                 return false;
 
-            role.IsEnabled = isEnabled;
-            await _auditLogService.LogOperationAsync(
-                1, "admin", AuditActionType.Update, "Account",
-                $"{(isEnabled ? "启用" : "禁用")}角色: {role.Name}", "Role", id);
+            var result = await _db.Updateable<RoleEntity>()
+                .SetColumns(r => new RoleEntity { RoleLevel = isEnabled ? 1 : 0 })
+                .Where(r => r.Id == id)
+                .ExecuteCommandAsync();
 
-            return true;
+            if (result > 0)
+            {
+                await _auditLogService.LogOperationAsync(
+                    1, "admin", AuditActionType.Update, "Account",
+                    $"{(isEnabled ? "启用" : "禁用")}角色: {role.Name}", "Role", id);
+                return true;
+            }
+            return false;
         }
 
-        private void InitializeSampleData()
+        private static RoleModel MapToModel(RoleEntity entity)
         {
-            _roles.AddRange(new[]
+            return new RoleModel
             {
-                new Role
-                {
-                    Id = _nextRoleId++,
-                    Name = "系统管理员",
-                    Description = "拥有系统所有权限",
-                    IsEnabled = true,
-                    PermissionIds = new List<int> { 1, 2, 3, 4, 5 }
-                },
-                new Role
-                {
-                    Id = _nextRoleId++,
-                    Name = "普通用户",
-                    Description = "只读权限",
-                    IsEnabled = true,
-                    PermissionIds = new List<int> { 4 }
-                }
-            });
+                Id = entity.Id,
+                Name = entity.Name,
+                IsEnabled = entity.RoleLevel > 0,
+                CreatedTime = DateTime.Now,
+                PermissionIds = new List<int>()
+            };
+        }
+
+        private static RoleEntity MapToEntity(RoleModel model)
+        {
+            return new RoleEntity
+            {
+                Id = model.Id,
+                Name = model.Name,
+                IsDefault = model.IsEnabled,
+                RoleLevel = model.IsEnabled ? 1 : 0
+            };
         }
     }
 }

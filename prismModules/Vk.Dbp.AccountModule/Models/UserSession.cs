@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Prism.Mvvm;
 
 namespace Vk.Dbp.AccountModule.Models
@@ -100,13 +101,17 @@ namespace Vk.Dbp.AccountModule.Models
         }
 
         private string _token;
-        /// <summary>
-        /// 认证令牌
-        /// </summary>
         public string Token
         {
             get { return _token; }
             set { SetProperty(ref _token, value); }
+        }
+
+        private List<string> _permissions;
+        public List<string> Permissions
+        {
+            get { return _permissions; }
+            private set { SetProperty(ref _permissions, value); }
         }
 
         /// <summary>
@@ -156,6 +161,20 @@ namespace Vk.Dbp.AccountModule.Models
             Token = null;
             IsLoggedIn = false;
             LoginTime = default;
+            Permissions = null;
+        }
+
+        public void SetPermissions(List<string> permissions)
+        {
+            Permissions = permissions ?? new List<string>();
+        }
+
+        public bool HasPermission(string permissionCode)
+        {
+            if (string.IsNullOrWhiteSpace(permissionCode))
+                return false;
+
+            return Permissions?.Contains(permissionCode) ?? false;
         }
 
         /// <summary>

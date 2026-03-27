@@ -1,0 +1,82 @@
+<hc:Window
+    x:Class="Vk.Dbp.AccountModule.Views.RoleEditDialog"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:hc="https://handyorg.github.io/handycontrol"
+    xmlns:prism="http://prismlibrary.com/"
+    prism:ViewModelLocator.AutoWireViewModel="True"
+    Title="{Binding DialogTitle}"
+    Width="450"
+    Height="350"
+    WindowStartupLocation="CenterOwner"
+    ResizeMode="NoResize"
+    ShowInTaskbar="False">
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0" Margin="0,0,0,15">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="80"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Text="角色名称:" VerticalAlignment="Center" 
+                       Foreground="{DynamicResource PrimaryTextBrush}"/>
+            <hc:TextBox Grid.Column="1" Text="{Binding Role.Name, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                        hc:InfoElement.Placeholder="请输入角色名称"
+                        IsEnabled="{Binding IsAddMode}"/>
+        </Grid>
+
+        <Grid Grid.Row="1" Margin="0,0,0,15">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="80"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Text="角色描述:" VerticalAlignment="Center"
+                       Foreground="{DynamicResource PrimaryTextBrush}"/>
+            <hc:TextBox Grid.Column="1" Text="{Binding Role.Description, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                        hc:InfoElement.Placeholder="请输入角色描述"/>
+        </Grid>
+
+        <Grid Grid.Row="2" Margin="0,0,0,15">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="80"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Text="启用状态:" VerticalAlignment="Center"
+                       Foreground="{DynamicResource PrimaryTextBrush}"/>
+            <CheckBox Grid.Column="1" IsChecked="{Binding Role.IsEnabled, Mode=TwoWay}"
+                      Content="启用" VerticalAlignment="Center"/>
+        </Grid>
+
+        <Grid Grid.Row="3" Margin="0,0,0,15">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="80"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Text="备注:" VerticalAlignment="Top"
+                       Foreground="{DynamicResource PrimaryTextBrush}"/>
+            <hc:TextBox Grid.Column="1" Text="{Binding Role.Remarks, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                        hc:InfoElement.Placeholder="请输入备注信息"
+                        AcceptsReturn="True"
+                        TextWrapping="Wrap"
+                        Height="60"
+                        VerticalScrollBarVisibility="Auto"/>
+        </Grid>
+
+        <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Content="确定" Command="{Binding ConfirmCommand}"
+                    Style="{StaticResource ButtonPrimary}"
+                    Width="80" Margin="0,0,10,0"/>
+            <Button Content="取消" Command="{Binding CancelCommand}"
+                    Style="{StaticResource ButtonDefault}"
+                    Width="80"/>
+        </StackPanel>
+    </Grid>
+</hc:Window>
