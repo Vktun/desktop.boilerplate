@@ -133,16 +133,16 @@
             </Button>
             
             <!-- 登录按钮 (未登录时显示) -->
-            <Button Margin="10 8 10 5" Height="50" Width="60" 
+            <Button Margin="10 8 10 5" Height="50" Width="70" 
                    Command="{Binding LoginCommand}"
                    Visibility="{Binding IsLoggedIn, Converter={StaticResource InverseBooleanToVisibilityConverter}}">
                 <Button.Template>
                     <ControlTemplate TargetType="Button">
                         <StackPanel Orientation="Vertical">
-                            <TextBlock Text="🔐" HorizontalAlignment="Center" FontSize="20" />
+                            <TextBlock Text="🔐" HorizontalAlignment="Center" FontSize="22" />
                             <TextBlock Text="登录" HorizontalAlignment="Center" 
-                                      Foreground="{DynamicResource SecondaryTextBrush}" 
-                                      FontSize="9" Margin="0 5 0 0" />
+                                      Foreground="{DynamicResource PrimaryTextBrush}" 
+                                      FontSize="13" Margin="0 5 0 0" />
                         </StackPanel>
                     </ControlTemplate>
                 </Button.Template>

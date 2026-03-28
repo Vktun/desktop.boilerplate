@@ -8,23 +8,19 @@ using Prism.Mvvm;
 using Prism.Navigation.Regions;
 using Vk.Dbp.AccountModule.Models;
 using Vk.Dbp.AccountModule.Services;
+using SqlSugar;
 
 namespace Vk.Dbp.AccountModule.ViewModels
 {
-    /// <summary>
-    /// 登录ViewModel
-    /// </summary>
     public class LoginViewModel : BindableBase, INavigationAware
     {
         private readonly IUserService _userService;
         private readonly IPermissionService _permissionService;
         private readonly IRegionManager _regionManager;
         private readonly IPasswordHasher _passwordHasher;
+        private readonly IUserSession _userSession;
 
         private string _username = "admin";
-        /// <summary>
-        /// 用户名
-        /// </summary>
         public string Username
         {
             get { return _username; }
@@ -32,9 +28,6 @@ namespace Vk.Dbp.AccountModule.ViewModels
         }
 
         private bool _rememberPassword;
-        /// <summary>
-        /// 记住密码
-        /// </summary>
         public bool RememberPassword
         {
             get { return _rememberPassword; }
@@ -42,9 +35,6 @@ namespace Vk.Dbp.AccountModule.ViewModels
         }
 
         private bool _isLoading;
-        /// <summary>
-        /// 是否正在加载
-        /// </summary>
         public bool IsLoading
         {
             get { return _isLoading; }
@@ -52,9 +42,6 @@ namespace Vk.Dbp.AccountModule.ViewModels
         }
 
         private string _errorMessage;
-        /// <summary>
-        /// 错误消息
-        /// </summary>
         public string ErrorMessage
         {
             get { return _errorMessage; }
@@ -62,9 +49,6 @@ namespace Vk.Dbp.AccountModule.ViewModels
         }
 
         private bool _showError;
-        /// <summary>
-        /// 是否显示错误
-        /// </summary>
         public bool ShowError
         {
             get { return _showError; }
@@ -73,25 +57,35 @@ namespace Vk.Dbp.AccountModule.ViewModels
 
         public DelegateCommand<PasswordBox> LoginCommand { get; }
 
-        public LoginViewModel(IUserService userService, IPermissionService permissionService, IRegionManager regionManager, IPasswordHasher passwordHasher)
+        public LoginViewModel(
+            IUserService userService, 
+            IPermissionService permissionService, 
+            IRegionManager regionManager, 
+            IPasswordHasher passwordHasher,
+            IUserSession userSession)
         {
             _userService = userService ?? throw new ArgumentNullException(nameof(userService));
             _permissionService = permissionService ?? throw new ArgumentNullException(nameof(permissionService));
             _regionManager = regionManager ?? throw new ArgumentNullException(nameof(regionManager));
             _passwordHasher = passwordHasher ?? throw new ArgumentNullException(nameof(passwordHasher));
+            _userSession = userSession ?? throw new ArgumentNullException(nameof(userSession));
 
             LoginCommand = new DelegateCommand<PasswordBox>(async password => await Login(password), CanLogin);
         }
 
-        /// <summary>
-        /// 执行登录
-        /// </summary>
         private async Task Login(PasswordBox passwordBox)
         {
             if (string.IsNullOrWhiteSpace(Username) || passwordBox == null || string.IsNullOrWhiteSpace(passwordBox.Password))
             {
                 ShowError = true;
                 ErrorMessage = "用户名和密码不能为空";
+                return;
+            }
+
+            if (Username.Length > 50)
+            {
+                ShowError = true;
+                ErrorMessage = "用户名长度不能超过50个字符";
                 return;
             }
 
@@ -105,7 +99,7 @@ namespace Vk.Dbp.AccountModule.ViewModels
                 if (user == null)
                 {
                     ShowError = true;
-                    ErrorMessage = "用户名不存在";
+                    ErrorMessage = "用户名或密码错误";
                     return;
                 }
 
@@ -118,12 +112,11 @@ namespace Vk.Dbp.AccountModule.ViewModels
 
                 if (ValidatePassword(passwordBox.Password, user.PasswordHash))
                 {
-                    var userSession = UserSession.Instance;
-                    userSession.Login(user, GenerateToken());
+                    _userSession.Login(user, GenerateToken());
 
                     var permissions = await _permissionService.GetUserPermissionsAsync(user.Id);
                     var permissionCodes = permissions.Select(p => p.Code).ToList();
-                    userSession.SetPermissions(permissionCodes);
+                    _userSession.SetPermissions(permissionCodes);
 
                     passwordBox.Clear();
 
@@ -135,10 +128,15 @@ namespace Vk.Dbp.AccountModule.ViewModels
                     ErrorMessage = "用户名或密码错误";
                 }
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is SqlSugarException)
             {
                 ShowError = true;
-                ErrorMessage = $"登录失败: {ex.Message}";
+                ErrorMessage = "数据库连接失败，请稍后重试";
+            }
+            catch (Exception)
+            {
+                ShowError = true;
+                ErrorMessage = "登录失败，请稍后重试";
             }
             finally
             {
@@ -146,9 +144,6 @@ namespace Vk.Dbp.AccountModule.ViewModels
             }
         }
 
-        /// <summary>
-        /// 验证是否可以登录
-        /// </summary>
         private bool CanLogin(PasswordBox passwordBox)
         {
             return !IsLoading;
@@ -162,9 +157,6 @@ namespace Vk.Dbp.AccountModule.ViewModels
             return _passwordHasher.VerifyPassword(inputPassword, storedHash);
         }
 
-        /// <summary>
-        /// 生成认证令牌
-        /// </summary>
         private string GenerateToken()
         {
             return Guid.NewGuid().ToString();
@@ -172,7 +164,7 @@ namespace Vk.Dbp.AccountModule.ViewModels
 
         public void OnNavigatedTo(NavigationContext navigationContext)
         {
-            if (UserSession.Instance.IsLoggedIn)
+            if (_userSession.IsLoggedIn)
             {
                 _regionManager.RequestNavigate("ContentRegion", "Dashboard");
             }

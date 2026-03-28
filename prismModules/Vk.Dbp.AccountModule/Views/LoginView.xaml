@@ -40,7 +40,7 @@
                     CommandParameter="{Binding ElementName=PasswordBox}"
                     Background="{DynamicResource PrimaryBrush}"
                     Foreground="White" FontSize="16" FontWeight="Bold"
-                    Cursor="Hand"/>
+                    Cursor="Hand" Width="100" Height="50"/>
 
             <!-- 错误消息显示 -->
             <TextBlock Text="{Binding ErrorMessage}" Foreground="Red" 

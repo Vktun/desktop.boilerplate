@@ -33,21 +33,28 @@ namespace Vk.Dbp.AccountModule.Services
             var entities = await _db.Queryable<UserEntity>()
                 .Where(u => !u.IsDeleted)
                 .ToListAsync();
-            return entities.Select(MapToModel).ToList();
+
+            var result = new List<UserModel>();
+            foreach (var entity in entities)
+            {
+                var userModel = await MapToModelAsync(entity);
+                result.Add(userModel);
+            }
+            return result;
         }
 
         public async Task<UserModel> GetUserByIdAsync(int id)
         {
             var entity = await _db.Queryable<UserEntity>()
                 .FirstAsync(u => u.Id == id && !u.IsDeleted);
-            return entity == null ? null : MapToModel(entity);
+            return entity == null ? null : await MapToModelAsync(entity);
         }
 
         public async Task<UserModel> GetUserByUsernameAsync(string username)
         {
             var entity = await _db.Queryable<UserEntity>()
                 .FirstAsync(u => u.UserName == username && !u.IsDeleted);
-            return entity == null ? null : MapToModel(entity);
+            return entity == null ? null : await MapToModelAsync(entity);
         }
 
         public async Task<bool> CreateUserAsync(UserModel user)
@@ -133,7 +140,7 @@ namespace Vk.Dbp.AccountModule.Services
 
                 var result = await _db.Updateable(entity).ExecuteCommandAsync();
 
-                var userModel = MapToModel(entity);
+                var userModel = await MapToModelAsync(entity);
                 await _auditLogService.LogDeleteAsync(
                     1, "admin", "Account", "User", id, userModel,
                     $"删除用户: {userModel.Username}");
@@ -265,8 +272,9 @@ namespace Vk.Dbp.AccountModule.Services
             }).ToList();
         }
 
-        private UserModel MapToModel(UserEntity entity)
+        private async Task<UserModel> MapToModelAsync(UserEntity entity)
         {
+            var roleIds = await GetUserRoleIdsAsync(entity.Id);
             return new UserModel
             {
                 Id = entity.Id,
@@ -278,7 +286,7 @@ namespace Vk.Dbp.AccountModule.Services
                 IsEnabled = entity.IsActive,
                 CreatedTime = entity.CreationTime,
                 LastModifiedTime = entity.LastModificationTime,
-                RoleIds = GetUserRoleIdsAsync(entity.Id).GetAwaiter().GetResult()
+                RoleIds = roleIds
             };
         }
 

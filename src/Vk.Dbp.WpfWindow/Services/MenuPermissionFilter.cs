@@ -1,17 +1,18 @@
 using System.Collections.Generic;
 using System.Linq;
 using Vk.Dbp.AccountModule.Models;
+using Vk.Dbp.AccountModule.Services;
 
 namespace Dabp.WpfWindow.Services
 {
     public class MenuPermissionFilter : IMenuPermissionFilter
     {
-        private readonly UserSession _userSession;
+        private readonly IUserSession _userSession;
         private HashSet<string> _visibleMenus;
 
-        public MenuPermissionFilter()
+        public MenuPermissionFilter(IUserSession userSession)
         {
-            _userSession = UserSession.Instance;
+            _userSession = userSession ?? throw new ArgumentNullException(nameof(userSession));
             _visibleMenus = new HashSet<string>();
             RefreshPermissions();
         }

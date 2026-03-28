@@ -1,13 +1,14 @@
 using System;
 using System.Collections.Generic;
 using Prism.Mvvm;
+using Vk.Dbp.AccountModule.Services;
 
 namespace Vk.Dbp.AccountModule.Models
 {
     /// <summary>
     /// 用户会话信息 - 保存当前登录用户的信息和状态
     /// </summary>
-    public class UserSession : BindableBase
+    public class UserSession : BindableBase, IUserSession
     {
         private static UserSession _instance;
         private static readonly object _lockObject = new object();

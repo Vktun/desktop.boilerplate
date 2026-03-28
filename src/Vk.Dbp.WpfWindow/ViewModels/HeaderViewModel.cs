@@ -2,12 +2,15 @@ using HandyControl.Controls;
 using HandyControl.Data;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Vk.Dbp.WpfWindow.Views;
+using Vk.Dbp.WpfWindow.Constants;
 using Dabp.WpfWindow.Services;
 using Vk.Dbp.AccountModule.Models;
+using Vk.Dbp.AccountModule.Services;
 using Prism.Commands;
 using Prism.Mvvm;
 
@@ -18,6 +21,7 @@ namespace Vk.Dbp.WpfWindow.ViewModels
         private readonly IRegionManager _regionManager;
         private readonly IThemeService _themeService;
         private readonly IMenuPermissionFilter _menuPermissionFilter;
+        private readonly IUserSession _userSession;
 
         private string _userName = "未登录";
         public string UserName
@@ -102,11 +106,12 @@ namespace Vk.Dbp.WpfWindow.ViewModels
         public DelegateCommand<string> ToggleThemeCommand { get; private set; }
         public DelegateCommand LoginCommand { get; private set; }
 
-        public HeaderViewModel(IRegionManager regionManager, IThemeService themeService)
+        public HeaderViewModel(IRegionManager regionManager, IThemeService themeService, IMenuPermissionFilter menuPermissionFilter, IUserSession userSession)
         {
-            _regionManager = regionManager;
+            _regionManager = regionManager ?? throw new ArgumentNullException(nameof(regionManager));
             _themeService = themeService ?? throw new ArgumentNullException(nameof(themeService));
-            _menuPermissionFilter = new MenuPermissionFilter();
+            _menuPermissionFilter = menuPermissionFilter ?? throw new ArgumentNullException(nameof(menuPermissionFilter));
+            _userSession = userSession ?? throw new ArgumentNullException(nameof(userSession));
 
             NavigateCommand = new DelegateCommand<string>(navigate);
             NotificationCommand = new DelegateCommand(appNotification);
@@ -121,16 +126,18 @@ namespace Vk.Dbp.WpfWindow.ViewModels
                 CurrentTheme = e.NewTheme;
             };
 
-            var userSession = UserSession.Instance;
-            userSession.PropertyChanged += (s, e) =>
+            if (_userSession is INotifyPropertyChanged notifyPropertyChanged)
             {
-                if (e.PropertyName == nameof(UserSession.IsLoggedIn) ||
-                    e.PropertyName == nameof(UserSession.Permissions))
+                notifyPropertyChanged.PropertyChanged += (s, e) =>
                 {
-                    UpdateUserInfo();
-                    UpdateMenuVisibility();
-                }
-            };
+                    if (e.PropertyName == nameof(IUserSession.IsLoggedIn) ||
+                        e.PropertyName == nameof(IUserSession.Permissions))
+                    {
+                        UpdateUserInfo();
+                        UpdateMenuVisibility();
+                    }
+                };
+            }
 
             UpdateUserInfo();
             UpdateMenuVisibility();
@@ -138,21 +145,20 @@ namespace Vk.Dbp.WpfWindow.ViewModels
 
         private void UpdateMenuVisibility()
         {
-            IsDashboardVisible = _menuPermissionFilter.IsMenuVisible("Dashboard");
-            IsSelfCheckVisible = _menuPermissionFilter.IsMenuVisible("SelfCheck");
-            IsProductionVisible = _menuPermissionFilter.IsMenuVisible("Production");
-            IsProductionRecordVisible = _menuPermissionFilter.IsMenuVisible("ProductionRecord");
-            IsAlarmRecordVisible = _menuPermissionFilter.IsMenuVisible("AlarmRecord");
-            IsAuditRecordVisible = _menuPermissionFilter.IsMenuVisible("AuditRecord");
-            IsAdminSettingVisible = _menuPermissionFilter.IsMenuVisible("AdminSettingView");
+            IsDashboardVisible = _menuPermissionFilter.IsMenuVisible(ViewNames.Dashboard);
+            IsSelfCheckVisible = _menuPermissionFilter.IsMenuVisible(ViewNames.SelfCheck);
+            IsProductionVisible = _menuPermissionFilter.IsMenuVisible(ViewNames.Production);
+            IsProductionRecordVisible = _menuPermissionFilter.IsMenuVisible(ViewNames.ProductionRecord);
+            IsAlarmRecordVisible = _menuPermissionFilter.IsMenuVisible(ViewNames.AlarmRecord);
+            IsAuditRecordVisible = _menuPermissionFilter.IsMenuVisible(ViewNames.AuditRecord);
+            IsAdminSettingVisible = _menuPermissionFilter.IsMenuVisible(ViewNames.AdminSettingView);
         }
 
         private void UpdateUserInfo()
         {
-            var userSession = UserSession.Instance;
-            if (userSession.IsLoggedIn)
+            if (_userSession.IsLoggedIn)
             {
-                UserName = userSession.RealName ?? userSession.Username ?? "未知用户";
+                UserName = _userSession.RealName ?? _userSession.Username ?? "未知用户";
                 UserStatus = "在线";
                 IsLoggedIn = true;
             }
@@ -167,7 +173,7 @@ namespace Vk.Dbp.WpfWindow.ViewModels
         private void navigate(string navigatePath)
         {
             if (navigatePath != null)
-                _regionManager.RequestNavigate("ContentRegion", navigatePath);
+                _regionManager.RequestNavigate(RegionNames.ContentRegion, navigatePath);
         }
 
         private void appNotification()
@@ -181,16 +187,16 @@ namespace Vk.Dbp.WpfWindow.ViewModels
 
             switch (action)
             {
-                case "ChangePassword":
-                    _regionManager.RequestNavigate("ContentRegion", "ChangePasswordView");
+                case AccountActions.ChangePassword:
+                    _regionManager.RequestNavigate(RegionNames.ContentRegion, ViewNames.ChangePasswordView);
                     break;
-                case "Logout":
+                case AccountActions.Logout:
                     handleLogout();
                     break;
-                case "Shutdown":
+                case AccountActions.Shutdown:
                     handleShutdown();
                     break;
-                case "Close":
+                case AccountActions.Close:
                     System.Windows.Application.Current.Shutdown();
                     break;
                 default:
@@ -213,18 +219,17 @@ namespace Vk.Dbp.WpfWindow.ViewModels
 
         private void handleLogout()
         {
-            var userSession = UserSession.Instance;
-            userSession.Logout();
+            _userSession.Logout();
 
             UpdateUserInfo();
             UpdateMenuVisibility();
 
-            _regionManager.RequestNavigate("ContentRegion", "LoginView");
+            _regionManager.RequestNavigate(RegionNames.ContentRegion, ViewNames.LoginView);
         }
 
         private void handleLogin()
         {
-            _regionManager.RequestNavigate("ContentRegion", "LoginView");
+            _regionManager.RequestNavigate(RegionNames.ContentRegion, ViewNames.LoginView);
         }
 
         private void handleShutdown()

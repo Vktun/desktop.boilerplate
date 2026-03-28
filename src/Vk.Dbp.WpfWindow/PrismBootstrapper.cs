@@ -4,6 +4,9 @@ using Dabp.Utils.Algorithm;
 using Dabp.Utils.Security;
 using Dabp.WpfWindow.Layout;
 using Dabp.WpfWindow.Services;
+using Vk.Dbp.WpfWindow.Constants;
+using Vk.Dbp.AccountModule.Models;
+using Vk.Dbp.AccountModule.Services;
 using Microsoft.Extensions.Configuration;
 using Serilog;
 using Serilog.Events;
@@ -37,11 +40,11 @@ namespace Dabp.WpfWindow
 
             if (userSession.IsLoggedIn)
             {
-                regionManager.RequestNavigate("ContentRegion", "Dashboard");
+                regionManager.RequestNavigate(RegionNames.ContentRegion, ViewNames.Dashboard);
             }
             else
             {
-                regionManager.RequestNavigate("ContentRegion", "LoginView");
+                regionManager.RequestNavigate(RegionNames.ContentRegion, ViewNames.LoginView);
             }
         }
 
@@ -67,6 +70,8 @@ namespace Dabp.WpfWindow
             containerRegistry.RegisterSingleton<IThemeService, ThemeService>();
             containerRegistry.RegisterSingleton<IPasswordHasher, PasswordHasher>();
             containerRegistry.RegisterSingleton<IDatabaseInitializer, DatabaseInitializer>();
+            containerRegistry.RegisterSingleton<IMenuPermissionFilter, MenuPermissionFilter>();
+            containerRegistry.RegisterInstance<IUserSession>(UserSession.Instance);
         }
         protected override void ConfigureViewModelLocator()
         {
