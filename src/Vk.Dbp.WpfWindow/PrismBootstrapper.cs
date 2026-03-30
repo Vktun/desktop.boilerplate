@@ -33,7 +33,7 @@ namespace Dabp.WpfWindow
         {
             base.InitializeShell(shell);
 
-            InitializeDatabaseAsync().GetAwaiter().GetResult();
+            InitializeDatabaseAsync().ConfigureAwait(false);
 
             var regionManager = Container.Resolve<IRegionManager>();
             var userSession = Vk.Dbp.AccountModule.Models.UserSession.Instance;
@@ -58,6 +58,7 @@ namespace Dabp.WpfWindow
             catch (Exception ex)
             {
                 Log.Error(ex, "数据库初始化失败");
+                MessageBox.Show($"数据库初始化失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -73,11 +74,13 @@ namespace Dabp.WpfWindow
             containerRegistry.RegisterSingleton<IMenuPermissionFilter, MenuPermissionFilter>();
             containerRegistry.RegisterInstance<IUserSession>(UserSession.Instance);
         }
+
         protected override void ConfigureViewModelLocator()
         {
             base.ConfigureViewModelLocator();
             ViewModelLocationProvider.Register<HeaderView, HeaderViewModel>();
         }
+
         protected override void ConfigureModuleCatalog(IModuleCatalog moduleCatalog)
         {
             moduleCatalog.AddModule<Vk.Dbp.WorkshopModule.DbpWorkshopModule>();
@@ -108,42 +111,42 @@ namespace Dabp.WpfWindow
         .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Warning)
         .Enrich.FromLogContext()
         .WriteTo.File("Logs/logs.txt",
-            outputTemplate: "[{Timestamp:MM-dd HH:mm:ss}] [{Level:u3}] {Message:lj}{NewLine}{Exception}", // 输出日期格式
-            rollingInterval: RollingInterval.Day, // 日志按日保存
-            rollOnFileSizeLimit: true, // 限制单个文件的最大长度
-            encoding: Encoding.UTF8, // 文件字符编码
-            retainedFileCountLimit: 10, // 最大保存文件数
-            fileSizeLimitBytes: 100 * 1024) // 最大单个文件长度
+            outputTemplate: "[{Timestamp:MM-dd HH:mm:ss}] [{Level:u3}] {Message:lj}{NewLine}{Exception}",
+            rollingInterval: RollingInterval.Day,
+            rollOnFileSizeLimit: true,
+            encoding: Encoding.UTF8,
+            retainedFileCountLimit: 10,
+            fileSizeLimitBytes: 100 * 1024)
         .CreateLogger();
         }
         #endregion
+
         #region 配置数据库
         void ConfigureSqlSugarDb(IContainerRegistry containerRegistry, IConfiguration configuration)
         {
-            string connectionString = string.Empty;
-            if (configuration["ConnectionStrings:Default"] != null)
+            string connectionString = configuration["ConnectionStrings:Default"];
+            if (string.IsNullOrEmpty(connectionString))
             {
-                var connectValue = configuration["ConnectionStrings:Default"].ToString();
-                connectionString = SM4.Decrypt(connectValue);
+                //var connectValue = configuration["ConnectionStrings:Default"].ToString();
+                //connectionString = SM4.Decrypt(connectValue);
             }
-            containerRegistry.RegisterScoped<ISqlSugarClient>(s =>
+
+            containerRegistry.RegisterSingleton<ISqlSugarClient>(s =>
             {
-                //Scoped用SqlSugarClient 
-                SqlSugarClient sqlSugar = new SqlSugarClient(new ConnectionConfig()
+                SqlSugarScope sqlSugar = new SqlSugarScope(new ConnectionConfig()
                 {
                     DbType = SqlSugar.DbType.SqlServer,
                     ConnectionString = connectionString,
                     IsAutoCloseConnection = true,
-                    ConfigureExternalServices= SqlSugarFluentService.GetConfigureExternalServices()
+                    ConfigureExternalServices = SqlSugarFluentService.GetConfigureExternalServices()
                 },
-               db =>
-               {
-                   //每次上下文都会执行
-                   db.Aop.OnLogExecuting = (sql, pars) =>
-                   {
-
-                   };
-               });
+                db =>
+                {
+                    db.Aop.OnLogExecuting = (sql, pars) =>
+                    {
+                        Log.Debug("SQL: {Sql}", sql);
+                    };
+                });
                 return sqlSugar;
             });
         }

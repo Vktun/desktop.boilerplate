@@ -10,12 +10,13 @@ namespace Dabp.Infrastructure.Entities
     public class AuditLog
     {
         [Key]
+        
         public long Id { get; set; }
         /// <summary>
         /// 模块名称
         /// </summary>
         [StringLength(100)]
-        
+
         public string ModuleName { get; set; }
         /// <summary>
         /// 服务名称
@@ -25,7 +26,7 @@ namespace Dabp.Infrastructure.Entities
         /// <summary>
         /// 方法名称
         /// </summary>
-        [StringLength(100)]
+        [StringLength(200)]
         public string MethodName { get; set; }
         /// <summary>
         /// 操作类型
@@ -41,9 +42,9 @@ namespace Dabp.Infrastructure.Entities
         /// 操作人
         /// </summary>
         public int UserId { get; set; }
-            /// <summary>
-            /// 操作人名称
-            /// </summary>
+        /// <summary>
+        /// 操作人名称
+        /// </summary>
         [StringLength(100)]
 
         public string UserName { get; set; }

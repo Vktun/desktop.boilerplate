@@ -11,20 +11,7 @@ namespace Dabp.Infrastructure
     {
         public void RegisterTypes(IServiceCollection serviceCollection)
         {
-            serviceCollection.AddScoped<ISqlSugarClient>(sp =>
-            {
-                var db = new SqlSugarScope(new ConnectionConfig()
-                {
-                    ConnectionString = "Data Source=local.db",
-                    DbType = DbType.Sqlite,
-                    IsAutoCloseConnection = true,
-                    ConfigureExternalServices = SqlSugarFluentService.GetConfigureExternalServices()
-                });
-                return db;
-            });
-
             serviceCollection.AddScoped(typeof(IRepository<>), typeof(SqlSugarRepository<>));
-            serviceCollection.AddScoped<IDatabaseInitializer, DatabaseInitializer>();
         }
     }
 }

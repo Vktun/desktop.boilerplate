@@ -6,7 +6,7 @@ namespace Dabp.Infrastructure
     public interface IDatabaseInitializer
     {
         Task InitializeAsync();
-        Task InitializeDatabaseAsync();
+        void InitializeDatabase();
         Task InitializeDataAsync();
     }
 }

@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System;
+using System.ComponentModel.DataAnnotations;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Dabp.Infrastructure.Entities
@@ -19,6 +20,7 @@ namespace Dabp.Infrastructure.Entities
         /// 父级名称,默认为空
         /// </summary>
         [StringLength(100)]
+        [AllowNull]
         public string ParentName { get; set; }
         /// <summary>
         /// 1.user 2.role      
@@ -33,6 +35,8 @@ namespace Dabp.Infrastructure.Entities
 /// 是否启用
 /// </summary>
         public bool IsEnabled { get; set; }
+
+        public DateTime CreationTime {  get; set; }
 
     }
 }
