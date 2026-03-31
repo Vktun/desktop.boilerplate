@@ -9,7 +9,10 @@
 - **UI Framework**: WPF + Prism + HandyControl
 - **Architecture**: MVVM Pattern
 - **DI**: Prism IoC Container
-
+- **Tools**: 
+  - **IDE**: Visual Studio 2026
+  - **Package Manager**: NuGet
+  - **Version Control**: Git
 ### 项目结构
 
 ## 📖 文档

@@ -18,5 +18,7 @@ bin-release/
 # information for Eclipse / Flash Builder.
 /.trae/documents
 /.trae/
+.trae/*
 .trae/skills/*
 /.agents/
+.agents/skills/*
