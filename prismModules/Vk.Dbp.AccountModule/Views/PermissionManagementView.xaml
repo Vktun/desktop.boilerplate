@@ -64,7 +64,7 @@
                               Text="{Binding SearchKeyword, UpdateSourceTrigger=PropertyChanged}"/>
 
                 <Button Grid.Column="6" Content="重置" Command="{Binding ResetFilterCommand}"
-                        Style="{StaticResource ButtonDefault}" Margin="15,0,0,0" Padding="15,8"/>
+                        Style="{StaticResource ButtonDefault}" Margin="15,0,0,0" Padding="15,0"/>
             </Grid>
         </Border>
 

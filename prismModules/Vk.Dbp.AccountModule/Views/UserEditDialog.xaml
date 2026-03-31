@@ -97,10 +97,10 @@
 
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
                 <Button Content="取消" Command="{Binding CancelCommand}"
-                        Style="{StaticResource ButtonDefault}" Padding="20,10" Margin="0,0,10,0"/>
+                        Style="{StaticResource ButtonDefault}" Padding="20,0" Margin="0,0,10,0"/>
                 <Button Content="保存" Command="{Binding SaveCommand}"
                         CommandParameter="{Binding ElementName=PasswordBox}"
-                        Style="{StaticResource ButtonPrimary}" Padding="20,10"/>
+                        Style="{StaticResource ButtonPrimary}" Padding="20,0"/>
             </StackPanel>
         </StackPanel>
     </Border>

@@ -124,11 +124,10 @@ namespace Vk.Dbp.AccountModule.ViewModels
                 return;
             }
 
-            var keyword = SearchKeyword.ToLower();
             var filtered = AllUsers.Where(u =>
-                (u.Username != null && u.Username.ToLower().Contains(keyword)) ||
-                (u.RealName != null && u.RealName.ToLower().Contains(keyword)) ||
-                (u.Email != null && u.Email.ToLower().Contains(keyword)))
+                (u.Username != null && u.Username.Contains(SearchKeyword, StringComparison.OrdinalIgnoreCase)) ||
+                (u.RealName != null && u.RealName.Contains(SearchKeyword, StringComparison.OrdinalIgnoreCase)) ||
+                (u.Email != null && u.Email.Contains(SearchKeyword, StringComparison.OrdinalIgnoreCase)))
                 .ToList();
 
             Users = new ObservableCollection<User>(filtered);
