@@ -6,6 +6,11 @@
     xmlns:hc="https://handyorg.github.io/handycontrol"
     xmlns:views="clr-namespace:Vk.Dbp.AccountModule.Views"
     prism:ViewModelLocator.AutoWireViewModel="True">
+	
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+    </UserControl.Resources>
+	
     <Grid Background="{DynamicResource PrimaryBackgroundBrush}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -19,9 +24,9 @@
                            Foreground="{DynamicResource PrimaryTextBrush}" VerticalAlignment="Center"/>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                     <Button Content="新增用户" Command="{Binding AddUserCommand}"
-                            Style="{StaticResource ButtonPrimary}" Padding="15,8" Margin="0,0,10,0"/>
+                            Style="{StaticResource ButtonPrimary}" Padding="10,0" Margin="0,0,10,0"/>
                     <Button Content="刷新" Command="{Binding LoadCommand}"
-                            Style="{StaticResource ButtonDefault}" Padding="15,8"/>
+                            Style="{StaticResource ButtonDefault}" Padding="15,0"/>
                 </StackPanel>
             </Grid>
         </Border>
@@ -39,7 +44,7 @@
 
                 <StackPanel Grid.Column="1" Orientation="Horizontal">
                     <Button Content="导出" Command="{Binding ExportCommand}"
-                            Style="{StaticResource ButtonDefault}" Padding="15,8"/>
+                            Style="{StaticResource ButtonDefault}" Padding="15,0"/>
                 </StackPanel>
             </Grid>
         </Border>

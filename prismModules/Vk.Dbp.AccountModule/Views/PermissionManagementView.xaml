@@ -28,7 +28,7 @@
                            Foreground="{DynamicResource PrimaryTextBrush}" VerticalAlignment="Center"/>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                     <Button Content="新增权限" Command="{Binding AddPermissionCommand}"
-                            Style="{StaticResource ButtonPrimary}" Padding="15,8"/>
+                            Style="{StaticResource ButtonPrimary}" Padding="15,0"/>
                 </StackPanel>
             </Grid>
         </Border>
