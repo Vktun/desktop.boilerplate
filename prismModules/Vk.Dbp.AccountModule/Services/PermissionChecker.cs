@@ -7,20 +7,20 @@ namespace Vk.Dbp.AccountModule.Services
     public class PermissionChecker : IPermissionChecker
     {
         private readonly IPermissionService _permissionService;
+        private readonly IUserSession _userSession;
 
-        public PermissionChecker(IPermissionService permissionService)
+        public PermissionChecker(IPermissionService permissionService, IUserSession userSession)
         {
             _permissionService = permissionService ?? throw new ArgumentNullException(nameof(permissionService));
+            _userSession = userSession ?? throw new ArgumentNullException(nameof(userSession));
         }
 
         public async Task<bool> IsGrantedAsync(string permissionCode)
         {
-            var session = UserSession.Instance;
-
-            if (!session.IsLoggedIn)
+            if (!_userSession.IsLoggedIn)
                 return false;
 
-            return await IsGrantedAsync(session.UserId, permissionCode);
+            return await IsGrantedAsync(_userSession.UserId, permissionCode);
         }
 
         public async Task<bool> IsGrantedAsync(int userId, string permissionCode)
@@ -33,12 +33,10 @@ namespace Vk.Dbp.AccountModule.Services
 
         public bool IsGranted(string permissionCode)
         {
-            var session = UserSession.Instance;
-
-            if (!session.IsLoggedIn)
+            if (!_userSession.IsLoggedIn)
                 return false;
 
-            return session.HasPermission(permissionCode);
+            return _userSession.HasPermission(permissionCode);
         }
     }
 }

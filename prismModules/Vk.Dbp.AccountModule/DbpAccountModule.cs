@@ -11,7 +11,6 @@ using System.Windows.Controls;
 using Vk.Dbp.AccountModule.Views;
 using Vk.Dbp.AccountModule.Services;
 using Vk.Dbp.Core.Audit.Interfaces;
-using Vk.Dbp.Core.Audit.Services;
 using Dabp.Utils.Security;
 
 namespace Vk.Dbp.AccountModule
@@ -34,7 +33,7 @@ namespace Vk.Dbp.AccountModule
             containerRegistry.RegisterForNavigation<AuditLogView>();
             containerRegistry.RegisterForNavigation<OrganizationManagementView>();
 
-            containerRegistry.RegisterSingleton<IAuditLogService, AuditLogService>();
+            containerRegistry.RegisterSingleton<IAuditLogService, DbAuditLogService>();
 
             containerRegistry.RegisterSingleton<IPasswordHasher, PasswordHasher>();
 

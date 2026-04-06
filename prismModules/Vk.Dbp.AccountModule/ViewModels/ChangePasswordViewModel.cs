@@ -1,190 +1,191 @@
-using System;
-using System.Threading.Tasks;
 using Prism.Commands;
 using Prism.Mvvm;
 using Prism.Navigation.Regions;
-using Vk.Dbp.AccountModule.Models;
 using Vk.Dbp.AccountModule.Services;
 
-namespace Vk.Dbp.AccountModule.ViewModels
+namespace Vk.Dbp.AccountModule.ViewModels;
+
+public class ChangePasswordViewModel : BindableBase, INavigationAware
 {
-    public class ChangePasswordViewModel : BindableBase, INavigationAware
+    private readonly IUserService _userService;
+    private readonly IRegionManager _regionManager;
+    private readonly IUserSession _userSession;
+
+    private string _message = string.Empty;
+
+    public string Message
     {
-        private readonly IUserService _userService;
-        private readonly IRegionManager _regionManager;
+        get => _message;
+        set => SetProperty(ref _message, value);
+    }
 
-        private string _message;
-        public string Message
+    private bool _showMessage;
+
+    public bool ShowMessage
+    {
+        get => _showMessage;
+        set => SetProperty(ref _showMessage, value);
+    }
+
+    private bool _isError;
+
+    public bool IsError
+    {
+        get => _isError;
+        set => SetProperty(ref _isError, value);
+    }
+
+    private bool _isLoading;
+
+    public bool IsLoading
+    {
+        get => _isLoading;
+        set => SetProperty(ref _isLoading, value);
+    }
+
+    public DelegateCommand<object[]> ChangeCommand { get; }
+
+    public DelegateCommand CancelCommand { get; }
+
+    public ChangePasswordViewModel(IUserService userService, IRegionManager regionManager, IUserSession userSession)
+    {
+        _userService = userService ?? throw new ArgumentNullException(nameof(userService));
+        _regionManager = regionManager ?? throw new ArgumentNullException(nameof(regionManager));
+        _userSession = userSession ?? throw new ArgumentNullException(nameof(userSession));
+
+        ChangeCommand = new DelegateCommand<object[]>(async passwords => await ChangeAsync(passwords), CanChange);
+        CancelCommand = new DelegateCommand(Cancel);
+    }
+
+    private bool CanChange(object[]? passwords)
+    {
+        return !IsLoading;
+    }
+
+    private async Task ChangeAsync(object[]? passwords)
+    {
+        if (passwords is null || passwords.Length < 3)
         {
-            get { return _message; }
-            set { SetProperty(ref _message, value); }
+            ShowMessage = true;
+            IsError = true;
+            Message = "瀵嗙爜鏁版嵁鏃犳晥";
+            return;
         }
 
-        private bool _showMessage;
-        public bool ShowMessage
+        var oldPasswordBox = passwords[0] as System.Windows.Controls.PasswordBox;
+        var newPasswordBox = passwords[1] as System.Windows.Controls.PasswordBox;
+        var confirmPasswordBox = passwords[2] as System.Windows.Controls.PasswordBox;
+
+        if (oldPasswordBox is null || newPasswordBox is null || confirmPasswordBox is null)
         {
-            get { return _showMessage; }
-            set { SetProperty(ref _showMessage, value); }
+            ShowMessage = true;
+            IsError = true;
+            Message = "瀵嗙爜妗嗘棤鏁?";
+            return;
         }
 
-        private bool _isError;
-        public bool IsError
+        string oldPassword = oldPasswordBox.Password;
+        string newPassword = newPasswordBox.Password;
+        string confirmPassword = confirmPasswordBox.Password;
+
+        if (string.IsNullOrWhiteSpace(oldPassword) ||
+            string.IsNullOrWhiteSpace(newPassword) ||
+            string.IsNullOrWhiteSpace(confirmPassword))
         {
-            get { return _isError; }
-            set { SetProperty(ref _isError, value); }
+            ShowMessage = true;
+            IsError = true;
+            Message = "鎵€鏈夊瘑鐮佸瓧娈甸兘涓嶈兘涓虹┖";
+            return;
         }
 
-        private bool _isLoading;
-        public bool IsLoading
+        if (newPassword != confirmPassword)
         {
-            get { return _isLoading; }
-            set { SetProperty(ref _isLoading, value); }
+            ShowMessage = true;
+            IsError = true;
+            Message = "鏂板瘑鐮佸拰纭瀵嗙爜涓嶄竴鑷?";
+            return;
         }
 
-        public DelegateCommand<object[]> ChangeCommand { get; }
-        public DelegateCommand CancelCommand { get; }
-
-        public ChangePasswordViewModel(IUserService userService, IRegionManager regionManager)
+        if (newPassword.Length < 6)
         {
-            _userService = userService ?? throw new ArgumentNullException(nameof(userService));
-            _regionManager = regionManager ?? throw new ArgumentNullException(nameof(regionManager));
-
-            ChangeCommand = new DelegateCommand<object[]>(async passwords => await Change(passwords), CanChange);
-            CancelCommand = new DelegateCommand(Cancel);
+            ShowMessage = true;
+            IsError = true;
+            Message = "鏂板瘑鐮侀暱搴︿笉鑳藉皯浜?浣?";
+            return;
         }
 
-        private bool CanChange(object[] passwords)
+        if (oldPassword == newPassword)
         {
-            return !IsLoading;
+            ShowMessage = true;
+            IsError = true;
+            Message = "鏂板瘑鐮佷笉鑳戒笌鍘熷瘑鐮佺浉鍚?";
+            return;
         }
 
-        private async Task Change(object[] passwords)
+        IsLoading = true;
+        ShowMessage = false;
+
+        try
         {
-            if (passwords == null || passwords.Length < 3)
+            if (!_userSession.IsLoggedIn)
             {
                 ShowMessage = true;
                 IsError = true;
-                Message = "密码数据无效";
+                Message = "鐢ㄦ埛鏈櫥褰?";
                 return;
             }
 
-            var oldPasswordBox = passwords[0] as System.Windows.Controls.PasswordBox;
-            var newPasswordBox = passwords[1] as System.Windows.Controls.PasswordBox;
-            var confirmPasswordBox = passwords[2] as System.Windows.Controls.PasswordBox;
+            bool result = await _userService.ChangePasswordAsync(_userSession.UserId, oldPassword, newPassword);
 
-            if (oldPasswordBox == null || newPasswordBox == null || confirmPasswordBox == null)
+            if (!result)
             {
                 ShowMessage = true;
                 IsError = true;
-                Message = "密码框无效";
+                Message = "鍘熷瘑鐮侀敊璇紝璇烽噸鏂拌緭鍏?";
                 return;
             }
 
-            var oldPassword = oldPasswordBox.Password;
-            var newPassword = newPasswordBox.Password;
-            var confirmPassword = confirmPasswordBox.Password;
+            ShowMessage = true;
+            IsError = false;
+            Message = "瀵嗙爜淇敼鎴愬姛";
 
-            if (string.IsNullOrWhiteSpace(oldPassword) ||
-                string.IsNullOrWhiteSpace(newPassword) ||
-                string.IsNullOrWhiteSpace(confirmPassword))
-            {
-                ShowMessage = true;
-                IsError = true;
-                Message = "所有密码字段都不能为空";
-                return;
-            }
+            oldPasswordBox.Clear();
+            newPasswordBox.Clear();
+            confirmPasswordBox.Clear();
 
-            if (newPassword != confirmPassword)
-            {
-                ShowMessage = true;
-                IsError = true;
-                Message = "新密码和确认密码不一致";
-                return;
-            }
-
-            if (newPassword.Length < 6)
-            {
-                ShowMessage = true;
-                IsError = true;
-                Message = "新密码长度不能少于6位";
-                return;
-            }
-
-            if (oldPassword == newPassword)
-            {
-                ShowMessage = true;
-                IsError = true;
-                Message = "新密码不能与原密码相同";
-                return;
-            }
-
-            IsLoading = true;
-            ShowMessage = false;
-
-            try
-            {
-                var userSession = UserSession.Instance;
-                if (!userSession.IsLoggedIn)
-                {
-                    ShowMessage = true;
-                    IsError = true;
-                    Message = "用户未登录";
-                    return;
-                }
-
-                var result = await _userService.ChangePasswordAsync(userSession.UserId, oldPassword, newPassword);
-
-                if (result)
-                {
-                    ShowMessage = true;
-                    IsError = false;
-                    Message = "密码修改成功";
-
-                    oldPasswordBox.Clear();
-                    newPasswordBox.Clear();
-                    confirmPasswordBox.Clear();
-
-                    await Task.Delay(1500);
-                    _regionManager.RequestNavigate("ContentRegion", "Dashboard");
-                }
-                else
-                {
-                    ShowMessage = true;
-                    IsError = true;
-                    Message = "原密码错误，请重新输入";
-                }
-            }
-            catch (Exception ex)
-            {
-                ShowMessage = true;
-                IsError = true;
-                Message = $"密码修改失败: {ex.Message}";
-            }
-            finally
-            {
-                IsLoading = false;
-            }
-        }
-
-        private void Cancel()
-        {
+            await Task.Delay(1500);
             _regionManager.RequestNavigate("ContentRegion", "Dashboard");
         }
-
-        public void OnNavigatedTo(NavigationContext navigationContext)
+        catch (Exception ex)
         {
-            ShowMessage = false;
-            IsError = false;
-            Message = string.Empty;
+            ShowMessage = true;
+            IsError = true;
+            Message = $"瀵嗙爜淇敼澶辫触: {ex.Message}";
         }
-
-        public bool IsNavigationTarget(NavigationContext navigationContext)
+        finally
         {
-            return true;
+            IsLoading = false;
         }
+    }
 
-        public void OnNavigatedFrom(NavigationContext navigationContext)
-        {
-        }
+    private void Cancel()
+    {
+        _regionManager.RequestNavigate("ContentRegion", "Dashboard");
+    }
+
+    public void OnNavigatedTo(NavigationContext navigationContext)
+    {
+        ShowMessage = false;
+        IsError = false;
+        Message = string.Empty;
+    }
+
+    public bool IsNavigationTarget(NavigationContext navigationContext)
+    {
+        return true;
+    }
+
+    public void OnNavigatedFrom(NavigationContext navigationContext)
+    {
     }
 }

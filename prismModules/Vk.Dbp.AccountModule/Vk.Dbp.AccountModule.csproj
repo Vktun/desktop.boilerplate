@@ -9,6 +9,7 @@
   
   <ItemGroup>
     <ProjectReference Include="..\..\dbpframework\Vk.Dbp.Core\Vk.Dbp.Core.csproj" />
+    <ProjectReference Include="..\..\src\Vk.Dbp.Services\Vk.Dbp.Service.csproj" />
     <ProjectReference Include="..\..\src\Vk.Dbp.Utils\Vk.Dbp.Utils.csproj" />
     <ProjectReference Include="..\..\src\Vk.Dbp.Infrastructure\Vk.Dbp.Infrastructure.csproj" />
   </ItemGroup>

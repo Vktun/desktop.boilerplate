@@ -16,12 +16,13 @@ using Prism.Mvvm;
 
 namespace Vk.Dbp.WpfWindow.ViewModels
 {
-    public class HeaderViewModel : BindableBase
+    public class HeaderViewModel : BindableBase, IDisposable
     {
         private readonly IRegionManager _regionManager;
         private readonly IThemeService _themeService;
         private readonly IMenuPermissionFilter _menuPermissionFilter;
         private readonly IUserSession _userSession;
+        private bool _isDisposed = false;
 
         private string _userName = "未登录";
         public string UserName
@@ -106,6 +107,8 @@ namespace Vk.Dbp.WpfWindow.ViewModels
         public DelegateCommand<string> ToggleThemeCommand { get; private set; }
         public DelegateCommand LoginCommand { get; private set; }
 
+        private INotifyPropertyChanged _userSessionNotifier;
+
         public HeaderViewModel(IRegionManager regionManager, IThemeService themeService, IMenuPermissionFilter menuPermissionFilter, IUserSession userSession)
         {
             _regionManager = regionManager ?? throw new ArgumentNullException(nameof(regionManager));
@@ -121,30 +124,51 @@ namespace Vk.Dbp.WpfWindow.ViewModels
 
             CurrentTheme = _themeService.CurrentTheme;
 
-            _themeService.ThemeChanged += (s, e) =>
-            {
-                CurrentTheme = e.NewTheme;
-            };
+            _themeService.ThemeChanged += OnThemeChanged;
 
             if (_userSession is INotifyPropertyChanged notifyPropertyChanged)
             {
-                notifyPropertyChanged.PropertyChanged += (s, e) =>
-                {
-                    if (e.PropertyName == nameof(IUserSession.IsLoggedIn) ||
-                        e.PropertyName == nameof(IUserSession.Permissions))
-                    {
-                        UpdateUserInfo();
-                        UpdateMenuVisibility();
-                    }
-                };
+                _userSessionNotifier = notifyPropertyChanged;
+                _userSessionNotifier.PropertyChanged += OnUserSessionPropertyChanged;
             }
 
             UpdateUserInfo();
             UpdateMenuVisibility();
         }
 
+        private void OnThemeChanged(object sender, ThemeChangedEventArgs e)
+        {
+            if (_isDisposed) return;
+            CurrentTheme = e.NewTheme;
+        }
+
+        private void OnUserSessionPropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            if (_isDisposed) return;
+            if (e.PropertyName == nameof(IUserSession.IsLoggedIn) ||
+                e.PropertyName == nameof(IUserSession.Permissions))
+            {
+                UpdateUserInfo();
+                UpdateMenuVisibility();
+            }
+        }
+
+        public void Dispose()
+        {
+            if (_isDisposed) return;
+
+            _themeService.ThemeChanged -= OnThemeChanged;
+            if (_userSessionNotifier != null)
+            {
+                _userSessionNotifier.PropertyChanged -= OnUserSessionPropertyChanged;
+            }
+
+            _isDisposed = true;
+        }
+
         private void UpdateMenuVisibility()
         {
+            _menuPermissionFilter.RefreshPermissions();
             IsDashboardVisible = _menuPermissionFilter.IsMenuVisible(ViewNames.Dashboard);
             IsSelfCheckVisible = _menuPermissionFilter.IsMenuVisible(ViewNames.SelfCheck);
             IsProductionVisible = _menuPermissionFilter.IsMenuVisible(ViewNames.Production);
@@ -234,11 +258,10 @@ namespace Vk.Dbp.WpfWindow.ViewModels
 
         private void handleShutdown()
         {
-            var result = System.Windows.MessageBox.Show("确认要关机吗？", "提示", System.Windows.MessageBoxButton.OKCancel);
-            if (result == System.Windows.MessageBoxResult.OK)
-            {
-                System.Diagnostics.Process.Start("shutdown", "/s /t 30");
-            }
+            // 桌面应用不应直接执行系统关机命令
+            // 此功能已被禁用以提高安全性
+            System.Windows.MessageBox.Show("关机功能已被禁用，请使用操作系统提供的关机选项。", "提示", 
+                System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
         }
     }
 }

@@ -1,6 +1,6 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using Vk.Dbp.AccountModule.Models;
 using Vk.Dbp.AccountModule.Services;
 
 namespace Dabp.WpfWindow.Services
@@ -13,31 +13,34 @@ namespace Dabp.WpfWindow.Services
         public MenuPermissionFilter(IUserSession userSession)
         {
             _userSession = userSession ?? throw new ArgumentNullException(nameof(userSession));
-            _visibleMenus = new HashSet<string>();
+            _visibleMenus = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             RefreshPermissions();
         }
 
         public bool IsMenuVisible(string menuName)
         {
-            if (string.IsNullOrEmpty(menuName))
+            if (string.IsNullOrWhiteSpace(menuName))
+            {
                 return false;
+            }
 
-            var menuItem = MenuPermissionConfig.GetMenuItem(menuName);
-            if (menuItem == null)
+            MenuItemInfo? menuItem = MenuPermissionConfig.GetMenuItem(menuName);
+            if (menuItem is null)
+            {
                 return false;
+            }
 
             if (!menuItem.RequireAuthentication)
-                return true;
-
-            if (!_userSession.IsLoggedIn)
-                return false;
-
-            if (_userSession.Permissions == null || _userSession.Permissions.Count == 0)
             {
                 return true;
             }
 
-            return _userSession.HasPermission(menuItem.PermissionCode);
+            if (!_userSession.IsLoggedIn)
+            {
+                return false;
+            }
+
+            return _visibleMenus.Contains(menuName);
         }
 
         public IEnumerable<MenuItemInfo> GetVisibleMenus()
@@ -48,11 +51,15 @@ namespace Dabp.WpfWindow.Services
 
         public void RefreshPermissions()
         {
+            IEnumerable<string> userPermissions = _userSession.Permissions ?? Enumerable.Empty<string>();
+
             _visibleMenus = new HashSet<string>(
                 MenuPermissionConfig.GetAllMenuItems()
-                    .Where(item => IsMenuVisible(item.Name))
-                    .Select(item => item.Name)
-            );
+                    .Where(item => item.RequireAuthentication &&
+                                   _userSession.IsLoggedIn &&
+                                   userPermissions.Contains(item.PermissionCode))
+                    .Select(item => item.Name),
+                StringComparer.OrdinalIgnoreCase);
         }
     }
 }

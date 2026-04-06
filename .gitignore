@@ -3,9 +3,14 @@ bin-debug/
 bin-release/
 [Oo]bj/
 [Bb]in/
+.codex-dotnet/
+Logs/
 
 # Other files and folders
 .settings/
+*.user
+appsettings.local.json
+appsettings.*.local.json
 
 # Executables
 *.swf
@@ -22,3 +27,4 @@ bin-release/
 .trae/skills/*
 /.agents/
 .agents/skills/*
+.lingma

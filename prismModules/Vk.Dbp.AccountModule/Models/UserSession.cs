@@ -10,27 +10,6 @@ namespace Vk.Dbp.AccountModule.Models
     /// </summary>
     public class UserSession : BindableBase, IUserSession
     {
-        private static UserSession _instance;
-        private static readonly object _lockObject = new object();
-
-        public static UserSession Instance
-        {
-            get
-            {
-                if (_instance == null)
-                {
-                    lock (_lockObject)
-                    {
-                        if (_instance == null)
-                        {
-                            _instance = new UserSession();
-                        }
-                    }
-                }
-                return _instance;
-            }
-        }
-
         private int _userId;
         /// <summary>
         /// 用户ID
@@ -116,11 +95,12 @@ namespace Vk.Dbp.AccountModule.Models
         }
 
         /// <summary>
-        /// 私有构造函数，防止外部实例化
+        /// 公共构造函数，支持依赖注入
         /// </summary>
-        private UserSession()
+        public UserSession()
         {
             IsLoggedIn = false;
+            Permissions = new List<string>();
         }
 
         /// <summary>
@@ -162,7 +142,7 @@ namespace Vk.Dbp.AccountModule.Models
             Token = null;
             IsLoggedIn = false;
             LoginTime = default;
-            Permissions = null;
+            Permissions = new List<string>();
         }
 
         public void SetPermissions(List<string> permissions)
@@ -184,17 +164,6 @@ namespace Vk.Dbp.AccountModule.Models
         public void Clear()
         {
             Logout();
-        }
-
-        /// <summary>
-        /// 重置单例实例（用于测试或特殊场景）
-        /// </summary>
-        public static void ResetInstance()
-        {
-            lock (_lockObject)
-            {
-                _instance = null;
-            }
         }
     }
 }

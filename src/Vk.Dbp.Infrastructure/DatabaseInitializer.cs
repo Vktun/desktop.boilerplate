@@ -93,10 +93,12 @@ namespace Dabp.Infrastructure
             // 创建默认用户
             if (!await _db.Queryable<User>().AnyAsync())
             {
+                // 生成随机强密码作为默认管理员密码
+                string defaultPassword = GenerateStrongPassword();
                 var defaultUser = new User
                 {
                     UserName = "admin",
-                    PasswordHash = _passwordHasher.HashPassword("admin123"),
+                    PasswordHash = _passwordHasher.HashPassword(defaultPassword),
                     SurName = "系统管理员",
                     PhoneNumber = "13800138000",
                     IsActive = true,
@@ -107,6 +109,9 @@ namespace Dabp.Infrastructure
                     IsDeleted = false
                 };
                 var userId = await _db.Insertable(defaultUser).ExecuteReturnIdentityAsync();
+
+                // 记录默认密码到日志（仅首次初始化时）
+                Log.Warning("默认管理员账户已创建 - 用户名: admin, 初始密码: {Password} (请立即修改)", defaultPassword);
 
                 // 为默认用户分配管理员角色
                 var adminRole = await _db.Queryable<Role>().Where(r => r.Name == "管理员").FirstAsync();
@@ -172,6 +177,43 @@ namespace Dabp.Infrastructure
                 }
             }
 
+        }
+
+        /// <summary>
+        /// 生成随机强密码（12位，包含大小写字母、数字和特殊字符）
+        /// </summary>
+        private static string GenerateStrongPassword()
+        {
+            const string upperCase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+            const string lowerCase = "abcdefghijklmnopqrstuvwxyz";
+            const string digits = "0123456789";
+            const string special = "!@#$%^&*";
+            
+            var allChars = upperCase + lowerCase + digits + special;
+            using var random = new System.Security.Cryptography.RNGCryptoServiceProvider();
+            var password = new char[12];
+            
+            // 确保至少包含每种类型的字符
+            password[0] = upperCase[GetRandomInt(random, upperCase.Length)];
+            password[1] = lowerCase[GetRandomInt(random, lowerCase.Length)];
+            password[2] = digits[GetRandomInt(random, digits.Length)];
+            password[3] = special[GetRandomInt(random, special.Length)];
+            
+            // 填充剩余字符
+            for (int i = 4; i < password.Length; i++)
+            {
+                password[i] = allChars[GetRandomInt(random, allChars.Length)];
+            }
+            
+            // 打乱顺序
+            return new string(password.OrderBy(_ => GetRandomInt(random, password.Length)).ToArray());
+        }
+
+        private static int GetRandomInt(System.Security.Cryptography.RNGCryptoServiceProvider rng, int maxValue)
+        {
+            byte[] bytes = new byte[4];
+            rng.GetBytes(bytes);
+            return Math.Abs(BitConverter.ToInt32(bytes, 0)) % maxValue;
         }
     }
 }

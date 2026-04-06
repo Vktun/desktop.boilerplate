@@ -1,393 +1,442 @@
-using System;
+using System.IO;
 using System.Collections.ObjectModel;
-using System.Linq;
-using System.Threading.Tasks;
-using System.Windows;
+using System.Text;
 using HandyControl.Controls;
+using Microsoft.Win32;
 using Prism.Commands;
 using Prism.Mvvm;
 using Vk.Dbp.AccountModule.Models;
 using Vk.Dbp.AccountModule.Services;
-using Vk.Dbp.AccountModule.Views;
+using Vk.Dbp.Core.Audit.Extensions;
 using Vk.Dbp.Core.Audit.Interfaces;
-using Vk.Dbp.Core.Audit;
 
-namespace Vk.Dbp.AccountModule.ViewModels
+namespace Vk.Dbp.AccountModule.ViewModels;
+
+public class UserManagementViewModel : BindableBase
 {
-    public class UserManagementViewModel : BindableBase
+    private readonly IUserService _userService;
+    private readonly IAuditLogService _auditLogService;
+    private readonly IUserSession _userSession;
+
+    private ObservableCollection<User> _users = new();
+
+    public ObservableCollection<User> Users
     {
-        private readonly IUserService _userService;
-        private readonly IAuditLogService _auditLogService;
+        get => _users;
+        set => SetProperty(ref _users, value);
+    }
 
-        private ObservableCollection<User> _users = new();
-        public ObservableCollection<User> Users
+    private ObservableCollection<User> _allUsers = new();
+
+    public ObservableCollection<User> AllUsers
+    {
+        get => _allUsers;
+        set => SetProperty(ref _allUsers, value);
+    }
+
+    private User? _selectedUser;
+
+    public User? SelectedUser
+    {
+        get => _selectedUser;
+        set => SetProperty(ref _selectedUser, value);
+    }
+
+    private bool _isLoading;
+
+    public bool IsLoading
+    {
+        get => _isLoading;
+        set => SetProperty(ref _isLoading, value);
+    }
+
+    private string _searchKeyword = string.Empty;
+
+    public string SearchKeyword
+    {
+        get => _searchKeyword;
+        set
         {
-            get { return _users; }
-            set { SetProperty(ref _users, value); }
+            SetProperty(ref _searchKeyword, value);
+            FilterUsers();
+        }
+    }
+
+    private bool _isDialogOpen;
+
+    public bool IsDialogOpen
+    {
+        get => _isDialogOpen;
+        set => SetProperty(ref _isDialogOpen, value);
+    }
+
+    private UserEditDialogViewModel? _currentDialogViewModel;
+
+    public UserEditDialogViewModel? CurrentDialogViewModel
+    {
+        get => _currentDialogViewModel;
+        set => SetProperty(ref _currentDialogViewModel, value);
+    }
+
+    public DelegateCommand LoadCommand { get; }
+    public DelegateCommand SearchCommand { get; }
+    public DelegateCommand AddUserCommand { get; }
+    public DelegateCommand<User?> EditUserCommand { get; }
+    public DelegateCommand<User?> DeleteUserCommand { get; }
+    public DelegateCommand<User?> ResetPasswordCommand { get; }
+    public DelegateCommand<User?> EnableUserCommand { get; }
+    public DelegateCommand ExportCommand { get; }
+
+    public UserManagementViewModel(IUserService userService, IAuditLogService auditLogService, IUserSession userSession)
+    {
+        _userService = userService ?? throw new ArgumentNullException(nameof(userService));
+        _auditLogService = auditLogService ?? throw new ArgumentNullException(nameof(auditLogService));
+        _userSession = userSession ?? throw new ArgumentNullException(nameof(userSession));
+
+        LoadCommand = new DelegateCommand(async () => await LoadUsersAsync());
+        SearchCommand = new DelegateCommand(FilterUsers);
+        AddUserCommand = new DelegateCommand(ShowAddUserDialog);
+        EditUserCommand = new DelegateCommand<User?>(ShowEditUserDialog, CanEditUser);
+        DeleteUserCommand = new DelegateCommand<User?>(async u => await DeleteUserAsync(u), CanDeleteUser);
+        ResetPasswordCommand = new DelegateCommand<User?>(async u => await ResetPasswordAsync(u), CanResetPassword);
+        EnableUserCommand = new DelegateCommand<User?>(async u => await EnableUserAsync(u), CanEnableUser);
+        ExportCommand = new DelegateCommand(async () => await ExportAsync());
+    }
+
+    private async Task LoadUsersAsync()
+    {
+        IsLoading = true;
+        try
+        {
+            List<User> users = await _userService.GetAllUsersAsync();
+            AllUsers = new ObservableCollection<User>(users);
+            Users = new ObservableCollection<User>(users);
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private void FilterUsers()
+    {
+        if (AllUsers.Count == 0)
+        {
+            return;
         }
 
-        private ObservableCollection<User> _allUsers = new();
-        public ObservableCollection<User> AllUsers
+        if (string.IsNullOrWhiteSpace(SearchKeyword))
         {
-            get { return _allUsers; }
-            set { SetProperty(ref _allUsers, value); }
+            Users = new ObservableCollection<User>(AllUsers);
+            return;
         }
 
-        private User? _selectedUser;
-        public User? SelectedUser
-        {
-            get { return _selectedUser; }
-            set { SetProperty(ref _selectedUser, value); }
-        }
+        List<User> filtered = AllUsers.Where(u =>
+                (u.Username?.Contains(SearchKeyword, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                (u.RealName?.Contains(SearchKeyword, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                (u.Email?.Contains(SearchKeyword, StringComparison.OrdinalIgnoreCase) ?? false))
+            .ToList();
 
-        private bool _isLoading;
-        public bool IsLoading
-        {
-            get { return _isLoading; }
-            set { SetProperty(ref _isLoading, value); }
-        }
+        Users = new ObservableCollection<User>(filtered);
+    }
 
-        private string _searchKeyword = "";
-        public string SearchKeyword
+    private void ShowAddUserDialog()
+    {
+        CurrentDialogViewModel = new UserEditDialogViewModel(async result =>
         {
-            get { return _searchKeyword; }
-            set 
-            { 
-                SetProperty(ref _searchKeyword, value);
-                FilterUsers();
+            IsDialogOpen = false;
+
+            if (result && CurrentDialogViewModel?.EditUser is not null)
+            {
+                await SaveNewUserAsync(CurrentDialogViewModel.EditUser);
             }
-        }
+        });
 
-        private bool _isDialogOpen;
-        public bool IsDialogOpen
-        {
-            get { return _isDialogOpen; }
-            set { SetProperty(ref _isDialogOpen, value); }
-        }
+        CurrentDialogViewModel.Initialize(null, true);
+        IsDialogOpen = true;
+    }
 
-        private UserEditDialogViewModel? _currentDialogViewModel;
-        public UserEditDialogViewModel? CurrentDialogViewModel
-        {
-            get { return _currentDialogViewModel; }
-            set { SetProperty(ref _currentDialogViewModel, value); }
-        }
-
-        public DelegateCommand LoadCommand { get; }
-        public DelegateCommand SearchCommand { get; }
-        public DelegateCommand AddUserCommand { get; }
-        public DelegateCommand<User?> EditUserCommand { get; }
-        public DelegateCommand<User?> DeleteUserCommand { get; }
-        public DelegateCommand<User?> ResetPasswordCommand { get; }
-        public DelegateCommand<User?> EnableUserCommand { get; }
-        public DelegateCommand ExportCommand { get; }
-
-        public UserManagementViewModel(IUserService userService, IAuditLogService auditLogService)
-        {
-            _userService = userService ?? throw new ArgumentNullException(nameof(userService));
-            _auditLogService = auditLogService ?? throw new ArgumentNullException(nameof(auditLogService));
-
-            LoadCommand = new DelegateCommand(async () => await LoadUsers());
-            SearchCommand = new DelegateCommand(FilterUsers);
-            AddUserCommand = new DelegateCommand(ShowAddUserDialog);
-            EditUserCommand = new DelegateCommand<User?>(ShowEditUserDialog, CanEditUser);
-            DeleteUserCommand = new DelegateCommand<User?>(async u => await DeleteUser(u), CanDeleteUser);
-            ResetPasswordCommand = new DelegateCommand<User?>(async u => await ResetPassword(u), CanResetPassword);
-            EnableUserCommand = new DelegateCommand<User?>(async u => await EnableUser(u), CanEnableUser);
-            ExportCommand = new DelegateCommand(Export);
-        }
-
-        private async Task LoadUsers()
+    private async Task SaveNewUserAsync(User user)
+    {
+        try
         {
             IsLoading = true;
-            try
+            bool success = await _userService.CreateUserAsync(user);
+            if (!success)
             {
-                var users = await _userService.GetAllUsersAsync();
-                AllUsers = new ObservableCollection<User>(users);
-                Users = new ObservableCollection<User>(users);
-            }
-            finally
-            {
-                IsLoading = false;
-            }
-        }
-
-        private void FilterUsers()
-        {
-            if (AllUsers == null || AllUsers.Count == 0)
-            {
+                Growl.Error("鐢ㄦ埛鍒涘缓澶辫触");
                 return;
             }
 
-            if (string.IsNullOrWhiteSpace(SearchKeyword))
+            Growl.Success("鐢ㄦ埛鍒涘缓鎴愬姛");
+            await LoadUsersAsync();
+        }
+        catch (Exception ex)
+        {
+            Growl.Error($"鍒涘缓鐢ㄦ埛澶辫触: {ex.Message}");
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private void ShowEditUserDialog(User? user)
+    {
+        if (user is null)
+        {
+            return;
+        }
+
+        CurrentDialogViewModel = new UserEditDialogViewModel(async result =>
+        {
+            IsDialogOpen = false;
+
+            if (result && CurrentDialogViewModel?.EditUser is not null)
             {
-                Users = new ObservableCollection<User>(AllUsers);
+                await UpdateUserAsync(CurrentDialogViewModel.EditUser);
+            }
+        });
+
+        CurrentDialogViewModel.Initialize(user, false);
+        IsDialogOpen = true;
+    }
+
+    private async Task UpdateUserAsync(User user)
+    {
+        try
+        {
+            IsLoading = true;
+            bool success = await _userService.UpdateUserAsync(user);
+            if (!success)
+            {
+                Growl.Error("鐢ㄦ埛鏇存柊澶辫触");
                 return;
             }
 
-            var filtered = AllUsers.Where(u =>
-                (u.Username != null && u.Username.Contains(SearchKeyword, StringComparison.OrdinalIgnoreCase)) ||
-                (u.RealName != null && u.RealName.Contains(SearchKeyword, StringComparison.OrdinalIgnoreCase)) ||
-                (u.Email != null && u.Email.Contains(SearchKeyword, StringComparison.OrdinalIgnoreCase)))
-                .ToList();
+            Growl.Success("鐢ㄦ埛鏇存柊鎴愬姛");
+            await LoadUsersAsync();
+        }
+        catch (Exception ex)
+        {
+            Growl.Error($"鏇存柊鐢ㄦ埛澶辫触: {ex.Message}");
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
 
-            Users = new ObservableCollection<User>(filtered);
+    private static bool CanEditUser(User? user)
+    {
+        return user is not null;
+    }
+
+    private async Task DeleteUserAsync(User? user)
+    {
+        if (user is null)
+        {
+            return;
         }
 
-        private void ShowAddUserDialog()
+        var result = System.Windows.MessageBox.Show(
+            $"纭畾瑕佸垹闄ょ敤鎴?\"{user.Username}\" 鍚楋紵\n姝ゆ搷浣滀笉鍙仮澶嶃€?",
+            "纭鍒犻櫎",
+            System.Windows.MessageBoxButton.YesNo,
+            System.Windows.MessageBoxImage.Warning);
+
+        if (result != System.Windows.MessageBoxResult.Yes)
         {
-            CurrentDialogViewModel = new UserEditDialogViewModel(async result =>
-            {
-                IsDialogOpen = false;
-
-                if (result && CurrentDialogViewModel?.EditUser != null)
-                {
-                    await SaveNewUser(CurrentDialogViewModel.EditUser);
-                }
-            });
-
-            CurrentDialogViewModel.Initialize(null, true);
-            IsDialogOpen = true;
+            return;
         }
 
-        private async Task SaveNewUser(User user)
+        try
         {
-            try
+            IsLoading = true;
+            bool success = await _userService.DeleteUserAsync(user.Id);
+            if (!success)
             {
-                IsLoading = true;
-                var success = await _userService.CreateUserAsync(user);
-                if (success)
-                {
-                    Growl.Success("用户创建成功");
-                    await LoadUsers();
-                    await _auditLogService.LogOperationAsync(1, "admin", AuditActionType.Create, 
-                        "用户管理", $"创建用户: {user.Username}", "User", user.Id);
-                }
-                else
-                {
-                    Growl.Error("用户创建失败");
-                }
-            }
-            catch (Exception ex)
-            {
-                Growl.Error($"创建用户失败: {ex.Message}");
-            }
-            finally
-            {
-                IsLoading = false;
-            }
-        }
-
-        private void ShowEditUserDialog(User? user)
-        {
-            if (user == null)
+                Growl.Error("鐢ㄦ埛鍒犻櫎澶辫触");
                 return;
+            }
 
-            CurrentDialogViewModel = new UserEditDialogViewModel(async result =>
+            Users.Remove(user);
+            if (AllUsers.Contains(user))
             {
-                IsDialogOpen = false;
+                AllUsers.Remove(user);
+            }
 
-                if (result && CurrentDialogViewModel?.EditUser != null)
-                {
-                    await UpdateUser(CurrentDialogViewModel.EditUser);
-                }
-            });
+            Growl.Success("鐢ㄦ埛鍒犻櫎鎴愬姛");
+        }
+        catch (Exception ex)
+        {
+            Growl.Error($"鍒犻櫎鐢ㄦ埛澶辫触: {ex.Message}");
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
 
-            CurrentDialogViewModel.Initialize(user, false);
-            IsDialogOpen = true;
+    private static bool CanDeleteUser(User? user)
+    {
+        return user is not null && user.Username != "admin";
+    }
+
+    private async Task ResetPasswordAsync(User? user)
+    {
+        if (user is null)
+        {
+            return;
         }
 
-        private async Task UpdateUser(User user)
+        var result = System.Windows.MessageBox.Show(
+            $"确定要重置用户 \"{user.Username}\" 的密码吗？\n密码将被重置为随机强密码。",
+            "重置密码",
+            System.Windows.MessageBoxButton.YesNo,
+            System.Windows.MessageBoxImage.Question);
+
+        if (result != System.Windows.MessageBoxResult.Yes)
         {
-            try
-            {
-                IsLoading = true;
-                var success = await _userService.UpdateUserAsync(user);
-                if (success)
-                {
-                    Growl.Success("用户更新成功");
-                    await LoadUsers();
-                    await _auditLogService.LogOperationAsync(1, "admin", AuditActionType.Update, 
-                        "用户管理", $"更新用户: {user.Username}", "User", user.Id);
-                }
-                else
-                {
-                    Growl.Error("用户更新失败");
-                }
-            }
-            catch (Exception ex)
-            {
-                Growl.Error($"更新用户失败: {ex.Message}");
-            }
-            finally
-            {
-                IsLoading = false;
-            }
+            return;
         }
 
-        private bool CanEditUser(User? user)
+        try
         {
-            return user != null;
-        }
-
-        private async Task DeleteUser(User? user)
-        {
-            if (user == null)
+            IsLoading = true;
+            // 生成随机强密码
+            string newPassword = GenerateStrongPassword();
+            bool success = await _userService.ResetPasswordAsync(user.Id, newPassword);
+            if (!success)
+            {
+                Growl.Error("密码重置失败");
                 return;
-
-            var result = System.Windows.MessageBox.Show(
-                $"确定要删除用户 \"{user.Username}\" 吗？\n此操作不可恢复。",
-                "确认删除",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Warning);
-
-            if (result == MessageBoxResult.Yes)
-            {
-                try
-                {
-                    IsLoading = true;
-                    var success = await _userService.DeleteUserAsync(user.Id);
-                    if (success)
-                    {
-                        Users.Remove(user);
-                        if (AllUsers.Contains(user))
-                        {
-                            AllUsers.Remove(user);
-                        }
-                        Growl.Success("用户删除成功");
-                        await _auditLogService.LogOperationAsync(1, "admin", AuditActionType.Delete, 
-                            "用户管理", $"删除用户: {user.Username}", "User", user.Id);
-                    }
-                    else
-                    {
-                        Growl.Error("用户删除失败");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Growl.Error($"删除用户失败: {ex.Message}");
-                }
-                finally
-                {
-                    IsLoading = false;
-                }
             }
+
+            Growl.Success($"密码已重置，新密码: {newPassword}\n请立即告知用户并建议其修改密码。");
+        }
+        catch (Exception ex)
+        {
+            Growl.Error($"重置密码失败: {ex.Message}");
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private static bool CanResetPassword(User? user)
+    {
+        return user is not null;
+    }
+
+    private async Task EnableUserAsync(User? user)
+    {
+        if (user is null)
+        {
+            return;
         }
 
-        private bool CanDeleteUser(User? user)
+        try
         {
-            return user != null && user.Username != "admin";
-        }
-
-        private async Task ResetPassword(User? user)
-        {
-            if (user == null)
-                return;
-
-            var result = System.Windows.MessageBox.Show(
-                $"确定要重置用户 \"{user.Username}\" 的密码吗？\n密码将被重置为: 123456",
-                "重置密码",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Question);
-
-            if (result == MessageBoxResult.Yes)
-            {
-                try
-                {
-                    IsLoading = true;
-                    var newPassword = "123456";
-                    var success = await _userService.ResetPasswordAsync(user.Id, newPassword);
-                    if (success)
-                    {
-                        Growl.Success($"密码已重置为: {newPassword}");
-                        await _auditLogService.LogOperationAsync(1, "admin", AuditActionType.ChangePassword, 
-                            "用户管理", $"重置用户密码: {user.Username}", "User", user.Id);
-                    }
-                    else
-                    {
-                        Growl.Error("密码重置失败");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Growl.Error($"重置密码失败: {ex.Message}");
-                }
-                finally
-                {
-                    IsLoading = false;
-                }
-            }
-        }
-
-        private bool CanResetPassword(User? user)
-        {
-            return user != null;
-        }
-
-        private async Task EnableUser(User? user)
-        {
-            if (user == null)
-                return;
-
-            try
+            user.IsEnabled = !user.IsEnabled;
+            bool success = await _userService.EnableUserAsync(user.Id, user.IsEnabled);
+            if (!success)
             {
                 user.IsEnabled = !user.IsEnabled;
-                var success = await _userService.EnableUserAsync(user.Id, user.IsEnabled);
-                if (success)
-                {
-                    var status = user.IsEnabled ? "启用" : "禁用";
-                    Growl.Success($"用户已{status}");
-                    await _auditLogService.LogOperationAsync(1, "admin", AuditActionType.Update, 
-                        "用户管理", $"{status}用户: {user.Username}", "User", user.Id);
-                    RaisePropertyChanged(nameof(Users));
-                }
-                else
-                {
-                    user.IsEnabled = !user.IsEnabled;
-                    Growl.Error("操作失败");
-                }
+                Growl.Error("鎿嶄綔澶辫触");
+                return;
             }
-            catch (Exception ex)
-            {
-                user.IsEnabled = !user.IsEnabled;
-                Growl.Error($"操作失败: {ex.Message}");
-            }
-        }
 
-        private bool CanEnableUser(User? user)
+            string status = user.IsEnabled ? "鍚敤" : "绂佺敤";
+            Growl.Success($"鐢ㄦ埛宸?{status}");
+            RaisePropertyChanged(nameof(Users));
+        }
+        catch (Exception ex)
         {
-            return user != null && user.Username != "admin";
+            user.IsEnabled = !user.IsEnabled;
+            Growl.Error($"鎿嶄綔澶辫触: {ex.Message}");
         }
+    }
 
-        private void Export()
+    private static bool CanEnableUser(User? user)
+    {
+        return user is not null && user.Username != "admin";
+    }
+
+    private async Task ExportAsync()
+    {
+        try
         {
-            try
+            var dialog = new SaveFileDialog
             {
-                var dialog = new Microsoft.Win32.SaveFileDialog
-                {
-                    Filter = "CSV文件 (*.csv)|*.csv",
-                    FileName = $"用户列表_{DateTime.Now:yyyyMMdd_HHmmss}.csv"
-                };
+                Filter = "CSV鏂囦欢 (*.csv)|*.csv",
+                FileName = $"鐢ㄦ埛鍒楄〃_{DateTime.Now:yyyyMMdd_HHmmss}.csv"
+            };
 
-                if (dialog.ShowDialog() == true)
-                {
-                    var csv = new System.Text.StringBuilder();
-                    csv.AppendLine("ID,用户名,真实姓名,邮箱,电话,是否启用,创建时间,最后登录时间");
-
-                    foreach (var user in Users)
-                    {
-                        csv.AppendLine($"{user.Id},{user.Username},{user.RealName},{user.Email},{user.Phone},{user.IsEnabled},{user.CreatedTime:yyyy-MM-dd HH:mm},{user.LastLoginTime?.ToString("yyyy-MM-dd HH:mm") ?? ""}");
-                    }
-
-                    System.IO.File.WriteAllText(dialog.FileName, csv.ToString(), System.Text.Encoding.UTF8);
-                    Growl.Success("导出成功");
-                    _ = _auditLogService.LogOperationAsync(1, "admin", AuditActionType.Export, 
-                        "用户管理", "导出用户列表");
-                }
-            }
-            catch (Exception ex)
+            if (dialog.ShowDialog() != true)
             {
-                Growl.Error($"导出失败: {ex.Message}");
+                return;
             }
+
+            var csv = new StringBuilder();
+            csv.AppendLine("ID,鐢ㄦ埛鍚?鐪熷疄濮撳悕,閭,鐢佃瘽,鏄惁鍚敤,鍒涘缓鏃堕棿,鏈€鍚庣櫥褰曟椂闂?");
+
+            foreach (User user in Users)
+            {
+                csv.AppendLine(
+                    $"{user.Id},{user.Username},{user.RealName},{user.Email},{user.Phone},{user.IsEnabled},{user.CreatedTime:yyyy-MM-dd HH:mm},{user.LastLoginTime?.ToString("yyyy-MM-dd HH:mm") ?? string.Empty}");
+            }
+
+            File.WriteAllText(dialog.FileName, csv.ToString(), Encoding.UTF8);
+            Growl.Success("瀵煎嚭鎴愬姛");
+
+            await _auditLogService.LogExportAsync(
+                _userSession.GetAuditUserId(),
+                _userSession.GetAuditUsername(),
+                "UserManagement",
+                "导出用户列表");
         }
+        catch (Exception ex)
+        {
+            Growl.Error($"导出失败: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// 生成随机强密码（12位，包含大小写字母、数字和特殊字符）
+    /// </summary>
+    private static string GenerateStrongPassword()
+    {
+        const string upperCase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        const string lowerCase = "abcdefghijklmnopqrstuvwxyz";
+        const string digits = "0123456789";
+        const string special = "!@#$%^&*";
+        
+        var allChars = upperCase + lowerCase + digits + special;
+        var random = new System.Security.Cryptography.RNGCryptoServiceProvider();
+        var password = new char[12];
+        
+        // 确保至少包含每种类型的字符
+        password[0] = upperCase[GetRandomInt(random, upperCase.Length)];
+        password[1] = lowerCase[GetRandomInt(random, lowerCase.Length)];
+        password[2] = digits[GetRandomInt(random, digits.Length)];
+        password[3] = special[GetRandomInt(random, special.Length)];
+        
+        // 填充剩余字符
+        for (int i = 4; i < password.Length; i++)
+        {
+            password[i] = allChars[GetRandomInt(random, allChars.Length)];
+        }
+        
+        // 打乱顺序
+        return new string(password.OrderBy(_ => GetRandomInt(random, password.Length)).ToArray());
+    }
+
+    private static int GetRandomInt(System.Security.Cryptography.RNGCryptoServiceProvider rng, int maxValue)
+    {
+        byte[] bytes = new byte[4];
+        rng.GetBytes(bytes);
+        return Math.Abs(BitConverter.ToInt32(bytes, 0)) % maxValue;
     }
 }
