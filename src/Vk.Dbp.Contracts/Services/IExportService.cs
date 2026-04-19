@@ -28,6 +28,26 @@ namespace Vk.Dbp.Contracts.Services
         Task<string> ExportToExcelAsync<T>(IEnumerable<T> data, string fileName) where T : class;
         
         /// <summary>
+        /// 导出数据到Excel文件（带配置选项）
+        /// </summary>
+        /// <typeparam name="T">数据类型</typeparam>
+        /// <param name="data">要导出的数据</param>
+        /// <param name="fileName">文件名（不含扩展名）</param>
+        /// <param name="options">导出配置选项</param>
+        /// <returns>导出文件的完整路径</returns>
+        Task<string> ExportToExcelAsync<T>(IEnumerable<T> data, string fileName, ExcelExportOptions? options) where T : class;
+        
+        /// <summary>
+        /// 导出数据到PDF文件
+        /// </summary>
+        /// <typeparam name="T">数据类型</typeparam>
+        /// <param name="data">要导出的数据</param>
+        /// <param name="fileName">文件名（不含扩展名）</param>
+        /// <param name="title">报表标题（可选）</param>
+        /// <returns>导出文件的完整路径</returns>
+        Task<string> ExportToPdfAsync<T>(IEnumerable<T> data, string fileName, string? title = null) where T : class;
+        
+        /// <summary>
         /// 从CSV文件导入数据
         /// </summary>
         /// <typeparam name="T">数据类型</typeparam>
@@ -49,5 +69,12 @@ namespace Vk.Dbp.Contracts.Services
         /// <param name="filter">文件过滤器</param>
         /// <returns>用户选择的文件路径，如果取消则返回null</returns>
         string? ShowOpenFileDialog(string filter);
+        
+        /// <summary>
+        /// 打开导出的文件
+        /// </summary>
+        /// <param name="filePath">文件路径</param>
+        /// <returns>是否成功打开</returns>
+        Task<bool> OpenExportedFileAsync(string filePath);
     }
 }

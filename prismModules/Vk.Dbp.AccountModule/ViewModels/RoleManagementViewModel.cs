@@ -6,7 +6,7 @@ using Prism.Mvvm;
 using Vk.Dbp.AccountModule.Models;
 using Vk.Dbp.AccountModule.Services;
 using Vk.Dbp.AccountModule.Views;
-using Vk.Dbp.Core.Audit.Interfaces;
+using Vk.Dbp.Services.Audit;
 
 namespace Vk.Dbp.AccountModule.ViewModels
 {
@@ -65,7 +65,8 @@ namespace Vk.Dbp.AccountModule.ViewModels
             Roles = new ObservableCollection<Role>();
             AvailablePermissions = new ObservableCollection<Permission>();
 
-            LoadCommand = new DelegateCommand(async () => await LoadRoles());
+            LoadCommand = new DelegateCommand(async () => await LoadRoles(), () => !IsLoading)
+                .ObservesProperty(() => IsLoading);
             AddRoleCommand = new DelegateCommand(AddRole);
             EditRoleCommand = new DelegateCommand<Role>(EditRole, CanEditRole);
             DeleteRoleCommand = new DelegateCommand<Role>(async r => await DeleteRole(r), CanDeleteRole);
@@ -83,6 +84,10 @@ namespace Vk.Dbp.AccountModule.ViewModels
 
                 var permissions = await _permissionService.GetAllPermissionsAsync();
                 AvailablePermissions = new ObservableCollection<Permission>(permissions);
+            }
+            catch (Exception ex)
+            {
+                HandyControl.Controls.Growl.Error($"加载角色失败: {ex.Message}");
             }
             finally
             {

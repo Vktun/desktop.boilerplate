@@ -8,9 +8,8 @@ using SqlSugar;
 using UserModel = Vk.Dbp.AccountModule.Models.User;
 using PermissionModel = Vk.Dbp.AccountModule.Models.Permission;
 using Vk.Dbp.AccountModule.Services;
-using Vk.Dbp.Core.Audit;
-using Vk.Dbp.Core.Audit.Extensions;
-using Vk.Dbp.Core.Audit.Interfaces;
+using Vk.Dbp.Services.Audit;
+using Vk.Dbp.Services.Session;
 
 namespace Vk.Dbp.AccountModule.ViewModels;
 
@@ -171,7 +170,7 @@ public class LoginViewModel : BindableBase, INavigationAware
                 return;
             }
 
-            _userSession.Login(user, GenerateToken());
+            _userSession.Login(user.Id, user.Username ?? Username, user.RealName ?? "", user.Email ?? "", user.Phone ?? "", GenerateToken());
 
             List<PermissionModel> permissions = await _permissionService.GetUserPermissionsAsync(user.Id);
             List<string> permissionCodes = permissions.Select(p => p.Code)

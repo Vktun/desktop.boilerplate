@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Microsoft.Extensions.Configuration;
 
 namespace Dabp.WpfWindow.Services
@@ -28,7 +29,7 @@ namespace Dabp.WpfWindow.Services
             var securitySection = configuration.GetSection("Security");
             if (securitySection.Exists())
             {
-                var tokenExpiryHours = securitySection.GetValue<int?>("TokenExpiryHours");
+                var tokenExpiryHours = configuration.GetValue<int?>("Security:TokenExpiryHours");
                 if (tokenExpiryHours.HasValue && tokenExpiryHours.Value <= 0)
                 {
                     errors.Add("Security:TokenExpiryHours 必须大于0");

@@ -1,10 +1,11 @@
 using System;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Threading.Tasks;
 using Prism.Commands;
 using Prism.Mvvm;
-using Vk.Dbp.Core.Audit;
-using Vk.Dbp.Core.Audit.Interfaces;
+using Vk.Dbp.Contracts.Services;
+using Vk.Dbp.Services.Audit;
 
 namespace Vk.Dbp.AccountModule.ViewModels
 {
@@ -14,6 +15,7 @@ namespace Vk.Dbp.AccountModule.ViewModels
     public class AuditLogViewModel : BindableBase
     {
         private readonly IAuditLogService _auditLogService;
+        private readonly IExportService _exportService;
 
         private ObservableCollection<AuditLog> _auditLogs;
         public ObservableCollection<AuditLog> AuditLogs
@@ -55,9 +57,10 @@ namespace Vk.Dbp.AccountModule.ViewModels
         public DelegateCommand ExportCommand { get; }
         public DelegateCommand SearchCommand { get; }
 
-        public AuditLogViewModel(IAuditLogService auditLogService)
+        public AuditLogViewModel(IAuditLogService auditLogService, IExportService exportService)
         {
             _auditLogService = auditLogService ?? throw new ArgumentNullException(nameof(auditLogService));
+            _exportService = exportService ?? throw new ArgumentNullException(nameof(exportService));
 
             AuditLogs = new ObservableCollection<AuditLog>();
 
@@ -109,7 +112,65 @@ namespace Vk.Dbp.AccountModule.ViewModels
 
         private async Task Export()
         {
-            // TODO: 导出审计日志
+            if (AuditLogs == null || AuditLogs.Count == 0)
+            {
+                System.Windows.MessageBox.Show("没有可导出的审计日志数据", "提示", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
+                return;
+            }
+
+            IsLoading = true;
+            try
+            {
+                // 配置导出选项
+                var options = new ExcelExportOptions
+                {
+                    Title = "审计日志",
+                    ColumnDisplayNames = new Dictionary<string, string>
+                    {
+                        { "Id", "ID" },
+                        { "ModuleName", "模块名称" },
+                        { "ServiceName", "服务名称" },
+                        { "MethodName", "方法名称" },
+                        { "IsSuccess", "是否成功" },
+                        { "Parameters", "参数" },
+                        { "UserId", "用户ID" },
+                        { "UserName", "用户名" },
+                        { "ExecutionTime", "执行时间" },
+                        { "ExecutionDuration", "执行时长(ms)" },
+                        { "Exceptions", "异常信息" }
+                    }
+                };
+
+                // 生成带时间戳的文件名
+                var fileName = $"审计日志_{DateTime.Now:yyyyMMdd_HHmmss}";
+                
+                var filePath = await _exportService.ExportToExcelAsync(AuditLogs.ToList(), fileName, options);
+                
+                // 提示用户并询问是否打开文件
+                var result = System.Windows.MessageBox.Show(
+                    $"导出成功！文件已保存到：\n{filePath}\n\n是否立即打开文件？",
+                    "导出完成",
+                    System.Windows.MessageBoxButton.YesNo,
+                    System.Windows.MessageBoxImage.Information);
+                
+                if (result == System.Windows.MessageBoxResult.Yes)
+                {
+                    await _exportService.OpenExportedFileAsync(filePath);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                // 用户取消了保存操作
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"导出失败：{ex.Message}", "错误", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+                System.Diagnostics.Debug.WriteLine($"Export audit logs error: {ex.Message}");
+            }
+            finally
+            {
+                IsLoading = false;
+            }
         }
     }
 }

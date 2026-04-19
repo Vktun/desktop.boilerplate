@@ -2,6 +2,8 @@
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics.CodeAnalysis;
 
+using SqlSugar;
+
 namespace Dabp.Infrastructure.Entities
 {
     /// <summary>
@@ -15,11 +17,13 @@ namespace Dabp.Infrastructure.Entities
         /// 显示名称
         /// </summary>
         [StringLength(100)]
+        [SugarColumn(ColumnDataType = "nvarchar")]
         public string DisplyName { get; set; }
         /// <summary>
         /// 父级名称,默认为空
         /// </summary>
         [StringLength(100)]
+        [SugarColumn(ColumnDataType = "nvarchar")]
         [AllowNull]
         public string ParentName { get; set; }
         /// <summary>

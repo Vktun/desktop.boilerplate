@@ -10,4 +10,8 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Prism.Core" Version="9.0.*" />
+  </ItemGroup>
+
 </Project>

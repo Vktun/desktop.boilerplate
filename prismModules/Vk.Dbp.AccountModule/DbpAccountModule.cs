@@ -10,8 +10,10 @@ using System.Threading.Tasks;
 using System.Windows.Controls;
 using Vk.Dbp.AccountModule.Views;
 using Vk.Dbp.AccountModule.Services;
-using Vk.Dbp.Core.Audit.Interfaces;
+using Vk.Dbp.Services.Audit;
+using Vk.Dbp.Services.Alarm;
 using Dabp.Utils.Security;
+using Vk.Dbp.Contracts.Services;
 
 namespace Vk.Dbp.AccountModule
 {
@@ -32,6 +34,8 @@ namespace Vk.Dbp.AccountModule
             containerRegistry.RegisterForNavigation<PermissionManagementView>();
             containerRegistry.RegisterForNavigation<AuditLogView>();
             containerRegistry.RegisterForNavigation<OrganizationManagementView>();
+            containerRegistry.RegisterForNavigation<SystemSettingsView>();
+            containerRegistry.RegisterForNavigation<AlarmConfigView>();
 
             containerRegistry.RegisterSingleton<IAuditLogService, DbAuditLogService>();
 
@@ -41,7 +45,13 @@ namespace Vk.Dbp.AccountModule
             containerRegistry.RegisterSingleton<IRoleService, RoleService>();
             containerRegistry.RegisterSingleton<IPermissionService, PermissionService>();
             containerRegistry.RegisterSingleton<INotificationService, NotificationService>();
+            containerRegistry.RegisterSingleton<IGlobalNotificationPublisher, GlobalNotificationPublisher>();
             containerRegistry.RegisterSingleton<IOrganizationService, OrganizationService>();
+            containerRegistry.RegisterSingleton<ISystemConfigService, SystemConfigService>();
+
+            // Alarm services
+            containerRegistry.RegisterSingleton<IAlarmService, AlarmService>();
+            containerRegistry.RegisterSingleton<IAlarmConfigService, AlarmConfigService>();
         }
     }
 }

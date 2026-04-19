@@ -4,6 +4,8 @@ using System.ComponentModel.DataAnnotations;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
+using SqlSugar;
+
 namespace Dabp.Infrastructure.Entities
 {
     public class User
@@ -26,6 +28,7 @@ namespace Dabp.Infrastructure.Entities
         /// 昵称
         /// </summary>
               [StringLength(50)]
+        [SugarColumn(ColumnDataType = "nvarchar")]
         public string SurName { get; set; }
         /// <summary>
         /// 手机号

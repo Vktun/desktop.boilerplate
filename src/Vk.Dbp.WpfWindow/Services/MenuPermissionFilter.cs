@@ -1,12 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Vk.Dbp.AccountModule.Services;
+using Vk.Dbp.Services.Session;
 
 namespace Dabp.WpfWindow.Services
 {
     public class MenuPermissionFilter : IMenuPermissionFilter
     {
+        private const string AdminUsername = "admin";
+
         private readonly IUserSession _userSession;
         private HashSet<string> _visibleMenus;
 
@@ -40,6 +42,11 @@ namespace Dabp.WpfWindow.Services
                 return false;
             }
 
+            if (IsAdminUser())
+            {
+                return true;
+            }
+
             return _visibleMenus.Contains(menuName);
         }
 
@@ -51,15 +58,37 @@ namespace Dabp.WpfWindow.Services
 
         public void RefreshPermissions()
         {
-            IEnumerable<string> userPermissions = _userSession.Permissions ?? Enumerable.Empty<string>();
+            if (!_userSession.IsLoggedIn)
+            {
+                _visibleMenus = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                return;
+            }
+
+            if (IsAdminUser())
+            {
+                _visibleMenus = new HashSet<string>(
+                    MenuPermissionConfig.GetAllMenuItems()
+                        .Where(item => item.RequireAuthentication)
+                        .Select(item => item.Name),
+                    StringComparer.OrdinalIgnoreCase);
+                return;
+            }
+
+            var userPermissions = new HashSet<string>(
+                _userSession.Permissions ?? Enumerable.Empty<string>(),
+                StringComparer.OrdinalIgnoreCase);
 
             _visibleMenus = new HashSet<string>(
                 MenuPermissionConfig.GetAllMenuItems()
                     .Where(item => item.RequireAuthentication &&
-                                   _userSession.IsLoggedIn &&
                                    userPermissions.Contains(item.PermissionCode))
                     .Select(item => item.Name),
                 StringComparer.OrdinalIgnoreCase);
+        }
+
+        private bool IsAdminUser()
+        {
+            return string.Equals(_userSession.Username, AdminUsername, StringComparison.OrdinalIgnoreCase);
         }
     }
 }

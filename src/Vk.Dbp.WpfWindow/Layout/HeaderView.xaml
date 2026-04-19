@@ -1,4 +1,4 @@
-<UserControl x:Class="Dabp.WpfWindow.Layout.HeaderView"
+﻿<UserControl x:Class="Dabp.WpfWindow.Layout.HeaderView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
@@ -63,8 +63,8 @@
                     <ControlTemplate TargetType="Button">
                         <StackPanel Orientation="Vertical">
                             <TextBlock HorizontalAlignment="Center" FontSize="20" Margin="0 5 0 0">
-                                <Run Text="☀️" Foreground="#FFD700" x:Name="SunIcon"/>
-                                <Run Text="🌙" Foreground="#9370DB" x:Name="MoonIcon"/>
+                                <Run Text="&#x2600;" Foreground="#FFD700" x:Name="SunIcon"/>
+                                <Run Text="&#x1F319;" Foreground="#9370DB" x:Name="MoonIcon"/>
                             </TextBlock>
                             <TextBlock Text="主题" HorizontalAlignment="Center" 
                                       Foreground="{DynamicResource SecondaryTextBrush}" 
@@ -90,11 +90,39 @@
             </Button>
             
             <!-- 通知铃铛 -->
-            <ToggleButton BorderThickness="0" IsChecked="True" Style="{StaticResource ToggleButtonCustom}" 
+            <ToggleButton BorderThickness="0" IsChecked="True" Style="{StaticResource ToggleButtonCustom}"
                          hc:StatusSwitchElement.HideUncheckedElement="True" Command="{Binding NotificationCommand}" >
                 <hc:StatusSwitchElement.CheckedElement>
-                    <hc:Badge Maximum="0" VerticalAlignment="Center" HorizontalAlignment="Center" Height="40" 
-                             Margin="10 5 15 5" Style="{DynamicResource BadgeDanger}">
+                    <hc:Badge Maximum="0" VerticalAlignment="Center" HorizontalAlignment="Center" Height="40"
+                             Margin="10 5 10 5" Style="{DynamicResource BadgeDanger}">
+                        <Button>
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Image Source="pack://application:,,,/Asserts/Icon/bell-normal.png"/>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
+                    </hc:Badge>
+                </hc:StatusSwitchElement.CheckedElement>
+                <hc:Badge Value="{Binding NotificationBadgeCount}" Maximum="99" VerticalAlignment="Center" HorizontalAlignment="Center" Height="40"
+                         Margin="10 5 10 5" Style="{DynamicResource BadgeDanger}" >
+                    <Button>
+                        <Button.Template>
+                            <ControlTemplate TargetType="Button">
+                                <Image Source="pack://application:,,,/Asserts/Icon/bell-red.png"/>
+                            </ControlTemplate>
+                        </Button.Template>
+                    </Button>
+                </hc:Badge>
+            </ToggleButton>
+
+            <!-- 告警图标 -->
+            <ToggleButton BorderThickness="0" Style="{StaticResource ToggleButtonCustom}"
+                         hc:StatusSwitchElement.HideUncheckedElement="True" Command="{Binding AlarmCommand}" >
+                <hc:StatusSwitchElement.CheckedElement>
+                    <!-- 无告警状态 -->
+                    <hc:Badge Value="0" Maximum="0" VerticalAlignment="Center" HorizontalAlignment="Center" Height="40"
+                             Margin="10 5 15 5" Style="{DynamicResource BadgeSuccess}">
                         <Button>
                             <Button.Template>
                                 <ControlTemplate TargetType="Button">
@@ -104,12 +132,36 @@
                         </Button>
                     </hc:Badge>
                 </hc:StatusSwitchElement.CheckedElement>
-                <hc:Badge Maximum="99" VerticalAlignment="Center" HorizontalAlignment="Center" Height="40" 
+                <!-- 有告警状态 -->
+                <hc:Badge Value="{Binding AlarmBadgeCount}" Maximum="99" VerticalAlignment="Center" HorizontalAlignment="Center" Height="40"
                          Margin="10 5 15 5" Style="{DynamicResource BadgeDanger}" >
                     <Button>
                         <Button.Template>
                             <ControlTemplate TargetType="Button">
-                                <Image Source="pack://application:,,,/Asserts/Icon/alarm-red.png"/>
+                                <Grid>
+                                    <Image Source="pack://application:,,,/Asserts/Icon/alarm-red.png"/>
+                                    <!-- 严重告警闪烁动画 -->
+                                    <Grid.Style>
+                                        <Style TargetType="Grid">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding HasCriticalAlarm}" Value="True">
+                                                    <DataTrigger.EnterActions>
+                                                        <BeginStoryboard x:Name="AlarmFlashStoryboard">
+                                                            <Storyboard RepeatBehavior="Forever">
+                                                                <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                                                                From="1.0" To="0.3" Duration="0:0:0.5"
+                                                                                AutoReverse="True"/>
+                                                            </Storyboard>
+                                                        </BeginStoryboard>
+                                                    </DataTrigger.EnterActions>
+                                                    <DataTrigger.ExitActions>
+                                                        <StopStoryboard BeginStoryboardName="AlarmFlashStoryboard"/>
+                                                    </DataTrigger.ExitActions>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Grid.Style>
+                                </Grid>
                             </ControlTemplate>
                         </Button.Template>
                     </Button>
@@ -132,14 +184,14 @@
                 </Button.Template>
             </Button>
             
-            <!-- 登录按钮 (未登录时显示) -->
+            <!-- 登录按钮（未登录时显示） -->
             <Button Margin="10 8 10 5" Height="50" Width="70" 
                    Command="{Binding LoginCommand}"
                    Visibility="{Binding IsLoggedIn, Converter={StaticResource InverseBooleanToVisibilityConverter}}">
                 <Button.Template>
                     <ControlTemplate TargetType="Button">
                         <StackPanel Orientation="Vertical">
-                            <TextBlock Text="🔐" HorizontalAlignment="Center" FontSize="22" />
+                            <TextBlock Text="&#x1F464;" HorizontalAlignment="Center" FontSize="22" />
                             <TextBlock Text="登录" HorizontalAlignment="Center" 
                                       Foreground="{DynamicResource PrimaryTextBrush}" 
                                       FontSize="13" Margin="0 5 0 0" />
@@ -148,8 +200,9 @@
                 </Button.Template>
             </Button>
             
-            <!-- 账户下拉菜单 (已登录时显示) -->
+            <!-- 账户下拉菜单（已登录时显示） -->
             <ToggleButton x:Name="Tbtn_Account" Margin="10 8 10 5" Height="50" Width="42"
+                         IsChecked="{Binding IsAccountPopupOpen, Mode=TwoWay}"
                          Visibility="{Binding IsLoggedIn, Converter={StaticResource BooleanToVisibilityConverter}}" >
                 <ToggleButton.Template>
                     <ControlTemplate TargetType="ToggleButton">
@@ -174,7 +227,7 @@
                         </BeginStoryboard>
                     </EventTrigger>
                 </ToggleButton.Triggers>
-                <Popup IsOpen="{Binding IsChecked, ElementName=Tbtn_Account}" 
+                <Popup IsOpen="{Binding IsAccountPopupOpen, Mode=TwoWay}" 
                       PlacementTarget="{Binding ElementName=Tbtn_Account}"            
                       AllowsTransparency="True" PopupAnimation="Fade" HorizontalOffset="-180" 
                       VerticalOffset="5" StaysOpen="True" >
@@ -188,7 +241,7 @@
                             <TextBlock Margin="0 0 0 4" Foreground="{DynamicResource PrimaryTextBrush}" 
                                       FontSize="18" FontWeight="SemiBold" Text="{Binding UserName}" />
                             <StackPanel Orientation="Horizontal" Margin="0 0 0 12">
-                                <TextBlock Text="状态: " Foreground="{DynamicResource SecondaryTextBrush}" FontSize="12"/>
+                                <TextBlock Text="状态：" Foreground="{DynamicResource SecondaryTextBrush}" FontSize="12"/>
                                 <TextBlock Text="{Binding UserStatus}" Foreground="{DynamicResource SuccessBrush}" FontSize="12" FontWeight="Bold"/>
                             </StackPanel>
                             <hc:Divider Margin="0 0 0 8" LineStroke="{DynamicResource BorderBrush}"/>
@@ -226,4 +279,9 @@
         </StackPanel>
     </Grid>
 </UserControl>
+
+
+
+
+
 

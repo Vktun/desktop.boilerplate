@@ -1,8 +1,7 @@
 using System.Text;
 using System.Text.Json;
 using SqlSugar;
-using Vk.Dbp.Core.Audit;
-using Vk.Dbp.Core.Audit.Interfaces;
+using Vk.Dbp.Services.Audit;
 using AuditLogEntity = Dabp.Infrastructure.Entities.AuditLog;
 
 namespace Vk.Dbp.AccountModule.Services;

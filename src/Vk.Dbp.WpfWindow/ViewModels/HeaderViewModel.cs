@@ -10,19 +10,32 @@ using Vk.Dbp.WpfWindow.Views;
 using Vk.Dbp.WpfWindow.Constants;
 using Dabp.WpfWindow.Services;
 using Vk.Dbp.AccountModule.Models;
-using Vk.Dbp.AccountModule.Services;
+using Vk.Dbp.Services.Session;
+using Vk.Dbp.Services.Alarm;
 using Prism.Commands;
+using Prism.Events;
+using Prism.Ioc;
 using Prism.Mvvm;
+using Vk.Dbp.Contracts.Events;
 
 namespace Vk.Dbp.WpfWindow.ViewModels
 {
     public class HeaderViewModel : BindableBase, IDisposable
     {
+        private const string AdminUsername = "admin";
+        private const string AdminDisplayName = "系统管理员";
+
         private readonly IRegionManager _regionManager;
         private readonly IThemeService _themeService;
         private readonly IMenuPermissionFilter _menuPermissionFilter;
         private readonly IUserSession _userSession;
+        private readonly ILockScreenService _lockScreenService;
+        private readonly IContainerProvider _container;
+        private IAlarmService? _alarmService;
+        private readonly IEventAggregator _eventAggregator;
         private bool _isDisposed = false;
+
+        private IAlarmService AlarmService => _alarmService ??= _container.Resolve<IAlarmService>();
 
         private string _userName = "未登录";
         public string UserName
@@ -45,11 +58,39 @@ namespace Vk.Dbp.WpfWindow.ViewModels
             set { SetProperty(ref _isLoggedIn, value); }
         }
 
+        private bool _isAccountPopupOpen;
+        public bool IsAccountPopupOpen
+        {
+            get { return _isAccountPopupOpen; }
+            set { SetProperty(ref _isAccountPopupOpen, value); }
+        }
+
         private string _currentTheme = "Light";
         public string CurrentTheme
         {
             get { return _currentTheme; }
             set { SetProperty(ref _currentTheme, value); }
+        }
+
+        private int _notificationBadgeCount;
+        public int NotificationBadgeCount
+        {
+            get { return _notificationBadgeCount; }
+            set { SetProperty(ref _notificationBadgeCount, value); }
+        }
+
+        private int _alarmBadgeCount;
+        public int AlarmBadgeCount
+        {
+            get { return _alarmBadgeCount; }
+            set { SetProperty(ref _alarmBadgeCount, value); }
+        }
+
+        private bool _hasCriticalAlarm;
+        public bool HasCriticalAlarm
+        {
+            get { return _hasCriticalAlarm; }
+            set { SetProperty(ref _hasCriticalAlarm, value); }
         }
 
         private bool _isDashboardVisible = true;
@@ -103,24 +144,38 @@ namespace Vk.Dbp.WpfWindow.ViewModels
 
         public DelegateCommand<string> NavigateCommand { get; private set; }
         public DelegateCommand NotificationCommand { get; private set; }
+        public DelegateCommand AlarmCommand { get; private set; }
         public DelegateCommand<string> AccountCommand { get; private set; }
         public DelegateCommand<string> ToggleThemeCommand { get; private set; }
         public DelegateCommand LoginCommand { get; private set; }
+        public DelegateCommand LockCommand { get; private set; }
 
-        private INotifyPropertyChanged _userSessionNotifier;
+        private INotifyPropertyChanged? _userSessionNotifier;
 
-        public HeaderViewModel(IRegionManager regionManager, IThemeService themeService, IMenuPermissionFilter menuPermissionFilter, IUserSession userSession)
+        public HeaderViewModel(
+            IRegionManager regionManager,
+            IThemeService themeService,
+            IMenuPermissionFilter menuPermissionFilter,
+            IUserSession userSession,
+            ILockScreenService lockScreenService,
+            IContainerProvider container,
+            IEventAggregator eventAggregator)
         {
             _regionManager = regionManager ?? throw new ArgumentNullException(nameof(regionManager));
             _themeService = themeService ?? throw new ArgumentNullException(nameof(themeService));
             _menuPermissionFilter = menuPermissionFilter ?? throw new ArgumentNullException(nameof(menuPermissionFilter));
             _userSession = userSession ?? throw new ArgumentNullException(nameof(userSession));
+            _lockScreenService = lockScreenService ?? throw new ArgumentNullException(nameof(lockScreenService));
+            _container = container ?? throw new ArgumentNullException(nameof(container));
+            _eventAggregator = eventAggregator ?? throw new ArgumentNullException(nameof(eventAggregator));
 
             NavigateCommand = new DelegateCommand<string>(navigate);
             NotificationCommand = new DelegateCommand(appNotification);
+            AlarmCommand = new DelegateCommand(showAlarm);
             AccountCommand = new DelegateCommand<string>(handleAccountAction);
             ToggleThemeCommand = new DelegateCommand<string>(handleToggleTheme);
             LoginCommand = new DelegateCommand(handleLogin);
+            LockCommand = new DelegateCommand(handleLock, canLock);
 
             CurrentTheme = _themeService.CurrentTheme;
 
@@ -132,24 +187,88 @@ namespace Vk.Dbp.WpfWindow.ViewModels
                 _userSessionNotifier.PropertyChanged += OnUserSessionPropertyChanged;
             }
 
+            // Subscribe to alarm events
+            _eventAggregator.GetEvent<AlarmCountChangedEvent>().Subscribe(OnAlarmCountChanged);
+            _eventAggregator.GetEvent<AlarmTriggeredEvent>().Subscribe(OnAlarmTriggered);
+            _eventAggregator.GetEvent<AlarmStatusChangedEvent>().Subscribe(OnAlarmStatusChanged);
+
             UpdateUserInfo();
             UpdateMenuVisibility();
         }
 
-        private void OnThemeChanged(object sender, ThemeChangedEventArgs e)
+        private void OnThemeChanged(object? sender, ThemeChangedEventArgs e)
         {
             if (_isDisposed) return;
             CurrentTheme = e.NewTheme;
         }
 
-        private void OnUserSessionPropertyChanged(object sender, PropertyChangedEventArgs e)
+        private void OnUserSessionPropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
             if (_isDisposed) return;
             if (e.PropertyName == nameof(IUserSession.IsLoggedIn) ||
-                e.PropertyName == nameof(IUserSession.Permissions))
+                e.PropertyName == nameof(IUserSession.Permissions) ||
+                e.PropertyName == nameof(IUserSession.IsLocked))
             {
                 UpdateUserInfo();
                 UpdateMenuVisibility();
+                LockCommand.RaiseCanExecuteChanged();
+
+                // Load alarm count when user logs in
+                if (_userSession.IsLoggedIn)
+                {
+                    _ = UpdateAlarmBadgeAsync();
+                }
+            }
+        }
+
+        private void OnAlarmCountChanged(AlarmCountChangedPayload payload)
+        {
+            if (_isDisposed) return;
+
+            System.Windows.Application.Current.Dispatcher.Invoke(() =>
+            {
+                AlarmBadgeCount = payload.ActiveCount;
+                HasCriticalAlarm = payload.HasCriticalAlarm;
+            });
+        }
+
+        private void OnAlarmTriggered(AlarmTriggeredPayload payload)
+        {
+            if (_isDisposed) return;
+
+            // Update badge when new alarm triggered
+            System.Windows.Application.Current.Dispatcher.Invoke(async () =>
+            {
+                await UpdateAlarmBadgeAsync();
+            });
+        }
+
+        private void OnAlarmStatusChanged(AlarmStatusChangedPayload payload)
+        {
+            if (_isDisposed) return;
+
+            // Update badge when alarm status changed
+            System.Windows.Application.Current.Dispatcher.Invoke(async () =>
+            {
+                await UpdateAlarmBadgeAsync();
+            });
+        }
+
+        private async System.Threading.Tasks.Task UpdateAlarmBadgeAsync()
+        {
+            if (!_userSession.IsLoggedIn) return;
+
+            try
+            {
+                var activeCount = await AlarmService.GetActiveAlarmCountAsync(_userSession.UserId);
+                var criticalCount = await AlarmService.GetCriticalAlarmCountAsync(_userSession.UserId);
+
+                AlarmBadgeCount = activeCount;
+                HasCriticalAlarm = criticalCount > 0;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Update alarm badge error: {ex.Message}");
             }
         }
 
@@ -162,6 +281,10 @@ namespace Vk.Dbp.WpfWindow.ViewModels
             {
                 _userSessionNotifier.PropertyChanged -= OnUserSessionPropertyChanged;
             }
+
+            _eventAggregator.GetEvent<AlarmCountChangedEvent>().Unsubscribe(OnAlarmCountChanged);
+            _eventAggregator.GetEvent<AlarmTriggeredEvent>().Unsubscribe(OnAlarmTriggered);
+            _eventAggregator.GetEvent<AlarmStatusChangedEvent>().Unsubscribe(OnAlarmStatusChanged);
 
             _isDisposed = true;
         }
@@ -182,7 +305,7 @@ namespace Vk.Dbp.WpfWindow.ViewModels
         {
             if (_userSession.IsLoggedIn)
             {
-                UserName = _userSession.RealName ?? _userSession.Username ?? "未知用户";
+                UserName = GetDisplayName(_userSession.Username, _userSession.RealName);
                 UserStatus = "在线";
                 IsLoggedIn = true;
             }
@@ -191,7 +314,30 @@ namespace Vk.Dbp.WpfWindow.ViewModels
                 UserName = "未登录";
                 UserStatus = "离线";
                 IsLoggedIn = false;
+                IsAccountPopupOpen = false;
+                AlarmBadgeCount = 0;
+                HasCriticalAlarm = false;
             }
+        }
+
+        private static string GetDisplayName(string? username, string? realName)
+        {
+            if (!IsInvalidDisplayName(realName))
+            {
+                return realName!.Trim();
+            }
+
+            if (string.Equals(username, AdminUsername, StringComparison.OrdinalIgnoreCase))
+            {
+                return AdminDisplayName;
+            }
+
+            return string.IsNullOrWhiteSpace(username) ? "未知用户" : username.Trim();
+        }
+
+        private static bool IsInvalidDisplayName(string? displayName)
+        {
+            return string.IsNullOrWhiteSpace(displayName) || displayName.Trim().All(c => c == '?');
         }
 
         private void navigate(string navigatePath)
@@ -205,9 +351,16 @@ namespace Vk.Dbp.WpfWindow.ViewModels
             HandyControl.Controls.Notification.Show(new AppNotificationView(), ShowAnimation.Fade, true);
         }
 
+        private void showAlarm()
+        {
+            HandyControl.Controls.Notification.Show(new AppAlarmView(), ShowAnimation.Fade, true);
+        }
+
         private void handleAccountAction(string action)
         {
             if (string.IsNullOrEmpty(action)) return;
+
+            IsAccountPopupOpen = false;
 
             switch (action)
             {
@@ -221,7 +374,6 @@ namespace Vk.Dbp.WpfWindow.ViewModels
                     handleShutdown();
                     break;
                 case AccountActions.Close:
-                    System.Windows.Application.Current.Shutdown();
                     break;
                 default:
                     break;
@@ -256,11 +408,21 @@ namespace Vk.Dbp.WpfWindow.ViewModels
             _regionManager.RequestNavigate(RegionNames.ContentRegion, ViewNames.LoginView);
         }
 
+        private bool canLock()
+        {
+            return _userSession.IsLoggedIn && !_userSession.IsLocked;
+        }
+
+        private void handleLock()
+        {
+            _lockScreenService.Lock("用户手动锁定");
+        }
+
         private void handleShutdown()
         {
             // 桌面应用不应直接执行系统关机命令
             // 此功能已被禁用以提高安全性
-            System.Windows.MessageBox.Show("关机功能已被禁用，请使用操作系统提供的关机选项。", "提示", 
+            System.Windows.MessageBox.Show("关机功能已被禁用，请使用操作系统提供的关机选项。", "提示",
                 System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
         }
     }

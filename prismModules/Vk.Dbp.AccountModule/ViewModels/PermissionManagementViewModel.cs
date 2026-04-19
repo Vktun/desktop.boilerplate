@@ -6,7 +6,7 @@ using Prism.Commands;
 using Prism.Mvvm;
 using Vk.Dbp.AccountModule.Models;
 using Vk.Dbp.AccountModule.Services;
-using Vk.Dbp.Core.Audit.Interfaces;
+using Vk.Dbp.Services.Audit;
 
 namespace Vk.Dbp.AccountModule.ViewModels
 {

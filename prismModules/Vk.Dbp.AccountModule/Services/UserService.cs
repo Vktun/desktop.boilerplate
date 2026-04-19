@@ -1,9 +1,8 @@
 using Dabp.Infrastructure.Entities;
 using Dabp.Utils.Security;
 using SqlSugar;
-using Vk.Dbp.Core.Audit;
-using Vk.Dbp.Core.Audit.Extensions;
-using Vk.Dbp.Core.Audit.Interfaces;
+using Vk.Dbp.Services.Audit;
+using Vk.Dbp.Services.Session;
 using RoleEntity = Dabp.Infrastructure.Entities.Role;
 using RoleModel = Vk.Dbp.AccountModule.Models.Role;
 using UserEntity = Dabp.Infrastructure.Entities.User;

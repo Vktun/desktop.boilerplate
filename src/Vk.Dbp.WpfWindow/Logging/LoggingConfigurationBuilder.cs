@@ -2,6 +2,7 @@ using System;
 using System.Reflection;
 using Serilog;
 using Serilog.Events;
+using Vk.Dbp.Services.Session;
 
 namespace Dabp.WpfWindow.Logging
 {

@@ -1,8 +1,7 @@
 using Dabp.Infrastructure.Entities;
 using SqlSugar;
-using Vk.Dbp.Core.Audit;
-using Vk.Dbp.Core.Audit.Extensions;
-using Vk.Dbp.Core.Audit.Interfaces;
+using Vk.Dbp.Services.Audit;
+using Vk.Dbp.Services.Session;
 using PermissionEntity = Dabp.Infrastructure.Entities.Permission;
 using PermissionModel = Vk.Dbp.AccountModule.Models.Permission;
 using RoleEntity = Dabp.Infrastructure.Entities.Role;

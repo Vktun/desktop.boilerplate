@@ -1,12 +1,215 @@
 ﻿<UserControl x:Class="Vk.Dbp.WorkshopModule.Views.AlarmRecord"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:local="clr-namespace:Vk.Dbp.WorkshopModule.Views"
-             mc:Ignorable="d" 
-             d:DesignHeight="450" d:DesignWidth="800">
-    <Grid>
-        <TextBlock Text="{Binding Title}"></TextBlock>
+             xmlns:hc="https://handyorg.github.io/handycontrol"
+             xmlns:prism="http://prismlibrary.com/"
+             prism:ViewModelLocator.AutoWireViewModel="True"
+             mc:Ignorable="d"
+             d:DesignHeight="600" d:DesignWidth="900">
+
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+    </UserControl.Resources>
+
+    <Grid Background="{DynamicResource SecondaryBackgroundBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- 统计卡片区域 -->
+        <Border Grid.Row="0" Background="{DynamicResource PrimaryBackgroundBrush}" Padding="15,10" Margin="0,0,0,5">
+            <StackPanel Orientation="Horizontal">
+                <Border Margin="0,0,15,0" Padding="15,10" Background="{DynamicResource SecondaryBackgroundBrush}"
+                        CornerRadius="5" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="活跃告警" VerticalAlignment="Center" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                        <TextBlock Text="{Binding ActiveCount}" FontSize="24" FontWeight="Bold"
+                                   Foreground="{DynamicResource DangerBrush}" Margin="15,0,0,0" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Border>
+                <Border Margin="0,0,15,0" Padding="15,10" Background="{DynamicResource SecondaryBackgroundBrush}"
+                        CornerRadius="5" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="严重告警" VerticalAlignment="Center" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                        <TextBlock Text="{Binding CriticalCount}" FontSize="24" FontWeight="Bold"
+                                   Foreground="{DynamicResource DangerBrush}" Margin="15,0,0,0" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Border>
+                <Border Padding="15,10" Background="{DynamicResource SecondaryBackgroundBrush}"
+                        CornerRadius="5" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="今日告警" VerticalAlignment="Center" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                        <TextBlock Text="{Binding TodayCount}" FontSize="24" FontWeight="Bold"
+                                   Foreground="{DynamicResource PrimaryBrush}" Margin="15,0,0,0" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </Border>
+
+        <!-- 筛选面板 -->
+        <Border Grid.Row="1" Background="{DynamicResource PrimaryBackgroundBrush}" Padding="10" Margin="0,0,0,5">
+            <WrapPanel Orientation="Horizontal">
+                <StackPanel Orientation="Horizontal" Margin="0,0,15,0">
+                    <TextBlock Text="告警等级:" VerticalAlignment="Center" Margin="0,0,5,0"
+                               Foreground="{DynamicResource SecondaryTextBrush}"/>
+                    <ComboBox Width="120" SelectedItem="{Binding SelectedLevelFilter}"
+                              ItemsSource="{Binding AlarmLevels}"/>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" Margin="0,0,15,0">
+                    <TextBlock Text="告警状态:" VerticalAlignment="Center" Margin="0,0,5,0"
+                               Foreground="{DynamicResource SecondaryTextBrush}"/>
+                    <ComboBox Width="120" SelectedItem="{Binding SelectedStatusFilter}"
+                              ItemsSource="{Binding AlarmStatuses}"/>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" Margin="0,0,15,0">
+                    <TextBlock Text="开始时间:" VerticalAlignment="Center" Margin="0,0,5,0"
+                               Foreground="{DynamicResource SecondaryTextBrush}"/>
+                    <DatePicker Width="130" SelectedDate="{Binding StartTimeFilter}"/>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" Margin="0,0,15,0">
+                    <TextBlock Text="结束时间:" VerticalAlignment="Center" Margin="0,0,5,0"
+                               Foreground="{DynamicResource SecondaryTextBrush}"/>
+                    <DatePicker Width="130" SelectedDate="{Binding EndTimeFilter}"/>
+                </StackPanel>
+
+                <Button Content="查询" Command="{Binding LoadCommand}"
+                        Style="{StaticResource ButtonPrimary}" Margin="0,0,10,0" Padding="15,5"/>
+                <Button Content="重置" Command="{Binding ClearFilterCommand}"
+                        Style="{StaticResource ButtonDefault}" Margin="0,0,10,0" Padding="15,5"/>
+                <Button Content="刷新" Command="{Binding RefreshCommand}"
+                        Style="{StaticResource ButtonDefault}" Padding="15,5"/>
+            </WrapPanel>
+        </Border>
+
+        <!-- 告警列表 -->
+        <DataGrid Grid.Row="2" ItemsSource="{Binding AlarmRecords}"
+                  SelectedItem="{Binding SelectedAlarm}"
+                  AutoGenerateColumns="False"
+                  IsReadOnly="True"
+                  CanUserAddRows="False"
+                  CanUserDeleteRows="False"
+                  HeadersVisibility="Column"
+                  GridLinesVisibility="Horizontal"
+                  Background="{DynamicResource PrimaryBackgroundBrush}"
+                  BorderBrush="{DynamicResource BorderBrush}"
+                  RowBackground="{DynamicResource PrimaryBackgroundBrush}"
+                  AlternatingRowBackground="{DynamicResource SecondaryBackgroundBrush}">
+
+            <DataGrid.Columns>
+                <!-- 告警等级 -->
+                <DataGridTemplateColumn Header="等级" Width="80">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Border Background="{Binding AlarmLevel, Converter={StaticResource AlarmLevelToColorConverter}}"
+                                    CornerRadius="3" Padding="8,2">
+                                <TextBlock Text="{Binding AlarmLevel}" Foreground="White"
+                                           HorizontalAlignment="Center" FontWeight="Bold"/>
+                            </Border>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                <!-- 告警标题 -->
+                <DataGridTextColumn Header="告警标题" Binding="{Binding AlarmTitle}" Width="200"/>
+
+                <!-- 告警来源 -->
+                <DataGridTextColumn Header="来源" Binding="{Binding AlarmSource}" Width="100"/>
+
+                <!-- 触发时间 -->
+                <DataGridTemplateColumn Header="触发时间" Width="150">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding TriggeredTime, StringFormat='{}{0:MM-dd HH:mm:ss}'}"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                <!-- 实际值/阈值 -->
+                <DataGridTemplateColumn Header="数值" Width="120">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="{Binding ActualValue}"/>
+                                <TextBlock Text="{Binding Unit}" Margin="2,0,0,0"/>
+                                <TextBlock Text=" / " Foreground="{DynamicResource SecondaryTextBrush}"/>
+                                <TextBlock Text="{Binding ThresholdValue}" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                <!-- 告警状态 -->
+                <DataGridTemplateColumn Header="状态" Width="80">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Border Background="{Binding AlarmStatus, Converter={StaticResource AlarmStatusToColorConverter}}"
+                                    CornerRadius="3" Padding="8,2">
+                                <TextBlock Text="{Binding AlarmStatus}" Foreground="White"
+                                           HorizontalAlignment="Center" FontSize="11"/>
+                            </Border>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                <!-- 操作按钮 -->
+                <DataGridTemplateColumn Header="操作" Width="*">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal">
+                                <Button Content="确认" Command="{Binding DataContext.AcknowledgeCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                        CommandParameter="{Binding}"
+                                        Style="{StaticResource ButtonWarning}"
+                                        Padding="8,3" Margin="0,0,5,0"
+                                        Visibility="{Binding AlarmStatus, Converter={StaticResource AlarmStatusToVisibilityConverter}}"/>
+                                <Button Content="解决" Command="{Binding DataContext.ResolveCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                        CommandParameter="{Binding}"
+                                        Style="{StaticResource ButtonSuccess}"
+                                        Padding="8,3" Margin="0,0,5,0"/>
+                                <Button Content="忽略" Command="{Binding DataContext.IgnoreCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                        CommandParameter="{Binding}"
+                                        Style="{StaticResource ButtonDefault}"
+                                        Padding="8,3"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <!-- 分页控件 -->
+        <Border Grid.Row="3" Background="{DynamicResource PrimaryBackgroundBrush}" Padding="10">
+            <Grid>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+                    <TextBlock Text="共 " Foreground="{DynamicResource SecondaryTextBrush}" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding TotalCount}" FontWeight="Bold" VerticalAlignment="Center"/>
+                    <TextBlock Text=" 条记录" Foreground="{DynamicResource SecondaryTextBrush}" VerticalAlignment="Center"/>
+                    <TextBlock Text="  第 " Foreground="{DynamicResource SecondaryTextBrush}" VerticalAlignment="Center" Margin="15,0,0,0"/>
+                    <TextBlock Text="{Binding CurrentPage}" FontWeight="Bold" VerticalAlignment="Center"/>
+                    <TextBlock Text=" 页" Foreground="{DynamicResource SecondaryTextBrush}" VerticalAlignment="Center"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button Content="上一页" Command="{Binding PageChangedCommand}" 
+                            CommandParameter="prev"
+                            Padding="10,5" Margin="0,0,5,0"/>
+                    <Button Content="下一页" Command="{Binding PageChangedCommand}"
+                            CommandParameter="next"
+                            Padding="10,5" Margin="5,0,0,0"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- 加载指示器 -->
+        <ProgressBar Grid.Row="2" IsIndeterminate="{Binding IsLoading}"
+                     Visibility="{Binding IsLoading, Converter={StaticResource BooleanToVisibilityConverter}}"
+                     VerticalAlignment="Center" HorizontalAlignment="Center" Width="100" Height="20"/>
     </Grid>
 </UserControl>

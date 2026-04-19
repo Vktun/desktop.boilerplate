@@ -1,7 +1,7 @@
 using System;
 using Serilog.Core;
 using Serilog.Events;
-using Vk.Dbp.AccountModule.Services;
+using Vk.Dbp.Services.Session;
 
 namespace Dabp.WpfWindow.Logging
 {

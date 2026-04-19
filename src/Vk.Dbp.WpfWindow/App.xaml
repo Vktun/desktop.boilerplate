@@ -2,7 +2,8 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:hc="https://handyorg.github.io/handycontrol"
-             xmlns:local="clr-namespace:Dabp.WpfWindow">
+             xmlns:local="clr-namespace:Dabp.WpfWindow"
+             xmlns:converters="clr-namespace:Vk.Dbp.WpfWindow.Converters">
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
@@ -11,6 +12,12 @@
                 <!-- 默认加载亮色主题 -->
                 <ResourceDictionary Source="pack://application:,,,/Themes/LightTheme.xaml"/>
             </ResourceDictionary.MergedDictionaries>
+
+            <!-- 全局转换器 -->
+            <converters:AlarmLevelToColorConverter x:Key="AlarmLevelToColorConverter"/>
+            <converters:AlarmStatusToColorConverter x:Key="AlarmStatusToColorConverter"/>
+            <converters:AlarmStatusToVisibilityConverter x:Key="AlarmStatusToVisibilityConverter"/>
+            <converters:CountToVisibilityConverter x:Key="CountToVisibilityConverter"/>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

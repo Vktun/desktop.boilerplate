@@ -10,4 +10,8 @@
 	<ItemGroup>
 		<PackageReference Include="Prism.Wpf" Version="9.0.*" />
 	</ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\..\src\Vk.Dbp.Services\Vk.Dbp.Service.csproj" />
+		<ProjectReference Include="..\..\src\Vk.Dbp.Contracts\Vk.Dbp.Contracts.csproj" />
+	</ItemGroup>
 </Project>

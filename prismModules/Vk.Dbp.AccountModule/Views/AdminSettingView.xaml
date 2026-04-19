@@ -21,6 +21,9 @@
             <TabItem Header="权限管理">
                 <local:PermissionManagementView/>
             </TabItem>
+            <TabItem Header="系统设置">
+                <local:SystemSettingsView/>
+            </TabItem>
             <TabItem Header="审计日志">
                 <local:AuditLogView/>
             </TabItem>
