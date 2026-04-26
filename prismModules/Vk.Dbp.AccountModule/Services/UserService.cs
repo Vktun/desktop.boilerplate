@@ -370,7 +370,7 @@ public class UserService : IUserService
             UserName = model.Username,
             SurName = model.RealName,
             PhoneNumber = model.Phone,
-            PasswordHash = model.PasswordHash ?? _passwordHasher.HashPassword("default123"),
+            PasswordHash = model.PasswordHash ?? throw new InvalidOperationException("Password hash is required when creating a user."),
             IsActive = model.IsEnabled
         };
     }

@@ -17,7 +17,6 @@ namespace Vk.Dbp.Tests.Common
             string username = "testuser",
             string passwordHash = "hashedpassword",
             string realName = "测试用户",
-            string email = "test@example.com",
             string phone = "13800138000",
             bool isEnabled = true)
         {
@@ -27,7 +26,6 @@ namespace Vk.Dbp.Tests.Common
                 UserName = username,
                 PasswordHash = passwordHash,
                 SurName = realName,
-                Email = email,
                 PhoneNumber = phone,
                 IsActive = isEnabled,
                 ChangePasswordLastTime = DateTime.Now,
@@ -44,17 +42,14 @@ namespace Vk.Dbp.Tests.Common
         public static Role CreateTestRole(
             int id = 1,
             string name = "测试角色",
-            string code = "TEST_ROLE")
+            int roleLevel = 0)
         {
             return new Role
             {
                 Id = id,
                 Name = name,
-                Code = code,
-                Description = $"测试角色 - {name}",
-                CreationTime = DateTime.Now,
-                CreatorId = 0,
-                IsDeleted = false
+                RoleLevel = roleLevel,
+                IsDefault = false
             };
         }
         
@@ -63,20 +58,18 @@ namespace Vk.Dbp.Tests.Common
         /// </summary>
         public static Permission CreateTestPermission(
             int id = 1,
-            string code = "test:permission",
-            string name = "测试权限",
-            string providerKey = "Test")
+            string displyName = "测试权限",
+            string providerKey = "Test",
+            int providerId = 1)
         {
             return new Permission
             {
                 Id = id,
-                Code = code,
-                Name = name,
+                DisplyName = displyName,
                 ProviderKey = providerKey,
-                Description = $"测试权限 - {name}",
-                CreationTime = DateTime.Now,
-                CreatorId = 0,
-                IsDeleted = false
+                ProviderId = providerId,
+                IsEnabled = true,
+                CreationTime = DateTime.Now
             };
         }
         
@@ -91,8 +84,7 @@ namespace Vk.Dbp.Tests.Common
                 users.Add(CreateTestUser(
                     id: i,
                     username: $"user{i}",
-                    realName: $"用户{i}",
-                    email: $"user{i}@example.com"
+                    realName: $"用户{i}"
                 ));
             }
             return users;
@@ -106,9 +98,7 @@ namespace Vk.Dbp.Tests.Common
             return new UserRole
             {
                 UserId = userId,
-                RoleId = roleId,
-                CreationTime = DateTime.Now,
-                CreatorId = 0
+                RoleId = roleId
             };
         }
         

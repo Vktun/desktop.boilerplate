@@ -1,4 +1,4 @@
-using HandyControl.Controls;
+﻿using HandyControl.Controls;
 using HandyControl.Data;
 using System;
 using System.Collections.Generic;
@@ -17,6 +17,7 @@ using Prism.Events;
 using Prism.Ioc;
 using Prism.Mvvm;
 using Vk.Dbp.Contracts.Events;
+using Vk.Dbp.Contracts.Services;
 
 namespace Vk.Dbp.WpfWindow.ViewModels
 {
@@ -30,6 +31,7 @@ namespace Vk.Dbp.WpfWindow.ViewModels
         private readonly IMenuPermissionFilter _menuPermissionFilter;
         private readonly IUserSession _userSession;
         private readonly ILockScreenService _lockScreenService;
+        private readonly IUiDialogService _uiDialogService;
         private readonly IContainerProvider _container;
         private IAlarmService? _alarmService;
         private readonly IEventAggregator _eventAggregator;
@@ -158,6 +160,7 @@ namespace Vk.Dbp.WpfWindow.ViewModels
             IMenuPermissionFilter menuPermissionFilter,
             IUserSession userSession,
             ILockScreenService lockScreenService,
+            IUiDialogService uiDialogService,
             IContainerProvider container,
             IEventAggregator eventAggregator)
         {
@@ -166,6 +169,7 @@ namespace Vk.Dbp.WpfWindow.ViewModels
             _menuPermissionFilter = menuPermissionFilter ?? throw new ArgumentNullException(nameof(menuPermissionFilter));
             _userSession = userSession ?? throw new ArgumentNullException(nameof(userSession));
             _lockScreenService = lockScreenService ?? throw new ArgumentNullException(nameof(lockScreenService));
+            _uiDialogService = uiDialogService ?? throw new ArgumentNullException(nameof(uiDialogService));
             _container = container ?? throw new ArgumentNullException(nameof(container));
             _eventAggregator = eventAggregator ?? throw new ArgumentNullException(nameof(eventAggregator));
 
@@ -420,10 +424,7 @@ namespace Vk.Dbp.WpfWindow.ViewModels
 
         private void handleShutdown()
         {
-            // 桌面应用不应直接执行系统关机命令
-            // 此功能已被禁用以提高安全性
-            System.Windows.MessageBox.Show("关机功能已被禁用，请使用操作系统提供的关机选项。", "提示",
-                System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
+            _uiDialogService.ShowInformation("关机功能已被禁用，请使用操作系统提供的关机选项。", "提示");
         }
     }
 }

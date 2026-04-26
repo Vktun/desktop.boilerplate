@@ -46,7 +46,8 @@ namespace Dabp.WpfWindow
                 splashScreen = CreateSplashScreen();
                 splashScreen.Show();
 
-                await InitializeDatabaseAsync();
+                var startupService = Container.Resolve<IAppStartupService>();
+                await startupService.InitializeDatabaseAsync();
 
                 base.InitializeShell(shell);
                 ShowShellWindow(shell);
@@ -65,7 +66,7 @@ namespace Dabp.WpfWindow
 
                 regionManager.RequestNavigate(RegionNames.ContentRegion, initialView);
 
-                _ = StartSessionTimeoutMonitoringAsync();
+                _ = startupService.StartSessionTimeoutMonitoringAsync();
             }
             catch (Exception ex)
             {
@@ -86,49 +87,6 @@ namespace Dabp.WpfWindow
                     Application.Current.ShutdownMode = originalShutdownMode;
                 }
             }
-        }
-
-        private async Task StartSessionTimeoutMonitoringAsync()
-        {
-            try
-            {
-                var timeoutService = Container.Resolve<ISessionTimeoutService>();
-
-                try
-                {
-                    var configService = Container.Resolve<Vk.Dbp.AccountModule.Services.ISystemConfigService>();
-                    var enabled = await configService.GetSessionTimeoutEnabledAsync();
-                    var minutes = await configService.GetSessionTimeoutMinutesAsync();
-
-                    timeoutService.TimeoutMinutes = minutes;
-
-                    if (enabled)
-                    {
-                        timeoutService.StartMonitoring();
-                    }
-
-                    Log.Information(
-                        "Session timeout monitoring initialized from database: Enabled={Enabled}, Timeout={Minutes} minutes",
-                        enabled,
-                        minutes);
-                }
-                catch (Exception dbEx)
-                {
-                    Log.Warning(dbEx, "Failed to load session config from database, using defaults");
-                    timeoutService.TimeoutMinutes = 15;
-                    timeoutService.StartMonitoring();
-                }
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "Failed to start session timeout monitoring");
-            }
-        }
-
-        private async Task InitializeDatabaseAsync()
-        {
-            var initializer = Container.Resolve<IDatabaseInitializer>();
-            await initializer.InitializeAsync();
         }
 
         private static void ShowShellWindow(DependencyObject shell)
@@ -168,6 +126,8 @@ namespace Dabp.WpfWindow
             containerRegistry.RegisterSingleton<IMenuPermissionFilter, MenuPermissionFilter>();
             containerRegistry.RegisterSingleton<IUserSession, UserSession>();
             containerRegistry.RegisterSingleton<IExportService, ExportService>();
+            containerRegistry.RegisterSingleton<IUiDialogService, UiDialogService>();
+            containerRegistry.RegisterSingleton<IAppStartupService, AppStartupService>();
             containerRegistry.RegisterSingleton<ILockScreenService, LockScreenService>();
             containerRegistry.RegisterSingleton<ISessionTimeoutService, SessionTimeoutService>();
             containerRegistry.RegisterSingleton<LockScreenViewModel>();

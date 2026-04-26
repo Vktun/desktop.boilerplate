@@ -12,6 +12,7 @@
     <Project Path="prismModules/Vk.Dbp.WorkshopModule/Vk.Dbp.WorkshopModule.csproj" />
   </Folder>
   <Folder Name="/src/">
+    <Project Path="src/Vk.Dbp.Contracts/Vk.Dbp.Contracts.csproj" />
     <Project Path="src/Vk.Dbp.Domain/Vk.Dbp.Domain.csproj" />
     <Project Path="src/Vk.Dbp.Infrastructure/Vk.Dbp.Infrastructure.csproj" />
     <Project Path="src/Vk.Dbp.Services/Vk.Dbp.Service.csproj" />
@@ -19,5 +20,9 @@
     <Project Path="src/Vk.Dbp.Utils/Vk.Dbp.Utils.csproj" />
     <Project Path="src/Vk.Dbp.WpfWindow/Vk.Dbp.WpfWindow.csproj" />
   </Folder>
-  <Folder Name="/test/" />
+  <Folder Name="/test/">
+    <Project Path="test/Vk.Dbp.Tests.Common/Vk.Dbp.Tests.Common.csproj" />
+    <Project Path="test/Vk.Dbp.Tests.Integration/Vk.Dbp.Tests.Integration.csproj" />
+    <Project Path="test/Vk.Dbp.Tests.Unit/Vk.Dbp.Tests.Unit.csproj" />
+  </Folder>
 </Solution>

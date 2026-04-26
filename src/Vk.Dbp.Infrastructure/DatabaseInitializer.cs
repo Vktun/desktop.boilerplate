@@ -1,4 +1,4 @@
-using SqlSugar;
+﻿using SqlSugar;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,7 +12,7 @@ namespace Dabp.Infrastructure
     public class DatabaseInitializer : IDatabaseInitializer
     {
         private const string DefaultAdminUsername = "admin";
-        private const string DefaultAdminPassword = "123456";
+        private const string InitialAdminPasswordEnvironmentVariable = "DBP_INITIAL_ADMIN_PASSWORD";
         private const string DefaultAdminDisplayName = "系统管理员";
         private const string AdminRoleName = "管理员";
         private const string UserRoleName = "普通用户";
@@ -97,12 +97,11 @@ namespace Dabp.Infrastructure
                 .FirstAsync();
             if (adminUser == null)
             {
-                // The initial admin password is intentionally fixed for local bootstrap.
-                const string defaultPassword = DefaultAdminPassword;
+                string initialPassword = GetInitialAdminPassword();
                 adminUser = new User
                 {
                     UserName = DefaultAdminUsername,
-                    PasswordHash = _passwordHasher.HashPassword(defaultPassword),
+                    PasswordHash = _passwordHasher.HashPassword(initialPassword),
                     SurName = DefaultAdminDisplayName,
                     PhoneNumber = "13800138000",
                     IsActive = true,
@@ -116,9 +115,8 @@ namespace Dabp.Infrastructure
 
                 // 记录默认密码到日志（仅首次初始化时）
                 Log.Warning(
-                    "Default administrator account created - username: {Username}, initial password: {Password} (please change immediately)",
-                    DefaultAdminUsername,
-                    defaultPassword);
+                    "Default administrator account created - username: {Username}. Configure DBP_INITIAL_ADMIN_PASSWORD and change it immediately after first login.",
+                    DefaultAdminUsername);
             }
             else
             {
@@ -466,5 +464,18 @@ DELETE FROM [Role] WHERE [Id] IN ({duplicateIds});";
         {
             return string.IsNullOrWhiteSpace(value) || value.Trim().All(c => c == '?');
         }
-    }
+
+        private static string GetInitialAdminPassword()
+        {
+            string? configuredPassword = Environment.GetEnvironmentVariable(InitialAdminPasswordEnvironmentVariable);
+            if (string.IsNullOrWhiteSpace(configuredPassword))
+            {
+                throw new InvalidOperationException(
+                    $"Missing initial administrator password. Set {InitialAdminPasswordEnvironmentVariable} before first database initialization.");
+            }
+
+            return configuredPassword;
+        }    }
 }
+
+

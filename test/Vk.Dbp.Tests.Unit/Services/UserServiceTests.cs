@@ -7,7 +7,8 @@ using FluentAssertions;
 using Moq;
 using SqlSugar;
 using Vk.Dbp.AccountModule.Services;
-using Vk.Dbp.Core.Audit.Interfaces;
+using Vk.Dbp.Services.Audit;
+using Vk.Dbp.Services.Session;
 using Xunit;
 using Vk.Dbp.Tests.Common;
 
@@ -18,14 +19,16 @@ namespace Vk.Dbp.Tests.Unit.Services
         private readonly Mock<ISqlSugarClient> _mockDb;
         private readonly Mock<IAuditLogService> _mockAuditLogService;
         private readonly Mock<IPasswordHasher> _mockPasswordHasher;
+        private readonly Mock<IUserSession> _mockUserSession;
         private readonly UserService _userService;
-        
+
         public UserServiceTests()
         {
             _mockDb = new Mock<ISqlSugarClient>();
             _mockAuditLogService = new Mock<IAuditLogService>();
             _mockPasswordHasher = new Mock<IPasswordHasher>();
-            _userService = new UserService(_mockDb.Object, _mockAuditLogService.Object, _mockPasswordHasher.Object);
+            _mockUserSession = new Mock<IUserSession>();
+            _userService = new UserService(_mockDb.Object, _mockAuditLogService.Object, _mockPasswordHasher.Object, _mockUserSession.Object);
         }
         
         [Fact]

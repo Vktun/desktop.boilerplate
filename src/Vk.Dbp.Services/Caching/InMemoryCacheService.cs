@@ -1,7 +1,8 @@
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using Vk.Dbp.Contracts.Caching;
 
@@ -14,6 +15,7 @@ namespace Dabp.Services.Caching
     {
         private readonly ConcurrentDictionary<string, CacheEntry> _cache = new();
         private readonly object _cleanupLock = new();
+        private readonly SemaphoreSlim _asyncFactoryLock = new(1, 1);
         private DateTime _lastCleanup = DateTime.MinValue;
         private readonly TimeSpan _cleanupInterval = TimeSpan.FromMinutes(5);
         
@@ -55,31 +57,35 @@ namespace Dabp.Services.Caching
         {
             if (string.IsNullOrWhiteSpace(key))
                 throw new ArgumentException("缓存键不能为空", nameof(key));
-            
+
             if (factory == null)
                 throw new ArgumentNullException(nameof(factory));
-            
-            // 定期清理过期缓存
+
             TryCleanup();
-            
-            var entry = _cache.GetOrAdd(key, k =>
+
+            if (_cache.TryGetValue(key, out var existingEntry) && !existingEntry.IsExpired)
             {
-                var value = factory().GetAwaiter().GetResult();
-                return new CacheEntry(value, expiry);
-            });
-            
-            // 如果缓存已过期，重新创建
-            if (entry.IsExpired)
-            {
-                var newValue = await factory();
-                var newEntry = new CacheEntry(newValue, expiry);
-                _cache.TryUpdate(key, newEntry, entry);
-                return newValue;
+                return (T)existingEntry.Value!;
             }
-            
-            return (T)entry.Value!;
+
+            await _asyncFactoryLock.WaitAsync();
+            try
+            {
+                if (_cache.TryGetValue(key, out existingEntry) && !existingEntry.IsExpired)
+                {
+                    return (T)existingEntry.Value!;
+                }
+
+                T value = await factory();
+                var newEntry = new CacheEntry(value, expiry);
+                _cache.AddOrUpdate(key, newEntry, (_, _) => newEntry);
+                return value;
+            }
+            finally
+            {
+                _asyncFactoryLock.Release();
+            }
         }
-        
         /// <summary>
         /// 获取缓存项
         /// </summary>

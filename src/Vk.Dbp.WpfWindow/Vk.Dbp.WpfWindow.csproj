@@ -17,9 +17,6 @@
     <Content Include="appsettings.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="appsettings.local.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
     <Content Include="appsettings.local.json" Condition="Exists('appsettings.local.json')">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -43,10 +40,11 @@
 	<ItemGroup>
 	  <ProjectReference Include="..\..\prismModules\Vk.Dbp.AccountModule\Vk.Dbp.AccountModule.csproj" />
 	  <ProjectReference Include="..\..\prismModules\Vk.Dbp.WorkshopModule\Vk.Dbp.WorkshopModule.csproj" />
+	  <ProjectReference Include="..\Vk.Dbp.Contracts\Vk.Dbp.Contracts.csproj" />
 	  <ProjectReference Include="..\Vk.Dbp.Infrastructure\Vk.Dbp.Infrastructure.csproj" />
-	  <ProjectReference Include="..\VK.Dbp.Domain\Vk.Dbp.Domain.csproj" />
-	  <ProjectReference Include="..\VK.Dbp.Services\Vk.Dbp.Service.csproj" />
-	  <ProjectReference Include="..\VK.Dbp.Utils\Vk.Dbp.Utils.csproj" />
+	  <ProjectReference Include="..\Vk.Dbp.Domain\Vk.Dbp.Domain.csproj" />
+	  <ProjectReference Include="..\Vk.Dbp.Services\Vk.Dbp.Service.csproj" />
+	  <ProjectReference Include="..\Vk.Dbp.Utils\Vk.Dbp.Utils.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>
