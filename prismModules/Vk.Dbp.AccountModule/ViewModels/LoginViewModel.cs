@@ -86,7 +86,8 @@ public class LoginViewModel : BindableBase, INavigationAware
         _appSettingsService = appSettingsService ?? throw new ArgumentNullException(nameof(appSettingsService));
 
         LoadSavedPreferences();
-        LoginCommand = new DelegateCommand<PasswordBox>(async password => await LoginAsync(password), CanLogin);
+        LoginCommand = new DelegateCommand<PasswordBox>(async password => await LoginAsync(password), CanLogin)
+            .ObservesProperty(() => IsLoading);
     }
 
     private void LoadSavedPreferences()

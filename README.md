@@ -1,5 +1,9 @@
 # Desktop Boilerplate (Dabp)
 
+<p align="center">
+  <img src="docs/images/login.png" alt="Dabp Login" width="120" />
+</p>
+
 [!\[CI Status\](https://github.com/yourorg/desktop.boilerplate/workflows/CI/badge.svg null)](https://github.com/yourorg/desktop.boilerplate/actions)
 [!\[License\](https://img.shields.io/badge/license-MIT-blue.svg null)](LICENSE)
 

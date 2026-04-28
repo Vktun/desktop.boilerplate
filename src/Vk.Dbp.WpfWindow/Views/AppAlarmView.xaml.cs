@@ -1,4 +1,5 @@
 using System.Windows.Controls;
+using System.Windows;
 
 namespace Vk.Dbp.WpfWindow.Views
 {
@@ -10,6 +11,12 @@ namespace Vk.Dbp.WpfWindow.Views
         public AppAlarmView()
         {
             InitializeComponent();
+        }
+
+        private void CloseButton_Click(object sender, RoutedEventArgs e)
+        {
+            Window? hostWindow = Window.GetWindow(this);
+            hostWindow?.Close();
         }
     }
 }

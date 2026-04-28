@@ -18,6 +18,7 @@ using Prism.Ioc;
 using Prism.Mvvm;
 using Vk.Dbp.Contracts.Events;
 using Vk.Dbp.Contracts.Services;
+using System.Windows;
 
 namespace Vk.Dbp.WpfWindow.ViewModels
 {
@@ -378,6 +379,7 @@ namespace Vk.Dbp.WpfWindow.ViewModels
                     handleShutdown();
                     break;
                 case AccountActions.Close:
+                    handleClose();
                     break;
                 default:
                     break;
@@ -425,6 +427,17 @@ namespace Vk.Dbp.WpfWindow.ViewModels
         private void handleShutdown()
         {
             _uiDialogService.ShowInformation("关机功能已被禁用，请使用操作系统提供的关机选项。", "提示");
+        }
+
+        private void handleClose()
+        {
+            bool shouldClose = _uiDialogService.Confirm("确定要关闭程序吗？", "确认关闭");
+            if (!shouldClose)
+            {
+                return;
+            }
+
+            Application.Current?.Shutdown();
         }
     }
 }

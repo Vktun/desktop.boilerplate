@@ -1,8 +1,10 @@
 using System.IO;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Text;
 using HandyControl.Controls;
 using Microsoft.Win32;
+using System.Windows;
 using Prism.Commands;
 using Prism.Mvvm;
 using Vk.Dbp.AccountModule.Models;
@@ -86,6 +88,7 @@ public class UserManagementViewModel : BindableBase
     public DelegateCommand<User?> ResetPasswordCommand { get; }
     public DelegateCommand<User?> EnableUserCommand { get; }
     public DelegateCommand ExportCommand { get; }
+    public DelegateCommand CloseProgramCommand { get; }
 
     public UserManagementViewModel(IUserService userService, IAuditLogService auditLogService, IUserSession userSession)
     {
@@ -101,6 +104,21 @@ public class UserManagementViewModel : BindableBase
         ResetPasswordCommand = new DelegateCommand<User?>(async u => await ResetPasswordAsync(u), CanResetPassword);
         EnableUserCommand = new DelegateCommand<User?>(async u => await EnableUserAsync(u), CanEnableUser);
         ExportCommand = new DelegateCommand(async () => await ExportAsync());
+        CloseProgramCommand = new DelegateCommand(CloseProgram);
+    }
+
+    private void CloseProgram()
+    {
+        MessageBoxResult result = System.Windows.MessageBox.Show(
+            "确定要关闭程序吗？",
+            "确认关闭",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Question);
+
+        if (result == MessageBoxResult.Yes)
+        {
+            Application.Current?.Shutdown();
+        }
     }
 
     private async Task LoadUsersAsync()
@@ -164,16 +182,16 @@ public class UserManagementViewModel : BindableBase
             bool success = await _userService.CreateUserAsync(user);
             if (!success)
             {
-                Growl.Error("鐢ㄦ埛鍒涘缓澶辫触");
+                Growl.Error("创建用户失败");
                 return;
             }
 
-            Growl.Success("鐢ㄦ埛鍒涘缓鎴愬姛");
+            Growl.Success("创建用户成功");
             await LoadUsersAsync();
         }
         catch (Exception ex)
         {
-            Growl.Error($"鍒涘缓鐢ㄦ埛澶辫触: {ex.Message}");
+            Growl.Error($"创建用户失败: {ex.Message}");
         }
         finally
         {
@@ -210,16 +228,16 @@ public class UserManagementViewModel : BindableBase
             bool success = await _userService.UpdateUserAsync(user);
             if (!success)
             {
-                Growl.Error("鐢ㄦ埛鏇存柊澶辫触");
+                Growl.Error("更新用户失败");
                 return;
             }
 
-            Growl.Success("鐢ㄦ埛鏇存柊鎴愬姛");
+            Growl.Success("更新用户成功");
             await LoadUsersAsync();
         }
         catch (Exception ex)
         {
-            Growl.Error($"鏇存柊鐢ㄦ埛澶辫触: {ex.Message}");
+            Growl.Error($"更新用户失败: {ex.Message}");
         }
         finally
         {
@@ -240,12 +258,12 @@ public class UserManagementViewModel : BindableBase
         }
 
         var result = System.Windows.MessageBox.Show(
-            $"纭畾瑕佸垹闄ょ敤鎴?\"{user.Username}\" 鍚楋紵\n姝ゆ搷浣滀笉鍙仮澶嶃€?",
-            "纭鍒犻櫎",
-            System.Windows.MessageBoxButton.YesNo,
-            System.Windows.MessageBoxImage.Warning);
+            $"确定要删除用户\"{user.Username}\"吗？",
+            "确认删除",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning);
 
-        if (result != System.Windows.MessageBoxResult.Yes)
+        if (result != MessageBoxResult.Yes)
         {
             return;
         }
@@ -256,7 +274,7 @@ public class UserManagementViewModel : BindableBase
             bool success = await _userService.DeleteUserAsync(user.Id);
             if (!success)
             {
-                Growl.Error("鐢ㄦ埛鍒犻櫎澶辫触");
+                Growl.Error("删除用户失败");
                 return;
             }
 
@@ -266,11 +284,11 @@ public class UserManagementViewModel : BindableBase
                 AllUsers.Remove(user);
             }
 
-            Growl.Success("鐢ㄦ埛鍒犻櫎鎴愬姛");
+            Growl.Success("删除用户成功");
         }
         catch (Exception ex)
         {
-            Growl.Error($"鍒犻櫎鐢ㄦ埛澶辫触: {ex.Message}");
+            Growl.Error($"删除用户失败: {ex.Message}");
         }
         finally
         {
@@ -291,12 +309,12 @@ public class UserManagementViewModel : BindableBase
         }
 
         var result = System.Windows.MessageBox.Show(
-            $"确定要重置用户 \"{user.Username}\" 的密码吗？\n密码将被重置为随机强密码。",
+            $"确定要重置用户\"{user.Username}\"的登录密码吗？",
             "重置密码",
-            System.Windows.MessageBoxButton.YesNo,
-            System.Windows.MessageBoxImage.Question);
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Question);
 
-        if (result != System.Windows.MessageBoxResult.Yes)
+        if (result != MessageBoxResult.Yes)
         {
             return;
         }
@@ -309,11 +327,11 @@ public class UserManagementViewModel : BindableBase
             bool success = await _userService.ResetPasswordAsync(user.Id, newPassword);
             if (!success)
             {
-                Growl.Error("密码重置失败");
+                Growl.Error("重置密码失败");
                 return;
             }
 
-            Growl.Success($"密码已重置，新密码: {newPassword}\n请立即告知用户并建议其修改密码。");
+            Growl.Success($"密码重置成功，初始密码为: {newPassword}\n请提醒用户并及时修改密码。");
         }
         catch (Exception ex)
         {
@@ -344,18 +362,18 @@ public class UserManagementViewModel : BindableBase
             if (!success)
             {
                 user.IsEnabled = !user.IsEnabled;
-                Growl.Error("鎿嶄綔澶辫触");
+                Growl.Error("操作失败");
                 return;
             }
 
-            string status = user.IsEnabled ? "鍚敤" : "绂佺敤";
-            Growl.Success($"鐢ㄦ埛宸?{status}");
+            string status = user.IsEnabled ? "启用" : "禁用";
+            Growl.Success($"用户已{status}");
             RaisePropertyChanged(nameof(Users));
         }
         catch (Exception ex)
         {
             user.IsEnabled = !user.IsEnabled;
-            Growl.Error($"鎿嶄綔澶辫触: {ex.Message}");
+            Growl.Error($"操作失败: {ex.Message}");
         }
     }
 
@@ -370,8 +388,8 @@ public class UserManagementViewModel : BindableBase
         {
             var dialog = new SaveFileDialog
             {
-                Filter = "CSV鏂囦欢 (*.csv)|*.csv",
-                FileName = $"鐢ㄦ埛鍒楄〃_{DateTime.Now:yyyyMMdd_HHmmss}.csv"
+                Filter = "CSV 文件(*.csv)|*.csv",
+                FileName = $"用户列表导出_{DateTime.Now:yyyyMMdd_HHmmss}.csv"
             };
 
             if (dialog.ShowDialog() != true)
@@ -380,7 +398,7 @@ public class UserManagementViewModel : BindableBase
             }
 
             var csv = new StringBuilder();
-            csv.AppendLine("ID,鐢ㄦ埛鍚?鐪熷疄濮撳悕,閭,鐢佃瘽,鏄惁鍚敤,鍒涘缓鏃堕棿,鏈€鍚庣櫥褰曟椂闂?");
+            csv.AppendLine("ID,用户名,真实姓名,邮箱,电话,是否启用,创建时间,最后登录时间");
 
             foreach (User user in Users)
             {
@@ -389,7 +407,7 @@ public class UserManagementViewModel : BindableBase
             }
 
             File.WriteAllText(dialog.FileName, csv.ToString(), Encoding.UTF8);
-            Growl.Success("瀵煎嚭鎴愬姛");
+            Growl.Success("导出成功");
 
             await _auditLogService.LogExportAsync(
                 _userSession.GetAuditUserId(),
@@ -404,7 +422,7 @@ public class UserManagementViewModel : BindableBase
     }
 
     /// <summary>
-    /// 生成随机强密码（12位，包含大小写字母、数字和特殊字符）
+    /// 生成一个12位随机密码（含大小写字母、数字和符号）
     /// </summary>
     private static string GenerateStrongPassword()
     {
@@ -412,24 +430,23 @@ public class UserManagementViewModel : BindableBase
         const string lowerCase = "abcdefghijklmnopqrstuvwxyz";
         const string digits = "0123456789";
         const string special = "!@#$%^&*";
-        
+
         var allChars = upperCase + lowerCase + digits + special;
         var random = new System.Security.Cryptography.RNGCryptoServiceProvider();
         var password = new char[12];
-        
-        // 确保至少包含每种类型的字符
+
+        // 强制覆盖每一类字符
         password[0] = upperCase[GetRandomInt(random, upperCase.Length)];
         password[1] = lowerCase[GetRandomInt(random, lowerCase.Length)];
         password[2] = digits[GetRandomInt(random, digits.Length)];
         password[3] = special[GetRandomInt(random, special.Length)];
-        
-        // 填充剩余字符
+
         for (int i = 4; i < password.Length; i++)
         {
             password[i] = allChars[GetRandomInt(random, allChars.Length)];
         }
-        
-        // 打乱顺序
+
+        // 打乱字符序列
         return new string(password.OrderBy(_ => GetRandomInt(random, password.Length)).ToArray());
     }
 

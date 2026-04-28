@@ -7,7 +7,6 @@
              xmlns:converters="clr-namespace:Dabp.WpfWindow.Converters"
              xmlns:prism="http://prismlibrary.com/"
              prism:ViewModelLocator.AutoWireViewModel="True"
-             xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
              xmlns:hc="https://handyorg.github.io/handycontrol"
              mc:Ignorable="d" 
              d:DesignHeight="70" d:DesignWidth="1200">
@@ -15,27 +14,147 @@
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
         <converters:InverseBooleanToVisibilityConverter x:Key="InverseBooleanToVisibilityConverter"/>
+        <Style x:Key="HeaderTopIconText" TargetType="TextBlock">
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="FontSize" Value="10"/>
+            <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
+            <Setter Property="TextAlignment" Value="Center"/>
+            <Setter Property="LineHeight" Value="14"/>
+            <Setter Property="TextWrapping" Value="NoWrap"/>
+            <Setter Property="MaxWidth" Value="66"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+        </Style>
+        <Style x:Key="HeaderTopIconButton" TargetType="Button">
+            <Setter Property="Height" Value="50"/>
+            <Setter Property="Width" Value="64"/>
+            <Setter Property="Margin" Value="4 0"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource SecondaryBackgroundBrush}"/>
+                    <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+                </Trigger>
+                <Trigger Property="IsPressed" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource TertiaryBackgroundBrush}"/>
+                    <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="HeaderTopIconToggleButton" TargetType="ToggleButton" BasedOn="{StaticResource ToggleButtonCustom}">
+            <Setter Property="Height" Value="50"/>
+            <Setter Property="Width" Value="64"/>
+            <Setter Property="Margin" Value="4 0"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource SecondaryBackgroundBrush}"/>
+                    <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+                    <Setter Property="BorderThickness" Value="1"/>
+                </Trigger>
+                <Trigger Property="IsChecked" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource SecondaryBackgroundBrush}"/>
+                    <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+                    <Setter Property="BorderThickness" Value="1"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="HeaderTopWideIconButton" TargetType="Button" BasedOn="{StaticResource HeaderTopIconButton}">
+            <Setter Property="Width" Value="80"/>
+        </Style>
+        <Style x:Key="HeaderTopWideIconToggleButton" TargetType="ToggleButton" BasedOn="{StaticResource HeaderTopIconToggleButton}">
+            <Setter Property="Width" Value="88"/>
+        </Style>
+        <Style x:Key="HeaderTopCompactIconToggleButton" TargetType="ToggleButton" BasedOn="{StaticResource HeaderTopIconToggleButton}">
+            <Setter Property="Width" Value="60"/>
+        </Style>
+        <Style x:Key="HeaderAccountPopupActionButton" TargetType="Button" BasedOn="{StaticResource ButtonDefault}">
+            <Setter Property="Height" Value="28"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Padding" Value="10,2"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="Margin" Value="0,4,0,0"/>
+            <Setter Property="Background" Value="{DynamicResource SecondaryBackgroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
+        </Style>
+        <Style x:Key="HeaderAccountPopupActionDangerButton" TargetType="Button" BasedOn="{StaticResource HeaderAccountPopupActionButton}">
+            <Setter Property="Foreground" Value="{DynamicResource ErrorBrush}"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Background" Value="#14D92D20"/>
+            <Setter Property="BorderBrush" Value="#33D92D20"/>
+        </Style>
+        <Style x:Key="HeaderAccountPopupGridActionButton" TargetType="Button" BasedOn="{StaticResource HeaderAccountPopupActionButton}">
+            <Setter Property="Height" Value="30"/>
+            <Setter Property="Margin" Value="0"/>
+            <Setter Property="Padding" Value="8,2"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        </Style>
+        <Style x:Key="HeaderAccountPopupGridActionDangerButton" TargetType="Button" BasedOn="{StaticResource HeaderAccountPopupActionDangerButton}">
+            <Setter Property="Height" Value="30"/>
+            <Setter Property="Margin" Value="0"/>
+            <Setter Property="Padding" Value="8,2"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        </Style>
     </UserControl.Resources>
     <Grid Background="{DynamicResource PrimaryBackgroundBrush}">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="150"/>
+            <ColumnDefinition Width="190"/>
             <ColumnDefinition Width="*"/>
-            <ColumnDefinition Width="280"/>
+            <ColumnDefinition Width="Auto"/>
         </Grid.ColumnDefinitions>
         
         <!-- Logo 区域 -->
-        <StackPanel Grid.Column="0" Orientation="Vertical" Margin="10 5 0 0">
-            <TextBlock Text="Dabp" FontSize="{StaticResource HeadFontSize}" FontWeight="Bold" 
-                       Foreground="{DynamicResource PrimaryTextBrush}" />
-            <TextBlock Text="desktop.boilerplate" FontSize="{StaticResource TextFontSize}" FontWeight="Bold" 
-                       Foreground="{DynamicResource SecondaryTextBrush}" />
+        <StackPanel Grid.Column="0" Orientation="Horizontal" Margin="14,7,0,7" VerticalAlignment="Center">
+            <Border Width="42" Height="42" CornerRadius="8" Background="#2563EB" Margin="0,0,12,0">
+                <TextBlock Text="D"
+                           Foreground="White"
+                           FontSize="24"
+                           FontWeight="Bold"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"/>
+            </Border>
+            <StackPanel VerticalAlignment="Center">
+                <TextBlock Text="Dabp" FontSize="20" FontWeight="Bold"
+                           Foreground="{DynamicResource PrimaryTextBrush}" />
+                <TextBlock Text="desktop.boilerplate" FontSize="12" FontWeight="SemiBold"
+                           Foreground="{DynamicResource SecondaryTextBrush}" />
+            </StackPanel>
         </StackPanel>
         
         <!-- 导航菜单区域 -->
         <StackPanel Orientation="Horizontal" Margin="5 5 0 0" Grid.Column="1" >
             <ToggleButton Style="{StaticResource ToggleButtonSuccess}" Command="{Binding NavigateCommand}" 
                          CommandParameter="Dashboard" Margin="5"
-                         Visibility="{Binding IsDashboardVisible, Converter={StaticResource BooleanToVisibilityConverter}}">驾驶舱</ToggleButton>
+                         Visibility="{Binding IsDashboardVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
+                <StackPanel Orientation="Horizontal">
+                    <Viewbox Width="15" Height="15" Margin="0,0,5,0">
+                        <Path Stroke="White"
+                              StrokeThickness="1.8"
+                              StrokeStartLineCap="Round"
+                              StrokeEndLineCap="Round"
+                              Fill="Transparent"
+                              Data="M 5,15 L 5,18 M 19,15 L 19,18 M 4,12 L 5.8,7 C 6.2,5.8 7.1,5 8.4,5 L 15.6,5 C 16.9,5 17.8,5.8 18.2,7 L 20,12 M 4,12 L 20,12 L 21,16 L 3,16 Z M 7,13.8 L 8.8,13.8 M 15.2,13.8 L 17,13.8"/>
+                    </Viewbox>
+                    <TextBlock Text="驾驶舱"/>
+                </StackPanel>
+            </ToggleButton>
             <ToggleButton Style="{StaticResource ToggleButtonSuccess}" Command="{Binding NavigateCommand}" 
                          CommandParameter="SelfCheck" Margin="5"
                          Visibility="{Binding IsSelfCheckVisible, Converter={StaticResource BooleanToVisibilityConverter}}">自检</ToggleButton>
@@ -54,22 +173,83 @@
         </StackPanel>
         
         <!-- 右侧工具栏区域 -->
-        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="5 5 10 5" Grid.Column="2" >
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" 
+                    Margin="4 0 8 0" Grid.Column="2" >
             
             <!-- 主题切换按钮 -->
-            <Button x:Name="ThemeButton" Margin="5" Height="50" Width="80" ToolTip="点击切换主题"
-                    Background="Transparent" BorderThickness="0">
+            <Button x:Name="ThemeButton" Style="{StaticResource HeaderTopIconButton}" ToolTip="点击切换主题"
+                    Background="Transparent" BorderThickness="0"
+                    Command="{Binding ToggleThemeCommand}" CommandParameter="{Binding CurrentTheme}">
                 <Button.Template>
                     <ControlTemplate TargetType="Button">
-                        <StackPanel Orientation="Vertical">
-                            <TextBlock HorizontalAlignment="Center" FontSize="20" Margin="0 5 0 0">
-                                <Run Text="&#x2600;" Foreground="#FFD700" x:Name="SunIcon"/>
-                                <Run Text="&#x1F319;" Foreground="#9370DB" x:Name="MoonIcon"/>
-                            </TextBlock>
-                            <TextBlock Text="主题" HorizontalAlignment="Center" 
-                                      Foreground="{DynamicResource SecondaryTextBrush}" 
-                                      FontSize="9" Margin="0 5 0 0" />
-                        </StackPanel>
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="10"
+                                Padding="4,2,4,4">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="26"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <Viewbox Grid.Row="0" Width="22" Height="22" Margin="0,2,0,0"
+                                         HorizontalAlignment="Center" VerticalAlignment="Center">
+                                    <Grid Width="24" Height="24">
+                                        <Canvas x:Name="LightThemeIcon" Width="24" Height="24">
+                                            <Ellipse Canvas.Left="6" Canvas.Top="6" Width="12" Height="12"
+                                                     Fill="#FFD54F"/>
+                                            <Rectangle Canvas.Left="11" Canvas.Top="0" Width="2" Height="4"
+                                                       RadiusX="1" RadiusY="1" Fill="#FFD54F"/>
+                                            <Rectangle Canvas.Left="11" Canvas.Top="20" Width="2" Height="4"
+                                                       RadiusX="1" RadiusY="1" Fill="#FFD54F"/>
+                                            <Rectangle Canvas.Left="20" Canvas.Top="11" Width="4" Height="2"
+                                                       RadiusX="1" RadiusY="1" Fill="#FFD54F"/>
+                                            <Rectangle Canvas.Left="0" Canvas.Top="11" Width="4" Height="2"
+                                                       RadiusX="1" RadiusY="1" Fill="#FFD54F"/>
+                                            <Rectangle Canvas.Left="17.3" Canvas.Top="2.1" Width="2" Height="4"
+                                                       RadiusX="1" RadiusY="1" Fill="#FFD54F"
+                                                       RenderTransformOrigin="0.5,0.5">
+                                                <Rectangle.RenderTransform>
+                                                    <RotateTransform Angle="45"/>
+                                                </Rectangle.RenderTransform>
+                                            </Rectangle>
+                                            <Rectangle Canvas.Left="4.7" Canvas.Top="17.9" Width="2" Height="4"
+                                                       RadiusX="1" RadiusY="1" Fill="#FFD54F"
+                                                       RenderTransformOrigin="0.5,0.5">
+                                                <Rectangle.RenderTransform>
+                                                    <RotateTransform Angle="45"/>
+                                                </Rectangle.RenderTransform>
+                                            </Rectangle>
+                                            <Rectangle Canvas.Left="17.3" Canvas.Top="17.9" Width="2" Height="4"
+                                                       RadiusX="1" RadiusY="1" Fill="#FFD54F"
+                                                       RenderTransformOrigin="0.5,0.5">
+                                                <Rectangle.RenderTransform>
+                                                    <RotateTransform Angle="-45"/>
+                                                </Rectangle.RenderTransform>
+                                            </Rectangle>
+                                            <Rectangle Canvas.Left="4.7" Canvas.Top="2.1" Width="2" Height="4"
+                                                       RadiusX="1" RadiusY="1" Fill="#FFD54F"
+                                                       RenderTransformOrigin="0.5,0.5">
+                                                <Rectangle.RenderTransform>
+                                                    <RotateTransform Angle="-45"/>
+                                                </Rectangle.RenderTransform>
+                                            </Rectangle>
+                                        </Canvas>
+                                        <Canvas x:Name="DarkThemeIcon" Width="24" Height="24" Visibility="Collapsed">
+                                            <Path Fill="#7C6BF2" Data="F1 M 15,2 C 10.5,2.8 7,6.8 7,11.5 C 7,16.8 11.2,21 16.5,21 C 18.2,21 19.8,20.6 21.1,19.7 C 19.3,21.7 16.7,23 13.8,23 C 8.4,23 4,18.6 4,13.2 C 4,8.6 7.2,4.7 11.5,3.4 C 12.6,3.1 13.8,2.9 15,2.9 Z"/>
+                                        </Canvas>
+                                    </Grid>
+                                </Viewbox>
+                                <TextBlock Grid.Row="1" Text="主题" Style="{StaticResource HeaderTopIconText}"
+                                          Margin="0 3 0 0"/>
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <DataTrigger Binding="{Binding CurrentTheme}" Value="Dark">
+                                <Setter TargetName="LightThemeIcon" Property="Visibility" Value="Collapsed"/>
+                                <Setter TargetName="DarkThemeIcon" Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                        </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Button.Template>
                 <Button.ContextMenu>
@@ -81,137 +261,255 @@
                                  CommandParameter="Dark" Foreground="{DynamicResource PrimaryTextBrush}"/>
                     </ContextMenu>
                 </Button.ContextMenu>
-                <i:Interaction.Triggers>
-                    <i:EventTrigger EventName="Click">
-                        <i:InvokeCommandAction Command="{Binding ToggleThemeCommand}" 
-                                              CommandParameter="Light"/>
-                    </i:EventTrigger>
-                </i:Interaction.Triggers>
             </Button>
             
             <!-- 通知铃铛 -->
-            <ToggleButton BorderThickness="0" IsChecked="True" Style="{StaticResource ToggleButtonCustom}"
+            <ToggleButton IsChecked="True" Style="{StaticResource HeaderTopCompactIconToggleButton}"
                          hc:StatusSwitchElement.HideUncheckedElement="True" Command="{Binding NotificationCommand}" >
-                <hc:StatusSwitchElement.CheckedElement>
-                    <hc:Badge Maximum="0" VerticalAlignment="Center" HorizontalAlignment="Center" Height="40"
-                             Margin="10 5 10 5" Style="{DynamicResource BadgeDanger}">
-                        <Button>
-                            <Button.Template>
-                                <ControlTemplate TargetType="Button">
-                                    <Image Source="pack://application:,,,/Asserts/Icon/bell-normal.png"/>
-                                </ControlTemplate>
-                            </Button.Template>
-                        </Button>
-                    </hc:Badge>
-                </hc:StatusSwitchElement.CheckedElement>
-                <hc:Badge Value="{Binding NotificationBadgeCount}" Maximum="99" VerticalAlignment="Center" HorizontalAlignment="Center" Height="40"
-                         Margin="10 5 10 5" Style="{DynamicResource BadgeDanger}" >
-                    <Button>
-                        <Button.Template>
-                            <ControlTemplate TargetType="Button">
-                                <Image Source="pack://application:,,,/Asserts/Icon/bell-red.png"/>
-                            </ControlTemplate>
-                        </Button.Template>
-                    </Button>
-                </hc:Badge>
+                <ToggleButton.Template>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="10"
+                                Padding="4,2,4,4">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="26"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <Grid Grid.Row="0" Width="34" Height="26" HorizontalAlignment="Center" VerticalAlignment="Center" ClipToBounds="False">
+                                    <Viewbox Width="21" Height="21" HorizontalAlignment="Center" VerticalAlignment="Bottom">
+                                        <Path Stroke="{DynamicResource PrimaryTextBrush}"
+                                              StrokeThickness="1.8"
+                                              StrokeStartLineCap="Round"
+                                              StrokeEndLineCap="Round"
+                                              Fill="Transparent"
+                                              Data="M 18,8 C 18,5 15.6,3 12,3 C 8.4,3 6,5 6,8 C 6,14 4,15.5 4,17 L 20,17 C 20,15.5 18,14 18,8 Z M 10,20 L 14,20"/>
+                                    </Viewbox>
+                                    <Border x:Name="NotificationBadge"
+                                            MinWidth="16"
+                                            Height="16"
+                                            Padding="4,0"
+                                            CornerRadius="8"
+                                            Background="#EF4444"
+                                            HorizontalAlignment="Right"
+                                            VerticalAlignment="Top"
+                                            Margin="0,0,1,0">
+                                        <TextBlock Text="{Binding NotificationBadgeCount}"
+                                                   Foreground="White"
+                                                   FontSize="9"
+                                                   FontWeight="Bold"
+                                                   LineHeight="12"
+                                                   TextAlignment="Center"
+                                                   HorizontalAlignment="Center"
+                                                   VerticalAlignment="Center"/>
+                                    </Border>
+                                </Grid>
+                                <TextBlock Grid.Row="1" Text="通知" Style="{StaticResource HeaderTopIconText}"
+                                          Margin="0 3 0 0"/>
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <DataTrigger Binding="{Binding NotificationBadgeCount}" Value="0">
+                                <Setter TargetName="NotificationBadge" Property="Visibility" Value="Collapsed"/>
+                            </DataTrigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </ToggleButton.Template>
             </ToggleButton>
 
             <!-- 告警图标 -->
-            <ToggleButton BorderThickness="0" Style="{StaticResource ToggleButtonCustom}"
+            <ToggleButton Style="{StaticResource HeaderTopCompactIconToggleButton}"
                          hc:StatusSwitchElement.HideUncheckedElement="True" Command="{Binding AlarmCommand}" >
-                <hc:StatusSwitchElement.CheckedElement>
-                    <!-- 无告警状态 -->
-                    <hc:Badge Value="0" Maximum="0" VerticalAlignment="Center" HorizontalAlignment="Center" Height="40"
-                             Margin="10 5 15 5" Style="{DynamicResource BadgeSuccess}">
-                        <Button>
-                            <Button.Template>
-                                <ControlTemplate TargetType="Button">
-                                    <Image Source="pack://application:,,,/Asserts/Icon/alarm-normal.png"/>
-                                </ControlTemplate>
-                            </Button.Template>
-                        </Button>
-                    </hc:Badge>
-                </hc:StatusSwitchElement.CheckedElement>
-                <!-- 有告警状态 -->
-                <hc:Badge Value="{Binding AlarmBadgeCount}" Maximum="99" VerticalAlignment="Center" HorizontalAlignment="Center" Height="40"
-                         Margin="10 5 15 5" Style="{DynamicResource BadgeDanger}" >
-                    <Button>
-                        <Button.Template>
-                            <ControlTemplate TargetType="Button">
-                                <Grid>
-                                    <Image Source="pack://application:,,,/Asserts/Icon/alarm-red.png"/>
-                                    <!-- 严重告警闪烁动画 -->
-                                    <Grid.Style>
-                                        <Style TargetType="Grid">
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding HasCriticalAlarm}" Value="True">
-                                                    <DataTrigger.EnterActions>
-                                                        <BeginStoryboard x:Name="AlarmFlashStoryboard">
-                                                            <Storyboard RepeatBehavior="Forever">
-                                                                <DoubleAnimation Storyboard.TargetProperty="Opacity"
-                                                                                From="1.0" To="0.3" Duration="0:0:0.5"
-                                                                                AutoReverse="True"/>
-                                                            </Storyboard>
-                                                        </BeginStoryboard>
-                                                    </DataTrigger.EnterActions>
-                                                    <DataTrigger.ExitActions>
-                                                        <StopStoryboard BeginStoryboardName="AlarmFlashStoryboard"/>
-                                                    </DataTrigger.ExitActions>
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </Grid.Style>
+                <ToggleButton.Template>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="10"
+                                Padding="4,2,4,4">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="26"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <Grid x:Name="AlarmBadgeContent" Grid.Row="0" Width="34" Height="26" HorizontalAlignment="Center" VerticalAlignment="Center" ClipToBounds="False">
+                                    <Viewbox Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Bottom">
+                                        <Path Stroke="{DynamicResource PrimaryTextBrush}"
+                                              StrokeThickness="1.8"
+                                              StrokeStartLineCap="Round"
+                                              StrokeEndLineCap="Round"
+                                              StrokeLineJoin="Round"
+                                              Fill="#FFF7CC"
+                                              Data="M 4,11 L 8,11 L 17,6 L 17,18 L 8,13 L 4,13 Z M 8,13 L 10,20 L 12,20 L 10,13 M 17,8 C 19,8.6 20,10 20,12 C 20,14 19,15.4 17,16"/>
+                                    </Viewbox>
+                                    <Border x:Name="AlarmBadge"
+                                            MinWidth="16"
+                                            Height="16"
+                                            Padding="4,0"
+                                            CornerRadius="8"
+                                            Background="#22C55E"
+                                            HorizontalAlignment="Right"
+                                            VerticalAlignment="Top"
+                                            Margin="0,0,1,0">
+                                        <TextBlock Text="{Binding AlarmBadgeCount}"
+                                                   Foreground="White"
+                                                   FontSize="9"
+                                                   FontWeight="Bold"
+                                                   LineHeight="12"
+                                                   TextAlignment="Center"
+                                                   HorizontalAlignment="Center"
+                                                   VerticalAlignment="Center"/>
+                                    </Border>
                                 </Grid>
-                            </ControlTemplate>
-                        </Button.Template>
-                    </Button>
-                </hc:Badge>
+                                <TextBlock Grid.Row="1" Text="告警" Style="{StaticResource HeaderTopIconText}"
+                                          Margin="0 3 0 0"/>
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <DataTrigger Binding="{Binding AlarmBadgeCount}" Value="0">
+                                <Setter TargetName="AlarmBadge" Property="Visibility" Value="Collapsed"/>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding HasCriticalAlarm}" Value="True">
+                                <DataTrigger.EnterActions>
+                                    <BeginStoryboard x:Name="AlarmFlashStoryboard">
+                                        <Storyboard RepeatBehavior="Forever">
+                                            <DoubleAnimation Storyboard.TargetName="AlarmBadgeContent"
+                                                            Storyboard.TargetProperty="Opacity"
+                                                            From="1.0" To="0.3" Duration="0:0:0.5"
+                                                            AutoReverse="True"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </DataTrigger.EnterActions>
+                                <DataTrigger.ExitActions>
+                                    <StopStoryboard BeginStoryboardName="AlarmFlashStoryboard"/>
+                                </DataTrigger.ExitActions>
+                            </DataTrigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </ToggleButton.Template>
             </ToggleButton>
 
             <!-- 后台管理按钮 -->
-            <Button Margin="10 8 10 5" Height="50" Width="42" Command="{Binding NavigateCommand}" 
+            <Button Style="{StaticResource HeaderTopWideIconButton}" Command="{Binding NavigateCommand}" 
                    CommandParameter="AdminSettingView"
                    Visibility="{Binding IsAdminSettingVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
                 <Button.Template>
                     <ControlTemplate TargetType="Button">
-                        <StackPanel Orientation="Vertical">
-                            <Image Source="pack://application:,,,/Asserts/Icon/admin.png" Height="20" />
-                            <TextBlock Text="后台管理" HorizontalAlignment="Center" 
-                                      Foreground="{DynamicResource SecondaryTextBrush}" 
-                                      FontSize="9" Margin="0 8 0 0" />
-                        </StackPanel>
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="10"
+                                Padding="4,2,4,4">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="26"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <Image Grid.Row="0" Source="pack://application:,,,/Asserts/Icon/admin.png"
+                                       Height="22" Width="22" Margin="0,2,0,0"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Row="1" Text="后台管理" Style="{StaticResource HeaderTopIconText}"
+                                          Margin="0 3 0 0" />
+                            </Grid>
+                        </Border>
                     </ControlTemplate>
                 </Button.Template>
             </Button>
             
             <!-- 登录按钮（未登录时显示） -->
-            <Button Margin="10 8 10 5" Height="50" Width="70" 
+            <Button Style="{StaticResource HeaderTopIconButton}" 
                    Command="{Binding LoginCommand}"
                    Visibility="{Binding IsLoggedIn, Converter={StaticResource InverseBooleanToVisibilityConverter}}">
                 <Button.Template>
                     <ControlTemplate TargetType="Button">
-                        <StackPanel Orientation="Vertical">
-                            <TextBlock Text="&#x1F464;" HorizontalAlignment="Center" FontSize="22" />
-                            <TextBlock Text="登录" HorizontalAlignment="Center" 
-                                      Foreground="{DynamicResource PrimaryTextBrush}" 
-                                      FontSize="13" Margin="0 5 0 0" />
-                        </StackPanel>
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="10"
+                                Padding="4,2,4,4">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="26"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <Viewbox Grid.Row="0" Width="22" Height="22" Margin="0,2,0,0"
+                                         HorizontalAlignment="Center" VerticalAlignment="Center">
+                                    <Grid Width="24" Height="24">
+                                        <Ellipse Width="9" Height="9" Fill="{DynamicResource PrimaryTextBrush}"
+                                                 HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,1,0,0"/>
+                                        <Path Fill="{DynamicResource PrimaryTextBrush}"
+                                              Data="F1 M 12,12 C 8.1,12 4.8,14.7 4,18.4 C 3.8,19.4 4.6,20.3 5.6,20.3 L 18.4,20.3 C 19.4,20.3 20.2,19.4 20,18.4 C 19.2,14.7 15.9,12 12,12 Z"/>
+                                    </Grid>
+                                </Viewbox>
+                                <TextBlock Grid.Row="1" Text="登录" Style="{StaticResource HeaderTopIconText}"
+                                          Foreground="{DynamicResource PrimaryTextBrush}" Margin="0 3 0 0"/>
+                            </Grid>
+                        </Border>
+                    </ControlTemplate>
+                </Button.Template>
+            </Button>
+
+            <!-- 关闭程序按钮（未登录时显示） -->
+            <Button Style="{StaticResource HeaderTopWideIconButton}"
+                   Command="{Binding AccountCommand}"
+                   CommandParameter="Close"
+                   Visibility="{Binding IsLoggedIn, Converter={StaticResource InverseBooleanToVisibilityConverter}}">
+                <Button.Template>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="10"
+                                Padding="4,2,4,4">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="26"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <Viewbox Grid.Row="0" Width="22" Height="22" Margin="0,2,0,0"
+                                         HorizontalAlignment="Center" VerticalAlignment="Center">
+                                    <Grid Width="24" Height="24">
+                                        <Ellipse Width="20" Height="20" Stroke="{DynamicResource ErrorBrush}" StrokeThickness="2"/>
+                                        <Path Stroke="{DynamicResource ErrorBrush}" StrokeThickness="2.4"
+                                              StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                              Data="M 8,8 L 16,16 M 16,8 L 8,16"/>
+                                    </Grid>
+                                </Viewbox>
+                                <TextBlock Grid.Row="1" Text="关闭程序" Style="{StaticResource HeaderTopIconText}"
+                                          Margin="0 3 0 0"/>
+                            </Grid>
+                        </Border>
                     </ControlTemplate>
                 </Button.Template>
             </Button>
             
             <!-- 账户下拉菜单（已登录时显示） -->
-            <ToggleButton x:Name="Tbtn_Account" Margin="10 8 10 5" Height="50" Width="42"
+            <ToggleButton x:Name="Tbtn_Account" Style="{StaticResource HeaderTopWideIconToggleButton}" 
                          IsChecked="{Binding IsAccountPopupOpen, Mode=TwoWay}"
+                         ToolTip="{Binding UserName}"
                          Visibility="{Binding IsLoggedIn, Converter={StaticResource BooleanToVisibilityConverter}}" >
                 <ToggleButton.Template>
                     <ControlTemplate TargetType="ToggleButton">
-                        <StackPanel Orientation="Vertical">
-                            <Image Source="pack://application:,,,/Asserts/Icon/account.png" Height="25" />
-                            <TextBlock HorizontalAlignment="Center" Text="{Binding UserName}" 
-                                      Foreground="{DynamicResource SecondaryTextBrush}" 
-                                      FontSize="9" Margin="0 8 0 0" />
-                        </StackPanel>
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="10"
+                                Padding="4,2,4,4">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="26"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <Image Grid.Row="0" Source="pack://application:,,,/Asserts/Icon/account.png"
+                                       Height="22" Width="22" Margin="0,2,0,0"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Row="1" HorizontalAlignment="Center" Text="{Binding UserName}" 
+                                          Style="{StaticResource HeaderTopIconText}"
+                                          Margin="0 3 0 0"/>
+                            </Grid>
+                        </Border>
                     </ControlTemplate>
                 </ToggleButton.Template>
                 <ToggleButton.Triggers>
@@ -229,48 +527,56 @@
                 </ToggleButton.Triggers>
                 <Popup IsOpen="{Binding IsAccountPopupOpen, Mode=TwoWay}" 
                       PlacementTarget="{Binding ElementName=Tbtn_Account}"            
-                      AllowsTransparency="True" PopupAnimation="Fade" HorizontalOffset="-180" 
+                      AllowsTransparency="True" PopupAnimation="Fade" HorizontalOffset="-152" 
                       VerticalOffset="5" StaysOpen="True" >
                     <Border Background="{DynamicResource PrimaryBackgroundBrush}" 
                            BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" 
-                           CornerRadius="12" Margin="5">
-                        <StackPanel Width="220" Orientation="Vertical" Margin="10 12">
+                           CornerRadius="12" Margin="5" Padding="0">
+                        <StackPanel Width="228" Orientation="Vertical" Margin="12 12 12 10" MaxHeight="240">
                             <StackPanel.RenderTransform>
                                 <RotateTransform x:Name="theTransform" />
                             </StackPanel.RenderTransform>
-                            <TextBlock Margin="0 0 0 4" Foreground="{DynamicResource PrimaryTextBrush}" 
-                                      FontSize="18" FontWeight="SemiBold" Text="{Binding UserName}" />
-                            <StackPanel Orientation="Horizontal" Margin="0 0 0 12">
-                                <TextBlock Text="状态：" Foreground="{DynamicResource SecondaryTextBrush}" FontSize="12"/>
-                                <TextBlock Text="{Binding UserStatus}" Foreground="{DynamicResource SuccessBrush}" FontSize="12" FontWeight="Bold"/>
+                            <Grid Margin="0 0 0 10">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="40"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Border Width="36" Height="36" CornerRadius="18"
+                                        Background="{DynamicResource SecondaryBackgroundBrush}"
+                                        VerticalAlignment="Top">
+                                    <Image Source="pack://application:,,,/Asserts/Icon/account.png"
+                                           Width="18" Height="18" HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"/>
+                                </Border>
+                                <StackPanel Grid.Column="1" Margin="10 0 0 0">
+                                    <TextBlock Foreground="{DynamicResource PrimaryTextBrush}" 
+                                              FontSize="16" FontWeight="SemiBold"
+                                              Text="{Binding UserName}" TextTrimming="CharacterEllipsis"/>
+                                    <StackPanel Orientation="Horizontal" Margin="0 3 0 0">
+                                        <TextBlock Text="状态" Foreground="{DynamicResource SecondaryTextBrush}" FontSize="12"/>
+                                        <TextBlock Text=" · " Foreground="{DynamicResource SecondaryTextBrush}" FontSize="12"/>
+                                        <TextBlock Text="{Binding UserStatus}" Foreground="{DynamicResource SuccessBrush}" FontSize="12" FontWeight="Bold"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Grid>
+                            <StackPanel Orientation="Horizontal" Margin="0 0 0 8">
+                                <Border Background="{DynamicResource SecondaryBackgroundBrush}" CornerRadius="10" Padding="8 3">
+                                    <TextBlock Text="账户操作" Foreground="{DynamicResource SecondaryTextBrush}" FontSize="11"/>
+                                </Border>
                             </StackPanel>
-                            <hc:Divider Margin="0 0 0 8" LineStroke="{DynamicResource BorderBrush}"/>
-                            <Button Content="修改密码" Margin="0 4 0 0" Padding="12 10" 
-                                   HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" 
-                                   FontSize="14" Height="Auto" Background="{DynamicResource SecondaryBackgroundBrush}" 
-                                   Foreground="{DynamicResource PrimaryTextBrush}" 
-                                   BorderBrush="Transparent" BorderThickness="0"
-                                   Command="{Binding AccountCommand}" CommandParameter="ChangePassword"
-                                   IsEnabled="{Binding IsLoggedIn}"/>
-                            <Button Content="注销" Margin="0 4 0 0" Padding="12 10" 
-                                   HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" 
-                                   FontSize="14" Height="Auto" Background="{DynamicResource SecondaryBackgroundBrush}" 
-                                   Foreground="{DynamicResource PrimaryTextBrush}" 
-                                   BorderBrush="Transparent" BorderThickness="0"
-                                   Command="{Binding AccountCommand}" CommandParameter="Logout"
-                                   IsEnabled="{Binding IsLoggedIn}"/>
-                            <Button Content="关机" Margin="0 4 0 0" Padding="12 10" 
-                                   HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" 
-                                   FontSize="14" Height="Auto" Background="{DynamicResource SecondaryBackgroundBrush}" 
-                                   Foreground="{DynamicResource PrimaryTextBrush}" 
-                                   BorderBrush="Transparent" BorderThickness="0"
-                                   Command="{Binding AccountCommand}" CommandParameter="Shutdown"/>
-                            <Button Content="关闭" Margin="0 4 0 0" Padding="12 10" 
-                                   HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" 
-                                   FontSize="14" Height="Auto" Background="{DynamicResource SecondaryBackgroundBrush}" 
-                                   Foreground="{DynamicResource PrimaryTextBrush}" 
-                                   BorderBrush="Transparent" BorderThickness="0"
-                                   Command="{Binding AccountCommand}" CommandParameter="Close"/>
+                            <hc:Divider Margin="0 0 0 6" LineStroke="{DynamicResource BorderBrush}"/>
+                            <UniformGrid Columns="2" Rows="2" Margin="0,2,0,0">
+                                <Button Content="修改密码" Style="{StaticResource HeaderAccountPopupGridActionButton}"
+                                       Command="{Binding AccountCommand}" CommandParameter="ChangePassword"
+                                       IsEnabled="{Binding IsLoggedIn}" Margin="0,0,4,4"/>
+                                <Button Content="注销" Style="{StaticResource HeaderAccountPopupGridActionButton}"
+                                       Command="{Binding AccountCommand}" CommandParameter="Logout"
+                                       IsEnabled="{Binding IsLoggedIn}" Margin="4,0,0,4"/>
+                                <Button Content="关机" Style="{StaticResource HeaderAccountPopupGridActionButton}"
+                                       Command="{Binding AccountCommand}" CommandParameter="Shutdown" Margin="0,4,4,0"/>
+                                <Button Content="关闭程序" Style="{StaticResource HeaderAccountPopupGridActionDangerButton}"
+                                       Command="{Binding AccountCommand}" CommandParameter="Close" Margin="4,4,0,0"/>
+                            </UniformGrid>
                         </StackPanel>
                     </Border>
                 </Popup>

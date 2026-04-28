@@ -22,7 +22,6 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <!-- 标题栏 -->
         <Border Grid.Row="0" Background="{StaticResource DangerBrush}" Padding="15,12">
             <Grid>
                 <TextBlock Text="告警中心" FontSize="18" FontWeight="Bold" Foreground="White" VerticalAlignment="Center"/>
@@ -35,11 +34,12 @@
                     <Button Content="全部确认" Command="{Binding AcknowledgeAllCommand}"
                             Style="{StaticResource ButtonWarning}" Padding="12,5" FontSize="12"
                             Visibility="{Binding HasCriticalAlarm, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                    <Button Content="关闭" Click="CloseButton_Click"
+                            Style="{StaticResource ButtonDefault}" Padding="12,5" FontSize="12" Margin="8,0,0,0"/>
                 </StackPanel>
             </Grid>
         </Border>
 
-        <!-- 工具栏 -->
         <Border Grid.Row="1" Padding="10,8" Background="{DynamicResource SecondaryBackgroundBrush}">
             <Grid>
                 <Button Content="刷新" Command="{Binding RefreshCommand}"
@@ -49,7 +49,6 @@
             </Grid>
         </Border>
 
-        <!-- 告警列表 -->
         <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
             <ItemsControl ItemsSource="{Binding ActiveAlarms}">
                 <ItemsControl.ItemTemplate>
@@ -62,12 +61,10 @@
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
 
-                                <!-- 告警等级指示 -->
                                 <Border Grid.Column="0" Width="6" CornerRadius="3" Margin="0,0,12,0"
                                         Background="{Binding AlarmLevel, Converter={StaticResource AlarmLevelToColorConverter}}"
                                         VerticalAlignment="Stretch"/>
 
-                                <!-- 告警内容 -->
                                 <StackPanel Grid.Column="1" VerticalAlignment="Center">
                                     <TextBlock Text="{Binding AlarmTitle}" FontWeight="Bold" FontSize="14"
                                                Foreground="{DynamicResource PrimaryTextBrush}"
@@ -88,7 +85,6 @@
                                     </StackPanel>
                                 </StackPanel>
 
-                                <!-- 操作按钮 -->
                                 <StackPanel Grid.Column="2" Orientation="Vertical" Margin="10,0,0,0" VerticalAlignment="Center">
                                     <Button Content="确认" Command="{Binding DataContext.AcknowledgeCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                                             CommandParameter="{Binding}"
@@ -107,7 +103,6 @@
             </ItemsControl>
         </ScrollViewer>
 
-        <!-- 空状态提示 -->
         <StackPanel Grid.Row="2" VerticalAlignment="Center" HorizontalAlignment="Center"
                     Visibility="{Binding ActiveAlarms.Count, Converter={StaticResource CountToVisibilityConverter}}">
             <TextBlock Text="暂无活跃告警" FontSize="16" Foreground="{DynamicResource SecondaryTextBrush}"
@@ -116,7 +111,6 @@
                        HorizontalAlignment="Center" Margin="0,5,0,0" Opacity="0.7"/>
         </StackPanel>
 
-        <!-- 加载指示器 -->
         <hc:LoadingCircle Grid.Row="2" Visibility="{Binding IsLoading, Converter={StaticResource BooleanToVisibilityConverter}}"
                           VerticalAlignment="Center" HorizontalAlignment="Center"/>
     </Grid>
