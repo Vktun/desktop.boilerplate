@@ -21,10 +21,18 @@ appsettings.*.local.json
 # Project files, i.e. `.project`, `.actionScriptProperties` and `.flexProperties`
 # should NOT be excluded as they contain compiler settings and other important
 # information for Eclipse / Flash Builder.
-/.trae/documents
-/.trae/
-.trae/*
-.trae/skills/*
+/.trae/*
+!/.trae/project_rules.md
+!/.trae/agents/
+!/.trae/agents/*.md
+!/.trae/rules/
+!/.trae/rules/*.md
+!/.trae/skills/
+!/.trae/skills/*/
+!/.trae/skills/*/SKILL.md
+!/.trae/specs/
+!/.trae/specs/**
+/.trae/documents/
 /.agents/
 .agents/skills/*
 .lingma

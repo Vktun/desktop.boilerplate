@@ -151,7 +151,7 @@ namespace Dabp.WpfWindow
             return new ConfigurationBuilder()
                 .SetBasePath(AppContext.BaseDirectory)
                 .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-                .AddJsonFile("appsettings.local.json", optional: true, reloadOnChange: true)
+                .AddJsonFile("appsettings.local.example.json", optional: true, reloadOnChange: true)
                 .AddEnvironmentVariables()
                 .Build();
         }

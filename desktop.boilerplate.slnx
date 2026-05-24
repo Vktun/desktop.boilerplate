@@ -12,6 +12,7 @@
     <Project Path="prismModules/Vk.Dbp.WorkshopModule/Vk.Dbp.WorkshopModule.csproj" />
   </Folder>
   <Folder Name="/src/">
+    <Project Path="src/Vk.Dbp.AdminWindow/Vk.Dbp.AdminWindow.csproj" />
     <Project Path="src/Vk.Dbp.Contracts/Vk.Dbp.Contracts.csproj" />
     <Project Path="src/Vk.Dbp.Domain/Vk.Dbp.Domain.csproj" />
     <Project Path="src/Vk.Dbp.Infrastructure/Vk.Dbp.Infrastructure.csproj" />
