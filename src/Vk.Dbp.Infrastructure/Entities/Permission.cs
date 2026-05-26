@@ -18,7 +18,7 @@ namespace Dabp.Infrastructure.Entities
         /// </summary>
         [StringLength(100)]
         [SugarColumn(ColumnDataType = "nvarchar")]
-        public string DisplyName { get; set; }
+        public string DisplyName { get; set; } = string.Empty;
         /// <summary>
         /// 父级名称,默认为空
         /// </summary>
@@ -34,7 +34,7 @@ namespace Dabp.Infrastructure.Entities
         /// 用户名或者权限名
         /// </summary>
               [StringLength(50)]
-        public string ProviderKey { get; set; }
+        public string ProviderKey { get; set; } = string.Empty;
 /// <summary>
 /// 是否启用
 /// </summary>

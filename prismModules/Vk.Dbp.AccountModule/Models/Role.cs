@@ -13,12 +13,12 @@ namespace Vk.Dbp.AccountModule.Models
         /// <summary>
         /// 角色名称
         /// </summary>
-        public string Name { get; set; }
+        public string Name { get; set; } = string.Empty;
 
         /// <summary>
         /// 角色描述
         /// </summary>
-        public string Description { get; set; }
+        public string Description { get; set; } = string.Empty;
 
         /// <summary>
         /// 是否启用
@@ -43,6 +43,6 @@ namespace Vk.Dbp.AccountModule.Models
         /// <summary>
         /// 备注
         /// </summary>
-        public string Remarks { get; set; }
+        public string Remarks { get; set; } = string.Empty;
     }
 }

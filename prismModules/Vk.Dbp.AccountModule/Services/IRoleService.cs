@@ -18,7 +18,7 @@ namespace Vk.Dbp.AccountModule.Services
         /// <summary>
         /// 按ID获取角色
         /// </summary>
-        Task<Role> GetRoleByIdAsync(int id);
+        Task<Role?> GetRoleByIdAsync(int id);
 
         /// <summary>
         /// 创建角色

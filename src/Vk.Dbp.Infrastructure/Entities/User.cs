@@ -17,24 +17,24 @@ namespace Dabp.Infrastructure.Entities
         /// 登录名//用户名
         /// </summary>
     [StringLength(50)]
-        public string UserName { get; set; }
+        public string UserName { get; set; } = string.Empty;
         /// <summary>
         /// 密码
         /// </summary>
     [StringLength(100)]
 
-        public string PasswordHash { get; set; }
+        public string PasswordHash { get; set; } = string.Empty;
         /// <summary>
         /// 昵称
         /// </summary>
               [StringLength(50)]
         [SugarColumn(ColumnDataType = "nvarchar")]
-        public string SurName { get; set; }
+        public string SurName { get; set; } = string.Empty;
         /// <summary>
         /// 手机号
         /// </summary>
         [StringLength(11)]
-        public string PhoneNumber { get; set; }
+        public string PhoneNumber { get; set; } = string.Empty;
 
         /// <summary>
         /// 是否激活
@@ -60,21 +60,25 @@ namespace Dabp.Infrastructure.Entities
         /// 最后修改时间
         /// </summary>
         [AllowNull]
+        [SugarColumn(IsNullable = true)]
         public DateTime? LastModificationTime { get; set; }
         /// <summary>
         /// 最后修改人ID
         /// </summary>
         [AllowNull]
+        [SugarColumn(IsNullable = true)]
         public int? LastModifierId { get; set; }
         /// <summary>
         /// 删除时间
         /// </summary>
         [AllowNull]
+        [SugarColumn(IsNullable = true)]
         public DateTime? DeletionTime { get; set; }
         /// <summary>
         /// 删除人ID
         /// </summary>
         [AllowNull]
+        [SugarColumn(IsNullable = true)]
         public int? DeleterId { get; set; }
         /// <summary>
         /// 是否删除

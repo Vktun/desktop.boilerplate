@@ -23,6 +23,6 @@ namespace Dabp.Infrastructure.Repositories
         Task<bool> IsAnyAsync(Expression<Func<T, bool>> whereExpression);
         Task<int> CountAsync();
         Task<int> CountAsync(Expression<Func<T, bool>> whereExpression);
-        Task<(List<T> list, int total)> GetPageListAsync(Expression<Func<T, bool>> whereExpression, int pageIndex, int pageSize, Expression<Func<T, object>> orderByExpression = null, bool isAsc = true);
+        Task<(List<T> list, int total)> GetPageListAsync(Expression<Func<T, bool>> whereExpression, int pageIndex, int pageSize, Expression<Func<T, object>>? orderByExpression = null, bool isAsc = true);
     }
 }

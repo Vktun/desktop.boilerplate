@@ -15,28 +15,28 @@ namespace Vk.Dbp.AccountModule.ViewModels
         private readonly IPermissionService _permissionService;
         private readonly IAuditLogService _auditLogService;
 
-        private ObservableCollection<Permission> _permissions;
+        private ObservableCollection<Permission> _permissions = new();
         public ObservableCollection<Permission> Permissions
         {
             get { return _permissions; }
             set { SetProperty(ref _permissions, value); }
         }
 
-        private ObservableCollection<Permission> _filteredPermissions;
+        private ObservableCollection<Permission> _filteredPermissions = new();
         public ObservableCollection<Permission> FilteredPermissions
         {
             get { return _filteredPermissions; }
             set { SetProperty(ref _filteredPermissions, value); }
         }
 
-        private Permission _selectedPermission;
-        public Permission SelectedPermission
+        private Permission? _selectedPermission;
+        public Permission? SelectedPermission
         {
             get { return _selectedPermission; }
             set { SetProperty(ref _selectedPermission, value); }
         }
 
-        private ObservableCollection<PermissionType> _permissionTypes;
+        private ObservableCollection<PermissionType> _permissionTypes = new();
         public ObservableCollection<PermissionType> PermissionTypes
         {
             get { return _permissionTypes; }
@@ -54,15 +54,15 @@ namespace Vk.Dbp.AccountModule.ViewModels
             }
         }
 
-        private ObservableCollection<string> _modules;
+        private ObservableCollection<string> _modules = new();
         public ObservableCollection<string> Modules
         {
             get { return _modules; }
             set { SetProperty(ref _modules, value); }
         }
 
-        private string _selectedModule;
-        public string SelectedModule
+        private string? _selectedModule;
+        public string? SelectedModule
         {
             get { return _selectedModule; }
             set
@@ -72,7 +72,7 @@ namespace Vk.Dbp.AccountModule.ViewModels
             }
         }
 
-        private string _searchKeyword = "";
+        private string _searchKeyword = string.Empty;
         public string SearchKeyword
         {
             get { return _searchKeyword; }
@@ -97,8 +97,8 @@ namespace Vk.Dbp.AccountModule.ViewModels
             set { SetProperty(ref _isDialogOpen, value); }
         }
 
-        private Permission _editingPermission;
-        public Permission EditingPermission
+        private Permission? _editingPermission;
+        public Permission? EditingPermission
         {
             get { return _editingPermission; }
             set { SetProperty(ref _editingPermission, value); }
@@ -111,7 +111,7 @@ namespace Vk.Dbp.AccountModule.ViewModels
             set { SetProperty(ref _isEditMode, value); }
         }
 
-        private string _dialogTitle;
+        private string _dialogTitle = string.Empty;
         public string DialogTitle
         {
             get { return _dialogTitle; }
@@ -120,9 +120,9 @@ namespace Vk.Dbp.AccountModule.ViewModels
 
         public DelegateCommand LoadCommand { get; }
         public DelegateCommand AddPermissionCommand { get; }
-        public DelegateCommand<Permission> EditPermissionCommand { get; }
-        public DelegateCommand<Permission> DeletePermissionCommand { get; }
-        public DelegateCommand<Permission> ToggleEnabledCommand { get; }
+        public DelegateCommand<Permission?> EditPermissionCommand { get; }
+        public DelegateCommand<Permission?> DeletePermissionCommand { get; }
+        public DelegateCommand<Permission?> ToggleEnabledCommand { get; }
         public DelegateCommand SavePermissionCommand { get; }
         public DelegateCommand CancelDialogCommand { get; }
         public DelegateCommand ResetFilterCommand { get; }
@@ -141,9 +141,9 @@ namespace Vk.Dbp.AccountModule.ViewModels
 
             LoadCommand = new DelegateCommand(async () => await LoadPermissions());
             AddPermissionCommand = new DelegateCommand(AddPermission);
-            EditPermissionCommand = new DelegateCommand<Permission>(EditPermission, CanEditPermission);
-            DeletePermissionCommand = new DelegateCommand<Permission>(async p => await DeletePermission(p), CanDeletePermission);
-            ToggleEnabledCommand = new DelegateCommand<Permission>(async p => await ToggleEnabled(p), CanToggleEnabled);
+            EditPermissionCommand = new DelegateCommand<Permission?>(EditPermission, CanEditPermission);
+            DeletePermissionCommand = new DelegateCommand<Permission?>(async p => await DeletePermission(p), CanDeletePermission);
+            ToggleEnabledCommand = new DelegateCommand<Permission?>(async p => await ToggleEnabled(p), CanToggleEnabled);
             SavePermissionCommand = new DelegateCommand(async () => await SavePermission());
             CancelDialogCommand = new DelegateCommand(CancelDialog);
             ResetFilterCommand = new DelegateCommand(ResetFilter);
@@ -202,7 +202,7 @@ namespace Vk.Dbp.AccountModule.ViewModels
         {
             SelectedPermissionType = null;
             SelectedModule = null;
-            SearchKeyword = "";
+            SearchKeyword = string.Empty;
             FilterPermissions();
         }
 
@@ -220,7 +220,7 @@ namespace Vk.Dbp.AccountModule.ViewModels
             IsDialogOpen = true;
         }
 
-        private void EditPermission(Permission permission)
+        private void EditPermission(Permission? permission)
         {
             if (permission == null)
                 return;
@@ -244,7 +244,7 @@ namespace Vk.Dbp.AccountModule.ViewModels
             IsDialogOpen = true;
         }
 
-        private bool CanEditPermission(Permission permission)
+        private bool CanEditPermission(Permission? permission)
         {
             return permission != null;
         }
@@ -309,7 +309,7 @@ namespace Vk.Dbp.AccountModule.ViewModels
             EditingPermission = null;
         }
 
-        private async Task DeletePermission(Permission permission)
+        private async Task DeletePermission(Permission? permission)
         {
             if (permission == null)
                 return;
@@ -330,12 +330,12 @@ namespace Vk.Dbp.AccountModule.ViewModels
             }
         }
 
-        private bool CanDeletePermission(Permission permission)
+        private bool CanDeletePermission(Permission? permission)
         {
             return permission != null;
         }
 
-        private async Task ToggleEnabled(Permission permission)
+        private async Task ToggleEnabled(Permission? permission)
         {
             if (permission == null)
                 return;
@@ -344,7 +344,7 @@ namespace Vk.Dbp.AccountModule.ViewModels
             await _permissionService.EnablePermissionAsync(permission.Id, permission.IsEnabled);
         }
 
-        private bool CanToggleEnabled(Permission permission)
+        private bool CanToggleEnabled(Permission? permission)
         {
             return permission != null;
         }

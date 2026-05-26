@@ -95,7 +95,7 @@ namespace Dabp.Infrastructure.Repositories
             return await _db.Queryable<T>().Where(whereExpression).CountAsync();
         }
 
-        public async Task<(List<T> list, int total)> GetPageListAsync(Expression<Func<T, bool>> whereExpression, int pageIndex, int pageSize, Expression<Func<T, object>> orderByExpression = null, bool isAsc = true)
+        public async Task<(List<T> list, int total)> GetPageListAsync(Expression<Func<T, bool>> whereExpression, int pageIndex, int pageSize, Expression<Func<T, object>>? orderByExpression = null, bool isAsc = true)
         {
             RefAsync<int> total = 0;
             var query = _db.Queryable<T>().Where(whereExpression);

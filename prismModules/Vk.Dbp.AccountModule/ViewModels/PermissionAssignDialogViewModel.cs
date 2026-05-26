@@ -11,7 +11,7 @@ namespace Vk.Dbp.AccountModule.ViewModels
 {
     public class PermissionItem : BindableBase
     {
-        public Permission Permission { get; set; }
+        public Permission Permission { get; set; } = new();
 
         private bool _isSelected;
         public bool IsSelected
@@ -25,11 +25,11 @@ namespace Vk.Dbp.AccountModule.ViewModels
     {
         private readonly IRoleService _roleService;
         private readonly IPermissionService _permissionService;
-        private Role _role;
-        private string _dialogTitle;
-        private string _roleInfo;
+        private Role? _role;
+        private string _dialogTitle = string.Empty;
+        private string _roleInfo = string.Empty;
         private int _selectedCount;
-        private Action<bool> _closeAction;
+        private Action<bool>? _closeAction;
 
         public ObservableCollection<PermissionItem> Permissions { get; set; }
 
@@ -87,6 +87,11 @@ namespace Vk.Dbp.AccountModule.ViewModels
                     .Where(p => p.IsSelected)
                     .Select(p => p.Permission.Id)
                     .ToList();
+
+                if (_role is null)
+                {
+                    return;
+                }
 
                 var result = await _roleService.AssignPermissionsToRoleAsync(_role.Id, selectedPermissionIds);
                 

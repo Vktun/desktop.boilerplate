@@ -23,7 +23,7 @@ namespace Vk.Dbp.AccountModule.Services
         /// <summary>
         /// 按ID获取权限
         /// </summary>
-        Task<Permission> GetPermissionByIdAsync(int id);
+        Task<Permission?> GetPermissionByIdAsync(int id);
 
         /// <summary>
         /// 创建权限

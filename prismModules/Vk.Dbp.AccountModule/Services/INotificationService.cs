@@ -11,7 +11,7 @@ namespace Vk.Dbp.AccountModule.Services
 
         Task<List<Notification>> GetNotificationsByUserIdAsync(int userId);
 
-        Task<Notification> GetNotificationByIdAsync(int id);
+        Task<Notification?> GetNotificationByIdAsync(int id);
 
         Task<bool> CreateNotificationAsync(Notification notification);
 

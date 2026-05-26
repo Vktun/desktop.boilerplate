@@ -186,13 +186,13 @@ public sealed class DbAuditLogService : IAuditLogService
 
         return new AuditLogEntity
         {
-            ModuleName = log.Module,
+            ModuleName = log.Module ?? string.Empty,
             ServiceName = log.ActionType.ToString(),
-            MethodName = log.Description,
+            MethodName = log.Description ?? string.Empty,
             IsSuccess = log.IsSuccess,
             Parameters = JsonSerializer.Serialize(payload, JsonOptions),
             UserId = log.UserId,
-            UserName = log.Username,
+            UserName = log.Username ?? string.Empty,
             ExecutionTime = log.OperationTime,
             ExecutionDuration = log.ExecutionTime,
             Exceptions = log.FailureReason

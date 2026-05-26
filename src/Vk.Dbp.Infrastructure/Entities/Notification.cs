@@ -9,13 +9,13 @@ namespace Dabp.Infrastructure.Entities
         public int Id { get; set; }
 
         [StringLength(200)]
-        public string Title { get; set; }
+        public string Title { get; set; } = string.Empty;
 
         [StringLength(2000)]
-        public string Content { get; set; }
+        public string Content { get; set; } = string.Empty;
 
         [StringLength(50)]
-        public string Type { get; set; }
+        public string Type { get; set; } = string.Empty;
 
         public bool IsRead { get; set; }
 

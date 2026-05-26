@@ -8,7 +8,7 @@ namespace Vk.Dbp.Account.Permissions
     {
         public int Id { get; set;}
 
-        public string Name { get; set; }
+        public string Name { get; set; } = string.Empty;
         public bool IsDefault { get; set; }
         /// <summary>
         /// 角色级别，默认可以不用

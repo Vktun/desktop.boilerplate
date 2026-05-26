@@ -26,15 +26,15 @@ namespace Vk.Dbp.WorkshopModule.ViewModels
 
         #region Properties
 
-        private ObservableCollection<AlarmRecord> _alarmRecords;
+        private ObservableCollection<AlarmRecord> _alarmRecords = new();
         public ObservableCollection<AlarmRecord> AlarmRecords
         {
             get { return _alarmRecords; }
             set { SetProperty(ref _alarmRecords, value); }
         }
 
-        private AlarmRecord _selectedAlarm;
-        public AlarmRecord SelectedAlarm
+        private AlarmRecord? _selectedAlarm;
+        public AlarmRecord? SelectedAlarm
         {
             get { return _selectedAlarm; }
             set { SetProperty(ref _selectedAlarm, value); }
@@ -76,7 +76,7 @@ namespace Vk.Dbp.WorkshopModule.ViewModels
             set { SetProperty(ref _endTimeFilter, value); }
         }
 
-        private string _searchKeyword;
+        private string _searchKeyword = string.Empty;
         public string SearchKeyword
         {
             get { return _searchKeyword; }
@@ -476,7 +476,7 @@ namespace Vk.Dbp.WorkshopModule.ViewModels
             SelectedStatusFilter = null;
             StartTimeFilter = null;
             EndTimeFilter = null;
-            SearchKeyword = null;
+            SearchKeyword = string.Empty;
             CurrentPage = 1;
             LoadCommand.Execute();
         }

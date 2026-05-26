@@ -53,7 +53,8 @@ public class PermissionService : IPermissionService
 
     public async Task<PermissionModel?> GetPermissionByIdAsync(int id)
     {
-        PermissionEntity? entity = await _db.Queryable<PermissionEntity>().InSingleAsync(id);
+        PermissionEntity? entity = await _db.Queryable<PermissionEntity>()
+            .FirstAsync(permission => permission.Id == id);
         return entity is null ? null : MapToModel(entity);
     }
 

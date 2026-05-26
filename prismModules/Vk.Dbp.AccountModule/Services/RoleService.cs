@@ -30,7 +30,8 @@ public class RoleService : IRoleService
 
     public async Task<RoleModel?> GetRoleByIdAsync(int id)
     {
-        RoleEntity? entity = await _db.Queryable<RoleEntity>().InSingleAsync(id);
+        RoleEntity? entity = await _db.Queryable<RoleEntity>()
+            .FirstAsync(role => role.Id == id);
         return entity is null ? null : MapToModel(entity);
     }
 
@@ -39,15 +40,14 @@ public class RoleService : IRoleService
         try
         {
             RoleEntity entity = MapToEntity(role);
-            entity.RoleLevel = 0;
 
-            int result = await _db.Insertable(entity).ExecuteCommandAsync();
+            int result = await _db.Insertable(entity).ExecuteReturnIdentityAsync();
             if (result <= 0)
             {
                 return false;
             }
 
-            role.Id = entity.Id;
+            role.Id = result;
             await _auditLogService.LogCreateAsync(
                 _userSession.GetAuditUserId(),
                 _userSession.GetAuditUsername(),
@@ -78,7 +78,8 @@ public class RoleService : IRoleService
     {
         try
         {
-            RoleEntity? existingEntity = await _db.Queryable<RoleEntity>().InSingleAsync(role.Id);
+            RoleEntity? existingEntity = await _db.Queryable<RoleEntity>()
+                .FirstAsync(entity => entity.Id == role.Id);
             if (existingEntity is null)
             {
                 return false;
@@ -86,8 +87,11 @@ public class RoleService : IRoleService
 
             var oldData = new { existingEntity.Name };
             existingEntity.Name = role.Name;
+            existingEntity.RoleLevel = role.IsEnabled ? 1 : 0;
 
-            int result = await _db.Updateable(existingEntity).ExecuteCommandAsync();
+            int result = await _db.Updateable(existingEntity)
+                .Where(entity => entity.Id == role.Id)
+                .ExecuteCommandAsync();
             if (result <= 0)
             {
                 return false;
@@ -125,7 +129,8 @@ public class RoleService : IRoleService
     {
         try
         {
-            RoleEntity? entity = await _db.Queryable<RoleEntity>().InSingleAsync(id);
+            RoleEntity? entity = await _db.Queryable<RoleEntity>()
+                .FirstAsync(role => role.Id == id);
             if (entity is null)
             {
                 return false;
@@ -135,7 +140,9 @@ public class RoleService : IRoleService
                 .Where(rp => rp.RoleId == id)
                 .ExecuteCommandAsync();
 
-            int result = await _db.Deleteable<RoleEntity>().In(id).ExecuteCommandAsync();
+            int result = await _db.Deleteable<RoleEntity>()
+                .Where(role => role.Id == id)
+                .ExecuteCommandAsync();
             if (result <= 0)
             {
                 return false;
@@ -169,7 +176,8 @@ public class RoleService : IRoleService
 
     public async Task<bool> AssignPermissionsToRoleAsync(int roleId, List<int> permissionIds)
     {
-        RoleEntity? role = await _db.Queryable<RoleEntity>().InSingleAsync(roleId);
+        RoleEntity? role = await _db.Queryable<RoleEntity>()
+            .FirstAsync(entity => entity.Id == roleId);
         if (role is null)
         {
             return false;
@@ -247,7 +255,8 @@ public class RoleService : IRoleService
 
     public async Task<bool> EnableRoleAsync(int id, bool isEnabled)
     {
-        RoleEntity? role = await _db.Queryable<RoleEntity>().InSingleAsync(id);
+        RoleEntity? role = await _db.Queryable<RoleEntity>()
+            .FirstAsync(entity => entity.Id == id);
         if (role is null)
         {
             return false;

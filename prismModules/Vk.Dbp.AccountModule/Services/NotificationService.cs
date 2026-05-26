@@ -30,7 +30,7 @@ namespace Vk.Dbp.AccountModule.Services
                     .ToList());
         }
 
-        public async Task<Notification> GetNotificationByIdAsync(int id)
+        public async Task<Notification?> GetNotificationByIdAsync(int id)
         {
             return await Task.FromResult(_notifications.FirstOrDefault(n => n.Id == id));
         }

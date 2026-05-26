@@ -91,7 +91,9 @@ public class OrganizationService : IOrganizationService
             existingEntity.ParentId = orgUnit.ParentId;
             existingEntity.LastModificationTime = DateTime.Now;
 
-            int result = await _db.Updateable(existingEntity).ExecuteCommandAsync();
+            int result = await _db.Updateable(existingEntity)
+                .Where(o => o.Id == orgUnit.Id)
+                .ExecuteCommandAsync();
 
             await _auditLogService.LogOperationAsync(
                 _userSession.GetAuditUserId(),
@@ -150,7 +152,9 @@ public class OrganizationService : IOrganizationService
                     .ExecuteCommandAsync();
             }
 
-            int result = await _db.Deleteable(entity).ExecuteCommandAsync();
+            int result = await _db.Deleteable<OrganizationUnit>()
+                .Where(o => o.Id == id)
+                .ExecuteCommandAsync();
             OrganizationUnitModel orgModel = MapToModel(entity);
 
             await _auditLogService.LogOperationAsync(

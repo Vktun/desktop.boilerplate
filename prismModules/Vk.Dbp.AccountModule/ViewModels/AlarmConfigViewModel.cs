@@ -19,15 +19,15 @@ namespace Vk.Dbp.AccountModule.ViewModels
 
         #region Properties
 
-        private ObservableCollection<AlarmConfig> _alarmConfigs;
+        private ObservableCollection<AlarmConfig> _alarmConfigs = new();
         public ObservableCollection<AlarmConfig> AlarmConfigs
         {
             get { return _alarmConfigs; }
             set { SetProperty(ref _alarmConfigs, value); }
         }
 
-        private AlarmConfig _selectedConfig;
-        public AlarmConfig SelectedConfig
+        private AlarmConfig? _selectedConfig;
+        public AlarmConfig? SelectedConfig
         {
             get { return _selectedConfig; }
             set
@@ -38,8 +38,8 @@ namespace Vk.Dbp.AccountModule.ViewModels
             }
         }
 
-        private AlarmConfig _editingConfig;
-        public AlarmConfig EditingConfig
+        private AlarmConfig? _editingConfig;
+        public AlarmConfig? EditingConfig
         {
             get { return _editingConfig; }
             set { SetProperty(ref _editingConfig, value); }
@@ -65,7 +65,7 @@ namespace Vk.Dbp.AccountModule.ViewModels
             set { SetProperty(ref _isLoading, value); }
         }
 
-        private string _dialogMessage;
+        private string _dialogMessage = string.Empty;
         public string DialogMessage
         {
             get { return _dialogMessage; }

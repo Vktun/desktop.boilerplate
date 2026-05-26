@@ -16,15 +16,15 @@ namespace Vk.Dbp.AccountModule.ViewModels
         private readonly IPermissionService _permissionService;
         private readonly IAuditLogService _auditLogService;
 
-        private ObservableCollection<Role> _roles;
+        private ObservableCollection<Role> _roles = new();
         public ObservableCollection<Role> Roles
         {
             get { return _roles; }
             set { SetProperty(ref _roles, value); }
         }
 
-        private Role _selectedRole;
-        public Role SelectedRole
+        private Role? _selectedRole;
+        public Role? SelectedRole
         {
             get { return _selectedRole; }
             set 
@@ -34,7 +34,7 @@ namespace Vk.Dbp.AccountModule.ViewModels
             }
         }
 
-        private ObservableCollection<Permission> _availablePermissions;
+        private ObservableCollection<Permission> _availablePermissions = new();
         public ObservableCollection<Permission> AvailablePermissions
         {
             get { return _availablePermissions; }
@@ -50,10 +50,10 @@ namespace Vk.Dbp.AccountModule.ViewModels
 
         public DelegateCommand LoadCommand { get; }
         public DelegateCommand AddRoleCommand { get; }
-        public DelegateCommand<Role> EditRoleCommand { get; }
-        public DelegateCommand<Role> DeleteRoleCommand { get; }
-        public DelegateCommand<Role> AssignPermissionsCommand { get; }
-        public DelegateCommand<Role> EnableRoleCommand { get; }
+        public DelegateCommand<Role?> EditRoleCommand { get; }
+        public DelegateCommand<Role?> DeleteRoleCommand { get; }
+        public DelegateCommand<Role?> AssignPermissionsCommand { get; }
+        public DelegateCommand<Role?> EnableRoleCommand { get; }
 
         public RoleManagementViewModel(IRoleService roleService, IPermissionService permissionService,
             IAuditLogService auditLogService)
@@ -68,10 +68,10 @@ namespace Vk.Dbp.AccountModule.ViewModels
             LoadCommand = new DelegateCommand(async () => await LoadRoles(), () => !IsLoading)
                 .ObservesProperty(() => IsLoading);
             AddRoleCommand = new DelegateCommand(AddRole);
-            EditRoleCommand = new DelegateCommand<Role>(EditRole, CanEditRole);
-            DeleteRoleCommand = new DelegateCommand<Role>(async r => await DeleteRole(r), CanDeleteRole);
-            AssignPermissionsCommand = new DelegateCommand<Role>(async r => await AssignPermissions(r), CanAssignPermissions);
-            EnableRoleCommand = new DelegateCommand<Role>(async r => await EnableRole(r), CanEnableRole);
+            EditRoleCommand = new DelegateCommand<Role?>(EditRole, CanEditRole);
+            DeleteRoleCommand = new DelegateCommand<Role?>(async r => await DeleteRole(r), CanDeleteRole);
+            AssignPermissionsCommand = new DelegateCommand<Role?>(async r => await AssignPermissions(r), CanAssignPermissions);
+            EnableRoleCommand = new DelegateCommand<Role?>(async r => await EnableRole(r), CanEnableRole);
         }
 
         private async Task LoadRoles()
@@ -112,7 +112,7 @@ namespace Vk.Dbp.AccountModule.ViewModels
             dialog.ShowDialog();
         }
 
-        private void EditRole(Role role)
+        private void EditRole(Role? role)
         {
             if (role == null)
                 return;
@@ -142,12 +142,12 @@ namespace Vk.Dbp.AccountModule.ViewModels
             dialog.ShowDialog();
         }
 
-        private bool CanEditRole(Role role)
+        private bool CanEditRole(Role? role)
         {
             return role != null;
         }
 
-        private async Task DeleteRole(Role role)
+        private async Task DeleteRole(Role? role)
         {
             if (role == null || role.Id == 1)
                 return;
@@ -173,12 +173,12 @@ namespace Vk.Dbp.AccountModule.ViewModels
             }
         }
 
-        private bool CanDeleteRole(Role role)
+        private bool CanDeleteRole(Role? role)
         {
             return role != null && role.Id != 1;
         }
 
-        private async Task AssignPermissions(Role role)
+        private async Task AssignPermissions(Role? role)
         {
             if (role == null)
                 return;
@@ -186,24 +186,27 @@ namespace Vk.Dbp.AccountModule.ViewModels
             var dialog = new PermissionAssignDialog();
             var viewModel = dialog.DataContext as PermissionAssignDialogViewModel;
             
-            await viewModel?.InitializeAsync(role, async (result) =>
+            if (viewModel is not null)
             {
-                if (result)
+                await viewModel.InitializeAsync(role, async (result) =>
                 {
-                    await LoadRoles();
-                }
-                dialog.Close();
-            });
+                    if (result)
+                    {
+                        await LoadRoles();
+                    }
+                    dialog.Close();
+                });
+            }
 
             dialog.ShowDialog();
         }
 
-        private bool CanAssignPermissions(Role role)
+        private bool CanAssignPermissions(Role? role)
         {
             return role != null;
         }
 
-        private async Task EnableRole(Role role)
+        private async Task EnableRole(Role? role)
         {
             if (role == null)
                 return;
@@ -222,7 +225,7 @@ namespace Vk.Dbp.AccountModule.ViewModels
             }
         }
 
-        private bool CanEnableRole(Role role)
+        private bool CanEnableRole(Role? role)
         {
             return role != null && role.Id != 1;
         }

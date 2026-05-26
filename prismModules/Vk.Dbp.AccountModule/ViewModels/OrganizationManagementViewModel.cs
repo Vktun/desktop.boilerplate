@@ -14,15 +14,15 @@ namespace Vk.Dbp.AccountModule.ViewModels
         private readonly IOrganizationService _organizationService;
         private readonly IUserService _userService;
 
-        private ObservableCollection<OrganizationUnitModel> _organizationTree;
+        private ObservableCollection<OrganizationUnitModel> _organizationTree = new();
         public ObservableCollection<OrganizationUnitModel> OrganizationTree
         {
             get { return _organizationTree; }
             set { SetProperty(ref _organizationTree, value); }
         }
 
-        private OrganizationUnitModel _selectedOrganization;
-        public OrganizationUnitModel SelectedOrganization
+        private OrganizationUnitModel? _selectedOrganization;
+        public OrganizationUnitModel? SelectedOrganization
         {
             get { return _selectedOrganization; }
             set
@@ -36,29 +36,29 @@ namespace Vk.Dbp.AccountModule.ViewModels
             }
         }
 
-        private ObservableCollection<User> _organizationUsers;
+        private ObservableCollection<User> _organizationUsers = new();
         public ObservableCollection<User> OrganizationUsers
         {
             get { return _organizationUsers; }
             set { SetProperty(ref _organizationUsers, value); }
         }
 
-        private ObservableCollection<User> _allUsers;
+        private ObservableCollection<User> _allUsers = new();
         public ObservableCollection<User> AllUsers
         {
             get { return _allUsers; }
             set { SetProperty(ref _allUsers, value); }
         }
 
-        private ObservableCollection<User> _availableUsers;
+        private ObservableCollection<User> _availableUsers = new();
         public ObservableCollection<User> AvailableUsers
         {
             get { return _availableUsers; }
             set { SetProperty(ref _availableUsers, value); }
         }
 
-        private User _selectedUser;
-        public User SelectedUser
+        private User? _selectedUser;
+        public User? SelectedUser
         {
             get { return _selectedUser; }
             set
@@ -68,8 +68,8 @@ namespace Vk.Dbp.AccountModule.ViewModels
             }
         }
 
-        private User _selectedAvailableUser;
-        public User SelectedAvailableUser
+        private User? _selectedAvailableUser;
+        public User? SelectedAvailableUser
         {
             get { return _selectedAvailableUser; }
             set
@@ -86,14 +86,14 @@ namespace Vk.Dbp.AccountModule.ViewModels
             set { SetProperty(ref _isLoading, value); }
         }
 
-        private string _newOrgName;
+        private string _newOrgName = string.Empty;
         public string NewOrgName
         {
             get { return _newOrgName; }
             set { SetProperty(ref _newOrgName, value); }
         }
 
-        private string _newOrgCode;
+        private string _newOrgCode = string.Empty;
         public string NewOrgCode
         {
             get { return _newOrgCode; }

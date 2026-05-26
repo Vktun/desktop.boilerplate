@@ -82,9 +82,9 @@ namespace Dabp.Tools
         void ConfigureSqlSugarDb(IContainerRegistry containerRegistry, IConfiguration configuration)
         {
             string connectionString = string.Empty;
-            if (configuration["ConnectionStrings:Default"] != null)
+            var connectValue = configuration["ConnectionStrings:Default"];
+            if (!string.IsNullOrWhiteSpace(connectValue))
             {
-                var connectValue = configuration["ConnectionStrings:Default"].ToString();
                 connectionString = SM4.Decrypt(connectValue);
             }
             containerRegistry.RegisterScoped<ISqlSugarClient>(s =>

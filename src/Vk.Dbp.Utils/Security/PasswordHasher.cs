@@ -16,7 +16,7 @@ namespace Dabp.Utils.Security
 
         public string HashPassword(string password)
         {
-            if (string.IsNullOrEmpty(password))
+            if (string.IsNullOrWhiteSpace(password))
                 throw new ArgumentNullException(nameof(password));
 
             byte[] salt = new byte[SaltSize];

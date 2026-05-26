@@ -89,10 +89,29 @@ namespace Vk.Dbp.Contracts.Data
     /// <typeparam name="T">实体类型</typeparam>
     public class PagedQuery<T> : IPagedQuery<T>
     {
+        /// <summary>
+        /// Gets or sets the 1-based page index.
+        /// </summary>
         public int PageIndex { get; set; } = 1;
+
+        /// <summary>
+        /// Gets or sets the number of items per page.
+        /// </summary>
         public int PageSize { get; set; } = 20;
+
+        /// <summary>
+        /// Gets or sets the field used for sorting.
+        /// </summary>
         public string? SortField { get; set; }
+
+        /// <summary>
+        /// Gets or sets the sort direction.
+        /// </summary>
         public string? SortDirection { get; set; } = "asc";
+
+        /// <summary>
+        /// Gets or sets the filter expression.
+        /// </summary>
         public Expression<Func<T, bool>>? Filter { get; set; }
     }
 }

@@ -16,10 +16,10 @@ namespace Vk.Dbp.Account.Permissions
         /// <summary>
         /// 当前权限名称
         /// </summary>
-        public string Name { get; set; }
+        public string Name { get; set; } = string.Empty;
         /// <summary>
         /// 当前权限的子权限
         /// </summary>
-        public List<PermissionDto> Children { get; set; }
+        public List<PermissionDto> Children { get; set; } = new();
     }
 }

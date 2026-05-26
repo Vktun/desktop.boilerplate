@@ -17,17 +17,17 @@ namespace Dabp.Infrastructure.Entities
         /// </summary>
         [StringLength(100)]
 
-        public string ModuleName { get; set; }
+        public string ModuleName { get; set; } = string.Empty;
         /// <summary>
         /// 服务名称
         /// </summary>
         [StringLength(100)]
-        public string ServiceName { get; set; }
+        public string ServiceName { get; set; } = string.Empty;
         /// <summary>
         /// 方法名称
         /// </summary>
         [StringLength(200)]
-        public string MethodName { get; set; }
+        public string MethodName { get; set; } = string.Empty;
         /// <summary>
         /// 操作类型
         /// </summary>
@@ -47,7 +47,7 @@ namespace Dabp.Infrastructure.Entities
         /// </summary>
         [StringLength(100)]
 
-        public string UserName { get; set; }
+        public string UserName { get; set; } = string.Empty;
 
         /// <summary>
         /// 执行时间

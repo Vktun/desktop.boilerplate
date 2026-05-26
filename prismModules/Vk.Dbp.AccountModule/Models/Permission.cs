@@ -33,12 +33,12 @@ namespace Vk.Dbp.AccountModule.Models
         /// <summary>
         /// 权限名称
         /// </summary>
-        public string Name { get; set; }
+        public string Name { get; set; } = string.Empty;
 
         /// <summary>
         /// 权限编码
         /// </summary>
-        public string Code { get; set; }
+        public string Code { get; set; } = string.Empty;
 
         /// <summary>
         /// 权限类型
@@ -48,17 +48,17 @@ namespace Vk.Dbp.AccountModule.Models
         /// <summary>
         /// 权限描述
         /// </summary>
-        public string Description { get; set; }
+        public string Description { get; set; } = string.Empty;
 
         /// <summary>
         /// 所属模块
         /// </summary>
-        public string Module { get; set; }
+        public string Module { get; set; } = string.Empty;
 
         /// <summary>
         /// 图标
         /// </summary>
-        public string Icon { get; set; }
+        public string Icon { get; set; } = string.Empty;
 
         /// <summary>
         /// 排序

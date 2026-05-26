@@ -18,12 +18,12 @@ namespace Vk.Dbp.AccountModule.Services
         /// <summary>
         /// 按ID获取用户
         /// </summary>
-        Task<User> GetUserByIdAsync(int id);
+        Task<User?> GetUserByIdAsync(int id);
 
         /// <summary>
         /// 按用户名获取用户
         /// </summary>
-        Task<User> GetUserByUsernameAsync(string username);
+        Task<User?> GetUserByUsernameAsync(string username);
 
         /// <summary>
         /// 创建用户

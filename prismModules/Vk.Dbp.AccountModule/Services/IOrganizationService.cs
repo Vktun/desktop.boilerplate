@@ -9,7 +9,7 @@ namespace Vk.Dbp.AccountModule.Services
     {
         Task<List<OrganizationUnitModel>> GetAllOrganizationUnitsAsync();
 
-        Task<OrganizationUnitModel> GetOrganizationUnitByIdAsync(int id);
+        Task<OrganizationUnitModel?> GetOrganizationUnitByIdAsync(int id);
 
         Task<bool> CreateOrganizationUnitAsync(OrganizationUnitModel orgUnit);
 

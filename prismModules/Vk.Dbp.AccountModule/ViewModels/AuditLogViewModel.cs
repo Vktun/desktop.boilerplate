@@ -17,15 +17,15 @@ namespace Vk.Dbp.AccountModule.ViewModels
         private readonly IAuditLogService _auditLogService;
         private readonly IExportService _exportService;
 
-        private ObservableCollection<AuditLog> _auditLogs;
+        private ObservableCollection<AuditLog> _auditLogs = new();
         public ObservableCollection<AuditLog> AuditLogs
         {
             get { return _auditLogs; }
             set { SetProperty(ref _auditLogs, value); }
         }
 
-        private AuditLog _selectedLog;
-        public AuditLog SelectedLog
+        private AuditLog? _selectedLog;
+        public AuditLog? SelectedLog
         {
             get { return _selectedLog; }
             set { SetProperty(ref _selectedLog, value); }
@@ -53,7 +53,7 @@ namespace Vk.Dbp.AccountModule.ViewModels
         }
 
         public DelegateCommand LoadCommand { get; }
-        public DelegateCommand<AuditLog> ViewDetailsCommand { get; }
+        public DelegateCommand<AuditLog?> ViewDetailsCommand { get; }
         public DelegateCommand ExportCommand { get; }
         public DelegateCommand SearchCommand { get; }
 
@@ -65,7 +65,7 @@ namespace Vk.Dbp.AccountModule.ViewModels
             AuditLogs = new ObservableCollection<AuditLog>();
 
             LoadCommand = new DelegateCommand(async () => await LoadAuditLogs());
-            ViewDetailsCommand = new DelegateCommand<AuditLog>(ViewDetails, CanViewDetails);
+            ViewDetailsCommand = new DelegateCommand<AuditLog?>(ViewDetails, CanViewDetails);
             ExportCommand = new DelegateCommand(async () => await Export());
             SearchCommand = new DelegateCommand(async () => await SearchLogs());
         }
@@ -98,14 +98,14 @@ namespace Vk.Dbp.AccountModule.ViewModels
             }
         }
 
-        private void ViewDetails(AuditLog log)
+        private void ViewDetails(AuditLog? log)
         {
             if (log == null)
                 return;
             // TODO: 打开日志详情对话框
         }
 
-        private bool CanViewDetails(AuditLog log)
+        private bool CanViewDetails(AuditLog? log)
         {
             return log != null;
         }

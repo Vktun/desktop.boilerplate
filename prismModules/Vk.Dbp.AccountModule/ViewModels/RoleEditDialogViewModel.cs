@@ -9,10 +9,10 @@ namespace Vk.Dbp.AccountModule.ViewModels
     public class RoleEditDialogViewModel : BindableBase
     {
         private readonly IRoleService _roleService;
-        private Role _role;
+        private Role _role = new();
         private bool _isAddMode;
-        private string _dialogTitle;
-        private Action<bool> _closeAction;
+        private string _dialogTitle = string.Empty;
+        private Action<bool>? _closeAction;
 
         public Role Role
         {
@@ -82,7 +82,7 @@ namespace Vk.Dbp.AccountModule.ViewModels
             });
         }
 
-        public void Initialize(Role role, bool isAddMode, Action<bool> closeAction)
+        public void Initialize(Role? role, bool isAddMode, Action<bool> closeAction)
         {
             _closeAction = closeAction;
             IsAddMode = isAddMode;

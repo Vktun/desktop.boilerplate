@@ -9,21 +9,21 @@ namespace Dabp.Tools.ViewModels
 {
     public class ContentViewModel : BindableBase
     {
-        private string _DenText;
+        private string _DenText = string.Empty;
         public string DenText
         {
             get { return _DenText; }
             set { SetProperty(ref _DenText, value); }
         }
 
-        private string _EncText;
+        private string _EncText = string.Empty;
         public string EncText
         {
             get { return _EncText; }
             set { SetProperty(ref _EncText, value); }
         }
 
-        private DelegateCommand<string> _sm4Command;
+        private DelegateCommand<string>? _sm4Command;
         public DelegateCommand<string> Sm4Command => _sm4Command ?? (_sm4Command = new DelegateCommand<string>(ExecuteSm4Command));
         public ContentViewModel()
         {

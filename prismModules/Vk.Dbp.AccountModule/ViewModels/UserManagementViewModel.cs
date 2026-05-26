@@ -1,6 +1,7 @@
 using System.IO;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using HandyControl.Controls;
 using Microsoft.Win32;
@@ -432,28 +433,25 @@ public class UserManagementViewModel : BindableBase
         const string special = "!@#$%^&*";
 
         var allChars = upperCase + lowerCase + digits + special;
-        var random = new System.Security.Cryptography.RNGCryptoServiceProvider();
         var password = new char[12];
 
         // 强制覆盖每一类字符
-        password[0] = upperCase[GetRandomInt(random, upperCase.Length)];
-        password[1] = lowerCase[GetRandomInt(random, lowerCase.Length)];
-        password[2] = digits[GetRandomInt(random, digits.Length)];
-        password[3] = special[GetRandomInt(random, special.Length)];
+        password[0] = upperCase[GetRandomInt(upperCase.Length)];
+        password[1] = lowerCase[GetRandomInt(lowerCase.Length)];
+        password[2] = digits[GetRandomInt(digits.Length)];
+        password[3] = special[GetRandomInt(special.Length)];
 
         for (int i = 4; i < password.Length; i++)
         {
-            password[i] = allChars[GetRandomInt(random, allChars.Length)];
+            password[i] = allChars[GetRandomInt(allChars.Length)];
         }
 
         // 打乱字符序列
-        return new string(password.OrderBy(_ => GetRandomInt(random, password.Length)).ToArray());
+        return new string(password.OrderBy(_ => GetRandomInt(password.Length)).ToArray());
     }
 
-    private static int GetRandomInt(System.Security.Cryptography.RNGCryptoServiceProvider rng, int maxValue)
+    private static int GetRandomInt(int maxValue)
     {
-        byte[] bytes = new byte[4];
-        rng.GetBytes(bytes);
-        return Math.Abs(BitConverter.ToInt32(bytes, 0)) % maxValue;
+        return RandomNumberGenerator.GetInt32(maxValue);
     }
 }

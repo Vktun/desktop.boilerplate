@@ -116,6 +116,7 @@ namespace Dabp.WpfWindow
             IConfigurationRoot configuration = BuildConfiguration();
 
             ConfigureLogging();
+            ConfigurationValidator.Validate(configuration);
             ConfigureSqlSugarDb(containerRegistry, configuration);
 
             containerRegistry.RegisterSingleton<IAppSettingsService, AppSettingsService>();
@@ -148,12 +149,7 @@ namespace Dabp.WpfWindow
 
         private IConfigurationRoot BuildConfiguration()
         {
-            return new ConfigurationBuilder()
-                .SetBasePath(AppContext.BaseDirectory)
-                .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-                .AddJsonFile("appsettings.local.example.json", optional: true, reloadOnChange: true)
-                .AddEnvironmentVariables()
-                .Build();
+            return AppConfigurationBuilder.Build();
         }
 
         private void ConfigureLogging()

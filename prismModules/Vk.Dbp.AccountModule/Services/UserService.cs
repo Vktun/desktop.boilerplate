@@ -117,11 +117,13 @@ public class UserService : IUserService
                 Phone = existingEntity.PhoneNumber
             };
 
-            existingEntity.SurName = user.RealName;
-            existingEntity.PhoneNumber = user.Phone;
+            existingEntity.SurName = user.RealName ?? string.Empty;
+            existingEntity.PhoneNumber = user.Phone ?? string.Empty;
             existingEntity.LastModificationTime = DateTime.Now;
 
-            int result = await _db.Updateable(existingEntity).ExecuteCommandAsync();
+            int result = await _db.Updateable(existingEntity)
+                .Where(u => u.Id == user.Id)
+                .ExecuteCommandAsync();
 
             var newData = new
             {
@@ -171,7 +173,9 @@ public class UserService : IUserService
             entity.IsDeleted = true;
             entity.DeletionTime = DateTime.Now;
 
-            int result = await _db.Updateable(entity).ExecuteCommandAsync();
+            int result = await _db.Updateable(entity)
+                .Where(u => u.Id == id)
+                .ExecuteCommandAsync();
 
             UserModel userModel = await MapToModelAsync(entity);
             await _auditLogService.LogDeleteAsync(
@@ -213,7 +217,9 @@ public class UserService : IUserService
         entity.IsActive = isEnabled;
         entity.LastModificationTime = DateTime.Now;
 
-        int result = await _db.Updateable(entity).ExecuteCommandAsync();
+        int result = await _db.Updateable(entity)
+            .Where(u => u.Id == id)
+            .ExecuteCommandAsync();
 
         await _auditLogService.LogOperationAsync(
             _userSession.GetAuditUserId(),
@@ -245,7 +251,9 @@ public class UserService : IUserService
         entity.PasswordHash = _passwordHasher.HashPassword(newPassword);
         entity.ChangePasswordLastTime = DateTime.Now;
 
-        int result = await _db.Updateable(entity).ExecuteCommandAsync();
+        int result = await _db.Updateable(entity)
+            .Where(u => u.Id == userId)
+            .ExecuteCommandAsync();
         await _auditLogService.LogChangePasswordAsync(userId, entity.UserName);
 
         return result > 0;
@@ -264,7 +272,9 @@ public class UserService : IUserService
         entity.PasswordHash = _passwordHasher.HashPassword(newPassword);
         entity.ChangePasswordLastTime = DateTime.Now;
 
-        int result = await _db.Updateable(entity).ExecuteCommandAsync();
+        int result = await _db.Updateable(entity)
+            .Where(u => u.Id == userId)
+            .ExecuteCommandAsync();
 
         await _auditLogService.LogOperationAsync(
             _userSession.GetAuditUserId(),
@@ -367,9 +377,9 @@ public class UserService : IUserService
         return new UserEntity
         {
             Id = model.Id,
-            UserName = model.Username,
-            SurName = model.RealName,
-            PhoneNumber = model.Phone,
+            UserName = model.Username ?? throw new InvalidOperationException("Username is required when creating a user."),
+            SurName = model.RealName ?? string.Empty,
+            PhoneNumber = model.Phone ?? string.Empty,
             PasswordHash = model.PasswordHash ?? throw new InvalidOperationException("Password hash is required when creating a user."),
             IsActive = model.IsEnabled
         };
