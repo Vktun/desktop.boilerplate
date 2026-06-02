@@ -1,7 +1,8 @@
-using Dabp.Utils.Security;
+﻿using Dabp.Utils.Security;
 using FluentAssertions;
 using Moq;
 using SqlSugar;
+using Vk.Dbp.AccountModule.Models;
 using Vk.Dbp.AccountModule.Services;
 using Vk.Dbp.Services.Audit;
 using Vk.Dbp.Services.Session;
@@ -69,6 +70,38 @@ public sealed class UserServiceTests : IClassFixture<TestDatabaseFixture>
 
         users.Should().ContainSingle();
         users[0].Username.Should().Be("active");
+    }
+
+    [Fact]
+    public async Task GetUsersPagedAsync_FiltersByKeywordAndPreservesRoleIds()
+    {
+        SeedUser(id: 1, username: "alice", realName: "Alice", phone: "13800000000");
+        SeedUser(id: 2, username: "bob", realName: "Bob", phone: "13900000000");
+        SeedUser(id: 3, username: "charlie", realName: "Charlie", phone: "13700000000", isDeleted: true);
+        SeedUserRole(userId: 1, roleId: 10);
+        SeedUserRole(userId: 1, roleId: 20);
+
+        var result = await _userService.GetUsersPagedAsync(1, 10, "ali");
+
+        result.TotalCount.Should().Be(1);
+        result.Items.Should().ContainSingle();
+        result.Items.Single().Username.Should().Be("alice");
+        result.Items.Single().RoleIds.Should().BeEquivalentTo(new[] { 10, 20 });
+    }
+
+    [Fact]
+    public async Task GetUsersPagedAsync_SupportsPaging()
+    {
+        SeedUser(id: 1, username: "u1", realName: "User1", phone: "13800000001");
+        SeedUser(id: 2, username: "u2", realName: "User2", phone: "13800000002");
+        SeedUser(id: 3, username: "u3", realName: "User3", phone: "13800000003");
+
+        var result = await _userService.GetUsersPagedAsync(2, 2);
+
+        result.TotalCount.Should().Be(3);
+        result.PageIndex.Should().Be(2);
+        result.PageSize.Should().Be(2);
+        result.Items.Should().HaveCount(1);
     }
 
     [Fact]

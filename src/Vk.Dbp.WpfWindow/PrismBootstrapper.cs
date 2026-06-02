@@ -7,6 +7,7 @@ using System.Windows.Controls;
 using Dabp.Infrastructure;
 using Dabp.Infrastructure.OrmSetting;
 using Dabp.Infrastructure.Repositories;
+using Dabp.Services.Caching;
 using Dabp.Services.Export;
 using Dabp.Services.Settings;
 using Dabp.Utils.Security;
@@ -17,6 +18,7 @@ using Microsoft.Extensions.Configuration;
 using Serilog;
 using Serilog.Events;
 using SqlSugar;
+using AppCacheService = Vk.Dbp.Contracts.Caching.ICacheService;
 using Vk.Dbp.Contracts.Services;
 using Vk.Dbp.Services.Session;
 using Vk.Dbp.WpfWindow.Constants;
@@ -57,14 +59,14 @@ namespace Dabp.WpfWindow
                     Application.Current.ShutdownMode = ShutdownMode.OnMainWindowClose;
                 }
 
-                var regionManager = Container.Resolve<IRegionManager>();
+                var navigationService = Container.Resolve<INavigationService>();
                 var userSession = Container.Resolve<IUserSession>();
 
                 string initialView = userSession.IsLoggedIn
                     ? ViewNames.Dashboard
                     : ViewNames.LoginView;
 
-                regionManager.RequestNavigate(RegionNames.ContentRegion, initialView);
+                navigationService.NavigateTo(initialView);
 
                 _ = startupService.StartSessionTimeoutMonitoringAsync();
             }
@@ -131,6 +133,9 @@ namespace Dabp.WpfWindow
             containerRegistry.RegisterSingleton<IAppStartupService, AppStartupService>();
             containerRegistry.RegisterSingleton<ILockScreenService, LockScreenService>();
             containerRegistry.RegisterSingleton<ISessionTimeoutService, SessionTimeoutService>();
+            containerRegistry.RegisterSingleton<AppCacheService, InMemoryCacheService>();
+            containerRegistry.RegisterSingleton<IViewModelFactory, ViewModelFactory>();
+            containerRegistry.RegisterSingleton<INavigationService, PrismNavigationService>();
             containerRegistry.RegisterSingleton<LockScreenViewModel>();
             containerRegistry.RegisterSingleton<AppAlarmViewModel>();
         }

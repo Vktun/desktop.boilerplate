@@ -1,11 +1,13 @@
-using System;
+﻿using System;
 using System.ComponentModel.DataAnnotations;
+using SqlSugar;
 
 namespace Dabp.Infrastructure.Entities
 {
     public class Notification
     {
         [Key]
+        [SugarColumn(IsPrimaryKey = true, IsIdentity = true)]
         public int Id { get; set; }
 
         [StringLength(200)]

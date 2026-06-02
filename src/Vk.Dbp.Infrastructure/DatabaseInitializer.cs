@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Dabp.Infrastructure.Entities;
 using Dabp.Utils.Security;
 using Serilog;
+using Vk.Dbp.Contracts.Navigation;
 
 namespace Dabp.Infrastructure
 {
@@ -16,7 +17,6 @@ namespace Dabp.Infrastructure
         private const string DefaultAdminDisplayName = "系统管理员";
         private const string AdminRoleName = "管理员";
         private const string UserRoleName = "普通用户";
-        private const int MenuPermissionProviderId = 1;
 
         private readonly ISqlSugarClient _db;
         private readonly IPasswordHasher _passwordHasher;
@@ -29,13 +29,12 @@ namespace Dabp.Infrastructure
 
         public async Task InitializeAsync()
         {
-             InitializeDatabase();
+            InitializeDatabase();
             await EnsureUnicodeTextColumnsAsync();
-
             await InitializeDataAsync();
         }
 
-        public  void InitializeDatabase()
+        public void InitializeDatabase()
         {
             if (!_db.DbMaintenance.GetDataBaseList().Contains(_db.Ado.Connection.Database))
             {
@@ -52,11 +51,10 @@ namespace Dabp.Infrastructure
                 typeof(RoleOrganizationUnit),
                 typeof(RolePermission),
                 typeof(AuditLog),
+                typeof(Notification),
                 typeof(SystemConfig),
                 typeof(AlarmRecord),
-                typeof(AlarmConfig)
-            );
-
+                typeof(AlarmConfig));
         }
 
         private async Task EnsureUnicodeTextColumnsAsync()
@@ -84,14 +82,10 @@ namespace Dabp.Infrastructure
 
         public async Task InitializeDataAsync()
         {
-            // 创建或补齐默认角色
             var adminRoleEntity = await EnsureDefaultRoleAsync(AdminRoleName, true, 1);
             var userRoleEntity = await EnsureDefaultRoleAsync(UserRoleName, false, 2);
-
-            // 创建或补齐默认权限
             var permissions = await EnsureSeedPermissionsAsync();
 
-            // 创建默认用户
             var adminUser = await _db.Queryable<User>()
                 .Where(u => u.UserName == DefaultAdminUsername && !u.IsDeleted)
                 .FirstAsync();
@@ -113,7 +107,6 @@ namespace Dabp.Infrastructure
                 };
                 adminUser.Id = await _db.Insertable(adminUser).ExecuteReturnIdentityAsync();
 
-                // 记录默认密码到日志（仅首次初始化时）
                 Log.Warning(
                     "Default administrator account created - username: {Username}. Configure DBP_INITIAL_ADMIN_PASSWORD and change it immediately after first login.",
                     DefaultAdminUsername);
@@ -139,7 +132,6 @@ namespace Dabp.Infrastructure
                 }
             }
 
-            // 为管理员角色分配所有权限
             if (adminRoleEntity != null)
             {
                 if (adminUser != null && !await _db.Queryable<UserRole>().AnyAsync(ur =>
@@ -156,8 +148,7 @@ namespace Dabp.Infrastructure
                     .Where(rp => rp.RoleId == adminRoleEntity.Id)
                     .ToListAsync();
 
-                var existingRolePermissionIds = new HashSet<int>(
-                    existingRolePermissions.Select(rp => rp.PermissionId));
+                var existingRolePermissionIds = new HashSet<int>(existingRolePermissions.Select(rp => rp.PermissionId));
                 var rolePermissions = permissions
                     .Where(permission => !existingRolePermissionIds.Contains(permission.Id))
                     .Select(permission => new RolePermission
@@ -175,7 +166,6 @@ namespace Dabp.Infrastructure
                 }
             }
 
-            // 为普通用户角色分配基本权限
             if (userRoleEntity != null)
             {
                 var existingRolePermissions = await _db.Queryable<RolePermission>()
@@ -184,26 +174,27 @@ namespace Dabp.Infrastructure
 
                 if (existingRolePermissions.Count == 0)
                 {
+                    var defaultUserPermissionCodes = ShellMenuDefinitions.All
+                        .Where(definition => definition.DefaultUserVisible)
+                        .Select(definition => definition.PermissionCode)
+                        .ToList();
+
                     var basicPermissions = await _db.Queryable<Permission>()
-                        .Where(p => p.ProviderKey == "Dashboard" || p.ProviderKey == "SelfCheck" || p.ProviderKey == "Production" || p.ProviderKey == "ProductionRecord" || p.ProviderKey == "AlarmRecord")
+                        .Where(p => defaultUserPermissionCodes.Contains(p.ProviderKey))
                         .ToListAsync();
 
-                    var rolePermissions = new List<RolePermission>();
-                    foreach (var permission in basicPermissions)
+                    var rolePermissions = basicPermissions.Select(permission => new RolePermission
                     {
-                        rolePermissions.Add(new RolePermission
-                        {
-                            RoleId = userRoleEntity.Id,
-                            PermissionId = permission.Id,
-                            CreationTime = DateTime.Now,
-                            CreatorId = adminUser?.Id ?? 0
-                        });
-                    }
+                        RoleId = userRoleEntity.Id,
+                        PermissionId = permission.Id,
+                        CreationTime = DateTime.Now,
+                        CreatorId = adminUser?.Id ?? 0
+                    }).ToList();
+
                     await _db.Insertable(rolePermissions).ExecuteCommandAsync();
                 }
             }
 
-            // 初始化系统配置
             if (!await _db.Queryable<SystemConfig>().AnyAsync())
             {
                 var defaultConfigs = new List<SystemConfig>
@@ -228,7 +219,6 @@ namespace Dabp.Infrastructure
                 await _db.Insertable(defaultConfigs).ExecuteCommandAsync();
             }
 
-            // 初始化告警配置
             if (!await _db.Queryable<AlarmConfig>().AnyAsync())
             {
                 var defaultAlarmConfigs = new List<AlarmConfig>
@@ -300,7 +290,6 @@ namespace Dabp.Infrastructure
                 };
                 await _db.Insertable(defaultAlarmConfigs).ExecuteCommandAsync();
             }
-
         }
 
         private async Task<Role> EnsureDefaultRoleAsync(string roleName, bool isDefault, int roleLevel)
@@ -443,21 +432,16 @@ DELETE FROM [Role] WHERE [Id] IN ({duplicateIds});";
 
         private static List<Permission> CreateSeedPermissions()
         {
-            return new List<Permission>
-            {
-                new Permission { DisplyName = "驾驶舱", ProviderKey = "Dashboard", ProviderId = MenuPermissionProviderId, IsEnabled = true, CreationTime = DateTime.Now },
-                new Permission { DisplyName = "自检", ProviderKey = "SelfCheck", ProviderId = MenuPermissionProviderId, IsEnabled = true, CreationTime = DateTime.Now },
-                new Permission { DisplyName = "生产信息", ProviderKey = "Production", ProviderId = MenuPermissionProviderId, IsEnabled = true, CreationTime = DateTime.Now },
-                new Permission { DisplyName = "生产记录", ProviderKey = "ProductionRecord", ProviderId = MenuPermissionProviderId, IsEnabled = true, CreationTime = DateTime.Now },
-                new Permission { DisplyName = "报警记录", ProviderKey = "AlarmRecord", ProviderId = MenuPermissionProviderId, IsEnabled = true, CreationTime = DateTime.Now },
-                new Permission { DisplyName = "审计追踪", ProviderKey = "AuditRecord", ProviderId = MenuPermissionProviderId, IsEnabled = true, CreationTime = DateTime.Now },
-                new Permission { DisplyName = "后台管理", ProviderKey = "AdminSettingView", ProviderId = MenuPermissionProviderId, IsEnabled = true, CreationTime = DateTime.Now },
-                new Permission { DisplyName = "用户管理", ProviderKey = "UserManagement", ProviderId = MenuPermissionProviderId, IsEnabled = true, CreationTime = DateTime.Now },
-                new Permission { DisplyName = "角色管理", ProviderKey = "RoleManagement", ProviderId = MenuPermissionProviderId, IsEnabled = true, CreationTime = DateTime.Now },
-                new Permission { DisplyName = "权限管理", ProviderKey = "PermissionManagement", ProviderId = MenuPermissionProviderId, IsEnabled = true, CreationTime = DateTime.Now },
-                new Permission { DisplyName = "组织管理", ProviderKey = "OrganizationManagement", ProviderId = MenuPermissionProviderId, IsEnabled = true, CreationTime = DateTime.Now },
-                new Permission { DisplyName = "审计日志", ProviderKey = "AuditLog", ProviderId = MenuPermissionProviderId, IsEnabled = true, CreationTime = DateTime.Now }
-            };
+            return ShellMenuDefinitions.All
+                .Select(definition => new Permission
+                {
+                    DisplyName = definition.DisplayName,
+                    ProviderKey = definition.PermissionCode,
+                    ProviderId = definition.ProviderId,
+                    IsEnabled = true,
+                    CreationTime = DateTime.Now
+                })
+                .ToList();
         }
 
         private static bool IsInvalidSeedText(string? value)
@@ -475,7 +459,6 @@ DELETE FROM [Role] WHERE [Id] IN ({duplicateIds});";
             }
 
             return configuredPassword;
-        }    }
+        }
+    }
 }
-
-

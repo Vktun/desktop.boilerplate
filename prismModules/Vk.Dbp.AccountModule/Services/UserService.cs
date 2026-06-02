@@ -1,6 +1,7 @@
 using Dabp.Infrastructure.Entities;
 using Dabp.Utils.Security;
 using SqlSugar;
+using Vk.Dbp.Contracts.Data;
 using Vk.Dbp.Services.Audit;
 using Vk.Dbp.Services.Session;
 using RoleEntity = Dabp.Infrastructure.Entities.Role;
@@ -43,6 +44,43 @@ public class UserService : IUserService
         }
 
         return result;
+    }
+
+    public async Task<PagedResult<UserModel>> GetUsersPagedAsync(int pageIndex, int pageSize, string? keyword = null)
+    {
+        int normalizedPageIndex = pageIndex <= 0 ? 1 : pageIndex;
+        int normalizedPageSize = pageSize <= 0 ? 20 : pageSize;
+
+        var query = _db.Queryable<UserEntity>()
+            .Where(u => !u.IsDeleted);
+
+        if (!string.IsNullOrWhiteSpace(keyword))
+        {
+            string trimmedKeyword = keyword.Trim();
+            query = query.Where(u => u.UserName.Contains(trimmedKeyword)
+                                     || u.SurName.Contains(trimmedKeyword)
+                                     || u.PhoneNumber.Contains(trimmedKeyword));
+        }
+
+        int totalCount = await query.CountAsync();
+        List<UserEntity> entities = await query
+            .OrderByDescending(u => u.CreationTime)
+            .Skip((normalizedPageIndex - 1) * normalizedPageSize)
+            .Take(normalizedPageSize)
+            .ToListAsync();
+
+        List<int> userIds = entities.Select(u => u.Id).ToList();
+        Dictionary<int, List<int>> roleMap = await GetRoleMapAsync(userIds);
+
+        List<UserModel> items = entities.Select(entity => MapToModel(entity, roleMap.GetValueOrDefault(entity.Id) ?? new List<int>())).ToList();
+
+        return new PagedResult<UserModel>
+        {
+            Items = items,
+            TotalCount = totalCount,
+            PageIndex = normalizedPageIndex,
+            PageSize = normalizedPageSize
+        };
     }
 
     public async Task<UserModel?> GetUserByIdAsync(int id)
@@ -357,6 +395,11 @@ public class UserService : IUserService
     private async Task<UserModel> MapToModelAsync(UserEntity entity)
     {
         List<int> roleIds = await GetUserRoleIdsAsync(entity.Id);
+        return MapToModel(entity, roleIds);
+    }
+
+    private static UserModel MapToModel(UserEntity entity, List<int> roleIds)
+    {
         return new UserModel
         {
             Id = entity.Id,
@@ -391,5 +434,21 @@ public class UserService : IUserService
             .Where(ur => ur.UserId == userId)
             .Select(ur => ur.RoleId)
             .ToListAsync();
+    }
+
+    private async Task<Dictionary<int, List<int>>> GetRoleMapAsync(List<int> userIds)
+    {
+        if (userIds.Count == 0)
+        {
+            return new Dictionary<int, List<int>>();
+        }
+
+        List<UserRole> userRoles = await _db.Queryable<UserRole>()
+            .Where(ur => userIds.Contains(ur.UserId))
+            .ToListAsync();
+
+        return userRoles
+            .GroupBy(ur => ur.UserId)
+            .ToDictionary(group => group.Key, group => group.Select(ur => ur.RoleId).ToList());
     }
 }

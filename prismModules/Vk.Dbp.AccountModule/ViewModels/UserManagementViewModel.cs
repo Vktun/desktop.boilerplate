@@ -1,11 +1,11 @@
+﻿using System.Collections.ObjectModel;
 using System.IO;
-using System.Collections.ObjectModel;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using System.Windows;
 using HandyControl.Controls;
 using Microsoft.Win32;
-using System.Windows;
 using Prism.Commands;
 using Prism.Mvvm;
 using Vk.Dbp.AccountModule.Models;
@@ -17,11 +17,21 @@ namespace Vk.Dbp.AccountModule.ViewModels;
 
 public class UserManagementViewModel : BindableBase
 {
+    private const int DefaultPageSize = 20;
+
     private readonly IUserService _userService;
     private readonly IAuditLogService _auditLogService;
     private readonly IUserSession _userSession;
 
     private ObservableCollection<User> _users = new();
+    private User? _selectedUser;
+    private bool _isLoading;
+    private string _searchKeyword = string.Empty;
+    private bool _isDialogOpen;
+    private UserEditDialogViewModel? _currentDialogViewModel;
+    private int _pageIndex = 1;
+    private int _pageSize = DefaultPageSize;
+    private int _totalCount;
 
     public ObservableCollection<User> Users
     {
@@ -29,23 +39,11 @@ public class UserManagementViewModel : BindableBase
         set => SetProperty(ref _users, value);
     }
 
-    private ObservableCollection<User> _allUsers = new();
-
-    public ObservableCollection<User> AllUsers
-    {
-        get => _allUsers;
-        set => SetProperty(ref _allUsers, value);
-    }
-
-    private User? _selectedUser;
-
     public User? SelectedUser
     {
         get => _selectedUser;
         set => SetProperty(ref _selectedUser, value);
     }
-
-    private bool _isLoading;
 
     public bool IsLoading
     {
@@ -53,19 +51,11 @@ public class UserManagementViewModel : BindableBase
         set => SetProperty(ref _isLoading, value);
     }
 
-    private string _searchKeyword = string.Empty;
-
     public string SearchKeyword
     {
         get => _searchKeyword;
-        set
-        {
-            SetProperty(ref _searchKeyword, value);
-            FilterUsers();
-        }
+        set => SetProperty(ref _searchKeyword, value);
     }
-
-    private bool _isDialogOpen;
 
     public bool IsDialogOpen
     {
@@ -73,16 +63,40 @@ public class UserManagementViewModel : BindableBase
         set => SetProperty(ref _isDialogOpen, value);
     }
 
-    private UserEditDialogViewModel? _currentDialogViewModel;
-
     public UserEditDialogViewModel? CurrentDialogViewModel
     {
         get => _currentDialogViewModel;
         set => SetProperty(ref _currentDialogViewModel, value);
     }
 
+    public int PageIndex
+    {
+        get => _pageIndex;
+        set => SetProperty(ref _pageIndex, value);
+    }
+
+    public int PageSize
+    {
+        get => _pageSize;
+        set => SetProperty(ref _pageSize, value);
+    }
+
+    public int TotalCount
+    {
+        get => _totalCount;
+        set => SetProperty(ref _totalCount, value);
+    }
+
+    public int TotalPages => PageSize <= 0 ? 0 : (int)Math.Ceiling((double)TotalCount / PageSize);
+
+    public bool CanGoPrevious => PageIndex > 1;
+
+    public bool CanGoNext => PageIndex < TotalPages;
+
     public DelegateCommand LoadCommand { get; }
     public DelegateCommand SearchCommand { get; }
+    public DelegateCommand PreviousPageCommand { get; }
+    public DelegateCommand NextPageCommand { get; }
     public DelegateCommand AddUserCommand { get; }
     public DelegateCommand<User?> EditUserCommand { get; }
     public DelegateCommand<User?> DeleteUserCommand { get; }
@@ -97,8 +111,14 @@ public class UserManagementViewModel : BindableBase
         _auditLogService = auditLogService ?? throw new ArgumentNullException(nameof(auditLogService));
         _userSession = userSession ?? throw new ArgumentNullException(nameof(userSession));
 
-        LoadCommand = new DelegateCommand(async () => await LoadUsersAsync());
-        SearchCommand = new DelegateCommand(FilterUsers);
+        LoadCommand = new DelegateCommand(async () => await LoadUsersAsync(1));
+        SearchCommand = new DelegateCommand(async () => await LoadUsersAsync(1));
+        PreviousPageCommand = new DelegateCommand(async () => await LoadUsersAsync(PageIndex - 1), () => CanGoPrevious)
+            .ObservesProperty(() => PageIndex)
+            .ObservesProperty(() => TotalCount);
+        NextPageCommand = new DelegateCommand(async () => await LoadUsersAsync(PageIndex + 1), () => CanGoNext)
+            .ObservesProperty(() => PageIndex)
+            .ObservesProperty(() => TotalCount);
         AddUserCommand = new DelegateCommand(ShowAddUserDialog);
         EditUserCommand = new DelegateCommand<User?>(ShowEditUserDialog, CanEditUser);
         DeleteUserCommand = new DelegateCommand<User?>(async u => await DeleteUserAsync(u), CanDeleteUser);
@@ -122,41 +142,26 @@ public class UserManagementViewModel : BindableBase
         }
     }
 
-    private async Task LoadUsersAsync()
+    private async Task LoadUsersAsync(int targetPageIndex)
     {
         IsLoading = true;
         try
         {
-            List<User> users = await _userService.GetAllUsersAsync();
-            AllUsers = new ObservableCollection<User>(users);
-            Users = new ObservableCollection<User>(users);
+            int normalizedPageIndex = targetPageIndex <= 0 ? 1 : targetPageIndex;
+            var result = await _userService.GetUsersPagedAsync(normalizedPageIndex, PageSize, SearchKeyword);
+
+            PageIndex = result.PageIndex;
+            PageSize = result.PageSize;
+            TotalCount = result.TotalCount;
+            Users = new ObservableCollection<User>(result.Items);
+            RaisePropertyChanged(nameof(TotalPages));
+            RaisePropertyChanged(nameof(CanGoPrevious));
+            RaisePropertyChanged(nameof(CanGoNext));
         }
         finally
         {
             IsLoading = false;
         }
-    }
-
-    private void FilterUsers()
-    {
-        if (AllUsers.Count == 0)
-        {
-            return;
-        }
-
-        if (string.IsNullOrWhiteSpace(SearchKeyword))
-        {
-            Users = new ObservableCollection<User>(AllUsers);
-            return;
-        }
-
-        List<User> filtered = AllUsers.Where(u =>
-                (u.Username?.Contains(SearchKeyword, StringComparison.OrdinalIgnoreCase) ?? false) ||
-                (u.RealName?.Contains(SearchKeyword, StringComparison.OrdinalIgnoreCase) ?? false) ||
-                (u.Email?.Contains(SearchKeyword, StringComparison.OrdinalIgnoreCase) ?? false))
-            .ToList();
-
-        Users = new ObservableCollection<User>(filtered);
     }
 
     private void ShowAddUserDialog()
@@ -188,7 +193,7 @@ public class UserManagementViewModel : BindableBase
             }
 
             Growl.Success("创建用户成功");
-            await LoadUsersAsync();
+            await LoadUsersAsync(PageIndex);
         }
         catch (Exception ex)
         {
@@ -234,7 +239,7 @@ public class UserManagementViewModel : BindableBase
             }
 
             Growl.Success("更新用户成功");
-            await LoadUsersAsync();
+            await LoadUsersAsync(PageIndex);
         }
         catch (Exception ex)
         {
@@ -259,7 +264,7 @@ public class UserManagementViewModel : BindableBase
         }
 
         var result = System.Windows.MessageBox.Show(
-            $"确定要删除用户\"{user.Username}\"吗？",
+            $"确定要删除用户 \"{user.Username}\" 吗？",
             "确认删除",
             MessageBoxButton.YesNo,
             MessageBoxImage.Warning);
@@ -279,13 +284,9 @@ public class UserManagementViewModel : BindableBase
                 return;
             }
 
-            Users.Remove(user);
-            if (AllUsers.Contains(user))
-            {
-                AllUsers.Remove(user);
-            }
-
             Growl.Success("删除用户成功");
+            int reloadPage = Users.Count == 1 && PageIndex > 1 ? PageIndex - 1 : PageIndex;
+            await LoadUsersAsync(reloadPage);
         }
         catch (Exception ex)
         {
@@ -310,7 +311,7 @@ public class UserManagementViewModel : BindableBase
         }
 
         var result = System.Windows.MessageBox.Show(
-            $"确定要重置用户\"{user.Username}\"的登录密码吗？",
+            $"确定要重置用户 \"{user.Username}\" 的登录密码吗？",
             "重置密码",
             MessageBoxButton.YesNo,
             MessageBoxImage.Question);
@@ -323,7 +324,6 @@ public class UserManagementViewModel : BindableBase
         try
         {
             IsLoading = true;
-            // 生成随机强密码
             string newPassword = GenerateStrongPassword();
             bool success = await _userService.ResetPasswordAsync(user.Id, newPassword);
             if (!success)
@@ -398,10 +398,11 @@ public class UserManagementViewModel : BindableBase
                 return;
             }
 
+            List<User> users = await _userService.GetAllUsersAsync();
             var csv = new StringBuilder();
             csv.AppendLine("ID,用户名,真实姓名,邮箱,电话,是否启用,创建时间,最后登录时间");
 
-            foreach (User user in Users)
+            foreach (User user in users)
             {
                 csv.AppendLine(
                     $"{user.Id},{user.Username},{user.RealName},{user.Email},{user.Phone},{user.IsEnabled},{user.CreatedTime:yyyy-MM-dd HH:mm},{user.LastLoginTime?.ToString("yyyy-MM-dd HH:mm") ?? string.Empty}");
@@ -422,9 +423,6 @@ public class UserManagementViewModel : BindableBase
         }
     }
 
-    /// <summary>
-    /// 生成一个12位随机密码（含大小写字母、数字和符号）
-    /// </summary>
     private static string GenerateStrongPassword()
     {
         const string upperCase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -435,7 +433,6 @@ public class UserManagementViewModel : BindableBase
         var allChars = upperCase + lowerCase + digits + special;
         var password = new char[12];
 
-        // 强制覆盖每一类字符
         password[0] = upperCase[GetRandomInt(upperCase.Length)];
         password[1] = lowerCase[GetRandomInt(lowerCase.Length)];
         password[2] = digits[GetRandomInt(digits.Length)];
@@ -446,7 +443,6 @@ public class UserManagementViewModel : BindableBase
             password[i] = allChars[GetRandomInt(allChars.Length)];
         }
 
-        // 打乱字符序列
         return new string(password.OrderBy(_ => GetRandomInt(password.Length)).ToArray());
     }
 
@@ -455,3 +451,5 @@ public class UserManagementViewModel : BindableBase
         return RandomNumberGenerator.GetInt32(maxValue);
     }
 }
+
+

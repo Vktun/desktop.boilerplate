@@ -4,12 +4,9 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Vk.Dbp.WpfWindow.Views;
 using Vk.Dbp.WpfWindow.Constants;
 using Dabp.WpfWindow.Services;
-using Vk.Dbp.AccountModule.Models;
 using Vk.Dbp.Services.Session;
 using Vk.Dbp.Services.Alarm;
 using Prism.Commands;
@@ -27,7 +24,7 @@ namespace Vk.Dbp.WpfWindow.ViewModels
         private const string AdminUsername = "admin";
         private const string AdminDisplayName = "系统管理员";
 
-        private readonly IRegionManager _regionManager;
+        private readonly INavigationService _navigationService;
         private readonly IThemeService _themeService;
         private readonly IMenuPermissionFilter _menuPermissionFilter;
         private readonly IUserSession _userSession;
@@ -156,7 +153,7 @@ namespace Vk.Dbp.WpfWindow.ViewModels
         private INotifyPropertyChanged? _userSessionNotifier;
 
         public HeaderViewModel(
-            IRegionManager regionManager,
+            INavigationService navigationService,
             IThemeService themeService,
             IMenuPermissionFilter menuPermissionFilter,
             IUserSession userSession,
@@ -165,7 +162,7 @@ namespace Vk.Dbp.WpfWindow.ViewModels
             IContainerProvider container,
             IEventAggregator eventAggregator)
         {
-            _regionManager = regionManager ?? throw new ArgumentNullException(nameof(regionManager));
+            _navigationService = navigationService ?? throw new ArgumentNullException(nameof(navigationService));
             _themeService = themeService ?? throw new ArgumentNullException(nameof(themeService));
             _menuPermissionFilter = menuPermissionFilter ?? throw new ArgumentNullException(nameof(menuPermissionFilter));
             _userSession = userSession ?? throw new ArgumentNullException(nameof(userSession));
@@ -192,7 +189,6 @@ namespace Vk.Dbp.WpfWindow.ViewModels
                 _userSessionNotifier.PropertyChanged += OnUserSessionPropertyChanged;
             }
 
-            // Subscribe to alarm events
             _eventAggregator.GetEvent<AlarmCountChangedEvent>().Subscribe(OnAlarmCountChanged);
             _eventAggregator.GetEvent<AlarmTriggeredEvent>().Subscribe(OnAlarmTriggered);
             _eventAggregator.GetEvent<AlarmStatusChangedEvent>().Subscribe(OnAlarmStatusChanged);
@@ -218,7 +214,6 @@ namespace Vk.Dbp.WpfWindow.ViewModels
                 UpdateMenuVisibility();
                 LockCommand.RaiseCanExecuteChanged();
 
-                // Load alarm count when user logs in
                 if (_userSession.IsLoggedIn)
                 {
                     _ = UpdateAlarmBadgeAsync();
@@ -241,7 +236,6 @@ namespace Vk.Dbp.WpfWindow.ViewModels
         {
             if (_isDisposed) return;
 
-            // Update badge when new alarm triggered
             System.Windows.Application.Current.Dispatcher.Invoke(async () =>
             {
                 await UpdateAlarmBadgeAsync();
@@ -252,14 +246,13 @@ namespace Vk.Dbp.WpfWindow.ViewModels
         {
             if (_isDisposed) return;
 
-            // Update badge when alarm status changed
             System.Windows.Application.Current.Dispatcher.Invoke(async () =>
             {
                 await UpdateAlarmBadgeAsync();
             });
         }
 
-        private async System.Threading.Tasks.Task UpdateAlarmBadgeAsync()
+        private async Task UpdateAlarmBadgeAsync()
         {
             if (!_userSession.IsLoggedIn) return;
 
@@ -347,8 +340,10 @@ namespace Vk.Dbp.WpfWindow.ViewModels
 
         private void navigate(string navigatePath)
         {
-            if (navigatePath != null)
-                _regionManager.RequestNavigate(RegionNames.ContentRegion, navigatePath);
+            if (!string.IsNullOrWhiteSpace(navigatePath))
+            {
+                _navigationService.NavigateTo(navigatePath);
+            }
         }
 
         private void appNotification()
@@ -370,7 +365,7 @@ namespace Vk.Dbp.WpfWindow.ViewModels
             switch (action)
             {
                 case AccountActions.ChangePassword:
-                    _regionManager.RequestNavigate(RegionNames.ContentRegion, ViewNames.ChangePasswordView);
+                    _navigationService.NavigateTo(ViewNames.ChangePasswordView);
                     break;
                 case AccountActions.Logout:
                     handleLogout();
@@ -380,8 +375,6 @@ namespace Vk.Dbp.WpfWindow.ViewModels
                     break;
                 case AccountActions.Close:
                     handleClose();
-                    break;
-                default:
                     break;
             }
         }
@@ -406,12 +399,12 @@ namespace Vk.Dbp.WpfWindow.ViewModels
             UpdateUserInfo();
             UpdateMenuVisibility();
 
-            _regionManager.RequestNavigate(RegionNames.ContentRegion, ViewNames.LoginView);
+            _navigationService.NavigateTo(ViewNames.LoginView);
         }
 
         private void handleLogin()
         {
-            _regionManager.RequestNavigate(RegionNames.ContentRegion, ViewNames.LoginView);
+            _navigationService.NavigateTo(ViewNames.LoginView);
         }
 
         private bool canLock()

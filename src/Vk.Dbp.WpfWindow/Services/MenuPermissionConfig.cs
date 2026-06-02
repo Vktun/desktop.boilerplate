@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using System.Linq;
+using Vk.Dbp.Contracts.Navigation;
 
 namespace Dabp.WpfWindow.Services
 {
@@ -23,16 +25,15 @@ namespace Dabp.WpfWindow.Services
 
     public static class MenuPermissionConfig
     {
-        private static readonly Dictionary<string, MenuItemInfo> MenuItemsInternal = new()
-        {
-            { "Dashboard", new MenuItemInfo("Dashboard", "驾驶舱", requireAuthentication: false) },
-            { "SelfCheck", new MenuItemInfo("SelfCheck", "自检") },
-            { "Production", new MenuItemInfo("Production", "生产信息") },
-            { "ProductionRecord", new MenuItemInfo("ProductionRecord", "生产记录") },
-            { "AlarmRecord", new MenuItemInfo("AlarmRecord", "报警记录") },
-            { "AuditRecord", new MenuItemInfo("AuditRecord", "审计追踪") },
-            { "AdminSettingView", new MenuItemInfo("AdminSettingView", "后台管理") }
-        };
+        private static readonly Dictionary<string, MenuItemInfo> MenuItemsInternal = ShellMenuDefinitions.All
+            .Where(definition => definition.IsShellMenu)
+            .ToDictionary(
+                definition => definition.Name,
+                definition => new MenuItemInfo(
+                    definition.Name,
+                    definition.DisplayName,
+                    definition.PermissionCode,
+                    definition.RequireAuthentication));
 
         public static IReadOnlyDictionary<string, MenuItemInfo> MenuItems => MenuItemsInternal;
 
