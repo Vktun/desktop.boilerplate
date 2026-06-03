@@ -2,6 +2,7 @@
 using Dabp.Tools.Layout;
 using Dabp.Tools.ViewModels;
 using Dabp.Utils.Algorithm;
+using Dabp.Utils.Security;
 using Microsoft.Extensions.Configuration;
 using Serilog;
 using Serilog.Events;
@@ -31,6 +32,7 @@ namespace Dabp.Tools
             ConfigureLogging();
             ConfigureSqlSugarDb(containerRegistry, config);
 
+            containerRegistry.RegisterSingleton<IPasswordHasher, PasswordHasher>();
         }
 
         protected override void ConfigureRegionAdapterMappings(RegionAdapterMappings regionAdapterMappings)
@@ -85,7 +87,8 @@ namespace Dabp.Tools
             var connectValue = configuration["ConnectionStrings:Default"];
             if (!string.IsNullOrWhiteSpace(connectValue))
             {
-                connectionString = SM4.Decrypt(connectValue);
+                var sm4Key = configuration["Encryption:SM4Key"] ?? "DabpSm4DefaultKey";
+                connectionString = SM4.Decrypt(connectValue, sm4Key);
             }
             containerRegistry.RegisterScoped<ISqlSugarClient>(s =>
             {

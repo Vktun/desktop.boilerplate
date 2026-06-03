@@ -9,39 +9,47 @@ namespace Dabp.Tools.ViewModels
 {
     public class ContentViewModel : BindableBase
     {
-        private string _DenText = string.Empty;
+        private string _denText = string.Empty;
         public string DenText
         {
-            get { return _DenText; }
-            set { SetProperty(ref _DenText, value); }
+            get => _denText;
+            set => SetProperty(ref _denText, value);
         }
 
-        private string _EncText = string.Empty;
+        private string _encText = string.Empty;
         public string EncText
         {
-            get { return _EncText; }
-            set { SetProperty(ref _EncText, value); }
+            get => _encText;
+            set => SetProperty(ref _encText, value);
+        }
+
+        private string _sm4Key = "DabpSm4DefaultKey";
+        public string Sm4Key
+        {
+            get => _sm4Key;
+            set => SetProperty(ref _sm4Key, value);
         }
 
         private DelegateCommand<string>? _sm4Command;
-        public DelegateCommand<string> Sm4Command => _sm4Command ?? (_sm4Command = new DelegateCommand<string>(ExecuteSm4Command));
+        public DelegateCommand<string> Sm4Command => _sm4Command ??= new DelegateCommand<string>(ExecuteSm4Command);
+
         public ContentViewModel()
         {
-            
         }
-      
 
         private void ExecuteSm4Command(string parameter)
         {
+            if (string.IsNullOrWhiteSpace(Sm4Key))
+                return;
+
             if (parameter == "1")
             {
-                EncText = SM4.Encrypt(DenText);
+                EncText = SM4.Encrypt(DenText, Sm4Key);
             }
             else if (parameter == "2")
             {
-                DenText = SM4.Decrypt(EncText);
+                DenText = SM4.Decrypt(EncText, Sm4Key);
             }
-
         }
     }
 }

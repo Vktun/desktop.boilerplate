@@ -7,51 +7,61 @@ description: "Optimizes WPF UI performance including layout, binding, rendering,
 
 ## Overview
 
-This skill provides guidance for optimizing WPF application UI performance, covering layout, data binding, rendering, and resource management.
+This skill provides guidance for optimizing WPF application UI performance in the Desktop Boilerplate project, covering layout, data binding, rendering, resource management, and ViewModel patterns.
 
 ## Optimization Areas
 
 ### 1. Layout Optimization
 
-- **Simplify Grid and DockPanel usage**: Reduce unnecessary nesting
-- **Optimize RowDefinition/ColumnDefinition**: Prefer fixed values or ratios over Auto
-- **Remove unnecessary containers**: Simplify layout hierarchy
+- **Simplify Grid and DockPanel usage**: Reduce unnecessary nesting.
+- **Optimize RowDefinition/ColumnDefinition**: Prefer fixed values or ratios over `Auto` where possible.
+- **Remove unnecessary containers**: Simplify layout hierarchy — avoid wrapping a single child in a StackPanel inside a Grid.
+- **Use VirtualizingStackPanel for lists**: Enable virtualization for all `ListBox`, `ListView`, `DataGrid` controls.
 
 ### 2. Data Virtualization
 
 - **Enable virtualization for list controls**:
   ```xaml
-  VirtualizingStackPanel.IsVirtualizing="True"
-  VirtualizingStackPanel.VirtualizationMode="Recycling"
+  <ListBox VirtualizingStackPanel.IsVirtualizing="True"
+           VirtualizingStackPanel.VirtualizationMode="Recycling" />
   ```
-- **Implement data pagination**: Reduce one-time data loading
-- **Async data loading**: Use async methods in ViewModel
+- **Implement data pagination**: Reduce one-time data loading via service-layer paging.
+- **Async data loading**: Use async methods in ViewModel, show loading state while awaiting.
 
 ### 3. Binding Optimization
 
-- **Use OneWay binding**: For display-only data
-- **Efficient INotifyPropertyChanged**: Use PropertyChanged.Fody
-- **Avoid unnecessary bindings**: Only bind required data
+- **Use OneWay binding** for display-only data; TwoWay only when user input is needed.
+- **Efficient INotifyPropertyChanged**: Use `SetProperty(ref _field, value)` from `BindableBase`; PropertyChanged.Fody handles auto-properties.
+- **Avoid unnecessary bindings**: Only bind required data; remove unused bindings.
+- **Use `ObservesProperty`** on `DelegateCommand` instead of manually calling `RaiseCanExecuteChanged`.
 
 ### 4. Rendering Optimization
 
-- **Enable GPU acceleration**: Modern WPF uses hardware acceleration by default
-- **Simplify visual effects**: Reduce complex gradients and shadows
-- **Use caching**: `CacheMode="BitmapCache"` for static UI elements
+- **Enable GPU acceleration**: Modern WPF uses hardware acceleration by default; ensure `RenderOptions` are not disabled.
+- **Simplify visual effects**: Reduce complex gradients, shadows, and opacity masks.
+- **Use caching**: `CacheMode="BitmapCache"` for static UI elements that are frequently re-rendered.
+- **Freeze freezable resources**: Use `Frozen="True"` on brushes and pens in XAML when they won't change.
 
 ### 5. Resource Optimization
 
-- **Optimize images**: Use appropriate size and format
-- **Merge resource dictionaries**: Centralize style management
-- **Remove unused resources**: Clean up project resources
+- **Optimize images**: Use appropriate size and format; consider `BitmapImage` with `DecodePixelWidth` for large images.
+- **Merge resource dictionaries**: Centralize style management; avoid duplicate resource entries.
+- **Remove unused resources**: Clean up project resources and styles that are no longer referenced.
 
-### 6. View Optimization
+### 6. View and ViewModel Optimization
 
-- **Lazy loading**: Load complex views on demand
-- **View caching**: Cache frequently switched views
-- **Optimize ViewModel creation**: Avoid creating too many objects on load
+- **Lazy loading**: Load complex views on demand using `RegisterForNavigation` and region navigation.
+- **View caching**: Prism can cache navigated views in regions; use `KeepAlive=true` for frequently switched views.
+- **Optimize ViewModel creation**: Avoid creating heavy objects in constructors; defer to `OnNavigatedTo` or lazy initialization.
+- **Dispose ViewModels properly**: Implement `IDisposable` with `_isDisposed` guard; unsubscribe from events and `IEventAggregator` subscriptions.
 
-## Color Scheme Optimization
+### 7. Thread Safety
+
+- **UI updates must be on UI thread**: Wrap event callback UI updates in `Application.Current.Dispatcher.Invoke()`.
+- **Avoid blocking UI thread**: Use `async/await` for I/O operations; never call `.Result` or `.Wait()` on async methods from the UI thread.
+- **Background processing**: Use `Task.Run` for CPU-bound work, then dispatch results back to UI thread.
+
+## Color Scheme Reference
 
 ### Comfortable Light Theme Colors
 
@@ -76,15 +86,20 @@ This skill provides guidance for optimizing WPF application UI performance, cove
 </Grid>
 ```
 
-## Expected Results
+## Performance Checklist
 
-- Improved UI response speed
-- Reduced memory usage
-- Faster application startup
-- Smoother user experience
+- [ ] List controls use `VirtualizingStackPanel` with `Recycling` mode
+- [ ] Display-only bindings use `Mode=OneWay`
+- [ ] No synchronous I/O on UI thread
+- [ ] Event subscriptions are properly disposed
+- [ ] Large images use `DecodePixelWidth`/`DecodePixelHeight`
+- [ ] Freezable resources are frozen when possible
+- [ ] No unnecessary layout nesting
+- [ ] Heavy ViewModel initialization deferred from constructor
 
 ## Testing Plan
 
-- Performance testing with Visual Studio Profiler
+- Performance testing with Visual Studio Profiler or dotTrace
 - Functional testing after optimization
-- User experience evaluation
+- Memory profiling for long-running sessions
+- User experience evaluation for perceived responsiveness

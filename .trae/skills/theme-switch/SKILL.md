@@ -1,32 +1,42 @@
 ---
 name: "theme-switch"
-description: "Handles theme switching between light and dark modes in WPF applications. Invoke when user needs theme toggle functionality or asks about theme switching."
+description: "Handles theme switching between light and dark modes in WPF applications using HandyControl. Invoke when user needs theme toggle functionality, theme persistence, or asks about theme switching."
 ---
 
 # Theme Switch Skill
 
 ## Overview
 
-This skill provides theme switching functionality for WPF applications using HandyControl, supporting both light and dark themes with smooth transitions.
+This skill covers theme switching in Desktop Boilerplate using `IThemeService` / `ThemeService`, supporting light and dark themes with HandyControl resource dictionary swapping and preference persistence.
 
 ## Core Components
 
-### ThemeService
+### IThemeService / ThemeService
+
+Both interface and implementation are defined in `src/Vk.Dbp.WpfWindow/Services/ThemeService.cs`.
 
 ```csharp
+public interface IThemeService
+{
+    string CurrentTheme { get; }
+    void SetTheme(string themeName);
+    void ToggleTheme();
+    event EventHandler<ThemeChangedEventArgs> ThemeChanged;
+}
+
 public class ThemeService : IThemeService
 {
     public const string LightTheme = "Light";
     public const string DarkTheme = "Dark";
-    
-    public string CurrentTheme { get; private set; }
-    
-    public void SetTheme(string themeName);
-    public void ToggleTheme();
+
+    // SetTheme replaces MergedDictionaries entries
+    // Persists preference via IAppSettingsService
+    // Fires ThemeChanged event
+    // Error recovery: rolls back to previous theme on failure
 }
 ```
 
-### Theme Toggle Implementation
+### Theme Toggle in HeaderViewModel
 
 ```csharp
 private void handleToggleTheme(string theme)
@@ -37,7 +47,9 @@ private void handleToggleTheme(string theme)
     // If passed theme is current, switch to the other
     if (theme == _themeService.CurrentTheme)
     {
-        theme = _themeService.CurrentTheme == LightTheme ? DarkTheme : LightTheme;
+        theme = _themeService.CurrentTheme == IThemeService.LightTheme
+            ? IThemeService.DarkTheme
+            : IThemeService.LightTheme;
     }
 
     _themeService.SetTheme(theme);
@@ -46,13 +58,13 @@ private void handleToggleTheme(string theme)
 
 ## UI Implementation
 
-### Button with Click Event
+### Button with Interaction.Triggers
 
 ```xaml
 <Button Content="Toggle Theme">
     <i:Interaction.Triggers>
         <i:EventTrigger EventName="Click">
-            <i:InvokeCommandAction Command="{Binding ToggleThemeCommand}" 
+            <i:InvokeCommandAction Command="{Binding ToggleThemeCommand}"
                                   CommandParameter="Light"/>
         </i:EventTrigger>
     </i:Interaction.Triggers>
@@ -64,10 +76,10 @@ private void handleToggleTheme(string theme)
 ```xaml
 <ToggleButton.ContextMenu>
     <ContextMenu>
-        <MenuItem Header="Light Theme" 
+        <MenuItem Header="Light Theme"
                   Command="{Binding ToggleThemeCommand}"
                   CommandParameter="Light"/>
-        <MenuItem Header="Dark Theme" 
+        <MenuItem Header="Dark Theme"
                   Command="{Binding ToggleThemeCommand}"
                   CommandParameter="Dark"/>
     </ContextMenu>
@@ -87,6 +99,13 @@ private void handleToggleTheme(string theme)
 </Application.Resources>
 ```
 
+`ThemeService.SetTheme` swaps the `SkinDefault.xaml` resource dictionary between light and dark variants in `Application.Current.Resources.MergedDictionaries`.
+
+## Theme Persistence
+
+- Theme preference is saved via `IAppSettingsService` when `SetTheme` is called.
+- On application startup, `ThemeService` constructor reads the saved preference and applies it immediately.
+
 ## Theme Colors
 
 ### Light Theme
@@ -105,30 +124,45 @@ private void handleToggleTheme(string theme)
 
 | Component | Location |
 |-----------|----------|
-| ThemeService | `Services/ThemeService.cs` |
-| IThemeService | `Services/IThemeService.cs` |
+| IThemeService + ThemeService | `src/Vk.Dbp.WpfWindow/Services/ThemeService.cs` |
+| ThemeChangedEventArgs | `src/Vk.Dbp.WpfWindow/Services/ThemeService.cs` |
 | HeaderView | `src/Vk.Dbp.WpfWindow/Layout/HeaderView.xaml` |
 | HeaderViewModel | `src/Vk.Dbp.WpfWindow/ViewModels/HeaderViewModel.cs` |
+| AppSettingsService | `src/Vk.Dbp.Services/Settings/` |
 
 ## Common Issues and Solutions
 
 ### Issue: Button click not triggering theme change
-**Solution**: Use `Interaction.Triggers` instead of direct Command binding
+**Solution**: Use `Interaction.Triggers` instead of direct Command binding for ToggleButton.
 
-### Issue: Theme not persisting
-**Solution**: Save theme preference to configuration file
+### Issue: Theme not persisting across restarts
+**Solution**: Ensure `IAppSettingsService` is registered and the ThemeService constructor reads the saved preference.
 
-### Issue: Some controls not updating
-**Solution**: Ensure controls use DynamicResource for theme-sensitive properties
+### Issue: Some controls not updating after theme switch
+**Solution**: Ensure controls use `DynamicResource` for theme-sensitive properties, not `StaticResource`.
+
+### Issue: Theme switch throws and leaves app in broken state
+**Solution**: ThemeService has built-in rollback — if applying the new theme fails, it restores the previous MergedDictionaries. Do not remove this safety behavior.
 
 ## Testing
 
 ```csharp
-// Test theme toggle
-var themeService = new ThemeService();
-themeService.SetTheme("Light");
-Assert.AreEqual("Light", themeService.CurrentTheme);
+[Fact]
+public void SetTheme_Light_SetsCurrentTheme()
+{
+    var mockSettings = new Mock<IAppSettingsService>();
+    var themeService = new ThemeService(mockSettings.Object);
+    themeService.SetTheme("Light");
+    themeService.CurrentTheme.Should().Be("Light");
+}
 
-themeService.ToggleTheme();
-Assert.AreEqual("Dark", themeService.CurrentTheme);
+[Fact]
+public void ToggleTheme_SwitchesBetweenLightAndDark()
+{
+    var mockSettings = new Mock<IAppSettingsService>();
+    var themeService = new ThemeService(mockSettings.Object);
+    themeService.SetTheme("Light");
+    themeService.ToggleTheme();
+    themeService.CurrentTheme.Should().Be("Dark");
+}
 ```

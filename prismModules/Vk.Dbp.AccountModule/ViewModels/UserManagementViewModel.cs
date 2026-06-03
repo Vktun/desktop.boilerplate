@@ -4,6 +4,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Windows;
+using Dabp.Utils.Security;
 using HandyControl.Controls;
 using Microsoft.Win32;
 using Prism.Commands;
@@ -22,6 +23,7 @@ public class UserManagementViewModel : BindableBase
     private readonly IUserService _userService;
     private readonly IAuditLogService _auditLogService;
     private readonly IUserSession _userSession;
+    private readonly IPasswordHasher _passwordHasher;
 
     private ObservableCollection<User> _users = new();
     private User? _selectedUser;
@@ -105,11 +107,12 @@ public class UserManagementViewModel : BindableBase
     public DelegateCommand ExportCommand { get; }
     public DelegateCommand CloseProgramCommand { get; }
 
-    public UserManagementViewModel(IUserService userService, IAuditLogService auditLogService, IUserSession userSession)
+    public UserManagementViewModel(IUserService userService, IAuditLogService auditLogService, IUserSession userSession, IPasswordHasher passwordHasher)
     {
         _userService = userService ?? throw new ArgumentNullException(nameof(userService));
         _auditLogService = auditLogService ?? throw new ArgumentNullException(nameof(auditLogService));
         _userSession = userSession ?? throw new ArgumentNullException(nameof(userSession));
+        _passwordHasher = passwordHasher ?? throw new ArgumentNullException(nameof(passwordHasher));
 
         LoadCommand = new DelegateCommand(async () => await LoadUsersAsync(1));
         SearchCommand = new DelegateCommand(async () => await LoadUsersAsync(1));
@@ -174,7 +177,7 @@ public class UserManagementViewModel : BindableBase
             {
                 await SaveNewUserAsync(CurrentDialogViewModel.EditUser);
             }
-        });
+        }, _passwordHasher);
 
         CurrentDialogViewModel.Initialize(null, true);
         IsDialogOpen = true;
@@ -220,7 +223,7 @@ public class UserManagementViewModel : BindableBase
             {
                 await UpdateUserAsync(CurrentDialogViewModel.EditUser);
             }
-        });
+        }, _passwordHasher);
 
         CurrentDialogViewModel.Initialize(user, false);
         IsDialogOpen = true;

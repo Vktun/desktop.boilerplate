@@ -28,27 +28,35 @@ Lead with concrete risks, ordered by severity:
    - Real credentials committed.
    - Default passwords reachable in runtime paths.
    - Sensitive values written to logs.
+   - Session tokens persisted to disk.
 
 2. Startup and configuration correctness.
-   - Database initialization not awaited before DB-backed UI or services.
+   - Database initialization (`IAppStartupService.InitializeDatabaseAsync`) not awaited before DB-backed UI or services.
    - Missing config produces unclear failures.
    - Unsafe fallback connection strings.
+   - SqlSugar connection errors not triggering lock-screen.
 
 3. Identity, permissions, and audit.
    - Hard-coded operator identity.
+   - `IUserInfo` vs `IUserSession` used incorrectly (lightweight audit vs full session).
    - Duplicate permission sources that can drift.
    - Missing denied-path tests for protected actions.
+   - `IAuditLogService` not recording failure reasons.
 
 4. Module and layer boundaries.
    - Business modules directly depend on each other.
    - Host shell gains customer-specific business logic.
    - ViewModels talk directly to persistence details without a reason.
+   - Cross-module communication bypasses `IEventAggregator`.
+   - ViewModels use `IRegionManager.RequestNavigate` directly instead of `INavigationService`.
 
 5. WPF reliability and performance.
    - UI-thread blocking work.
    - Heavy synchronous data load in constructors.
    - Missing virtualization for large lists.
    - Resource dictionaries or bindings that cause unnecessary churn.
+   - Event callbacks updating UI without `Dispatcher.Invoke`.
+   - ViewModels subscribing to events without `IDisposable` / unsubscribe.
 
 6. Test coverage and verification.
    - No focused unit tests for changed behavior.
@@ -102,4 +110,3 @@ git diff --check
 ```
 
 If the environment lacks the required .NET SDK, SQL Server, or Windows desktop workload, state that clearly and still perform static review.
-

@@ -31,6 +31,8 @@ Choose the target location by responsibility:
 - Shared service implementation: `src/Vk.Dbp.Services`
 - Persistence entity or repository behavior: `src/Vk.Dbp.Infrastructure`
 - Customer-specific entry-point behavior: `dbpApps/<AppName>`
+- Framework-level abstraction: `dbpframework/Vk.Dbp.Core`
+- Account primitives: `dbpframework/Vk.Dbp.Account`
 
 Do not put customer-specific business logic in the reusable shell unless the user explicitly asks for a host-level feature.
 
@@ -62,23 +64,31 @@ prismModules/Vk.Dbp.YourModule/
 
 3. Register services and views.
    - Use `IContainerRegistry` in the module's `RegisterTypes`.
-   - Use `RegisterForNavigation<TView>()` for navigable views.
-   - Use singleton lifetimes only for shared stateful services that are safe to share.
+   - Use `RegisterForNavigation<TView>()` for navigable views (ViewModelLocator resolves ViewModels by convention).
+   - Use `RegisterSingleton<IService, Impl>()` for shared stateful services.
+   - Use `Register<IService, Impl>()` for transient services.
 
 4. Add navigation.
-   - Use existing region and view-name constants when available.
+   - Use existing region and view-name constants when available (`NavigationConstants.ViewNames`, `NavigationConstants.RegionNames`).
+   - In ViewModels, use `INavigationService.NavigateTo(viewName)` from Contracts layer, not `IRegionManager.RequestNavigate` directly.
    - Update menu or permission configuration only when the feature requires it.
    - Keep database permission seed data and static menu permission mappings from drifting apart.
 
 5. Keep ViewModels testable.
-   - Put user actions in commands.
-   - Inject services through constructors.
+   - Put user actions in commands (`DelegateCommand` / `DelegateCommand<T>`).
+   - Inject services through constructors with null-guards: `_svc = svc ?? throw new ArgumentNullException(nameof(svc))`.
+   - Use `.ObservesProperty()` for automatic CanExecute refresh.
    - Avoid direct database calls from ViewModels when a service boundary already exists.
+   - ViewModels that subscribe to events must implement `IDisposable` with `_isDisposed` guard.
 
 6. Add focused tests.
    - Use xUnit, Moq, and FluentAssertions.
    - Prefer service and ViewModel tests for behavior.
    - Put shared fixtures or factories in `test/Vk.Dbp.Tests.Common`.
+
+7. Register the module in the bootstrapper.
+   - Add `moduleCatalog.AddModule<DbpYourModule>()` in `PrismBootstrapper.ConfigureModuleCatalog`.
+   - If the ViewModel-View naming does not follow Prism convention, add explicit mapping in `PrismBootstrapper.ConfigureViewModelLocator` via `ViewModelLocationProvider.Register<V, VM>()`.
 
 ## Verification
 
@@ -98,4 +108,3 @@ In the final response, mention:
 - the module, View, ViewModel, service, and test files changed
 - any manual database or configuration step the user must know
 - which verification commands ran and whether anything could not be run
-

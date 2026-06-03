@@ -1,7 +1,6 @@
 using System;
-using System.Security.Cryptography;
-using System.Text;
 using System.Windows.Controls;
+using Dabp.Utils.Security;
 using Prism.Commands;
 using Prism.Mvvm;
 using Vk.Dbp.AccountModule.Models;
@@ -11,6 +10,7 @@ namespace Vk.Dbp.AccountModule.ViewModels
     public class UserEditDialogViewModel : BindableBase
     {
         private readonly Action<bool> _closeCallback;
+        private readonly IPasswordHasher _passwordHasher;
 
         private User _editUser = new();
         public User EditUser
@@ -53,9 +53,10 @@ namespace Vk.Dbp.AccountModule.ViewModels
         public DelegateCommand CancelCommand { get; }
         public DelegateCommand<PasswordBox> SaveCommand { get; }
 
-        public UserEditDialogViewModel(Action<bool> closeCallback)
+        public UserEditDialogViewModel(Action<bool> closeCallback, IPasswordHasher passwordHasher)
         {
             _closeCallback = closeCallback;
+            _passwordHasher = passwordHasher ?? throw new ArgumentNullException(nameof(passwordHasher));
             CancelCommand = new DelegateCommand(Cancel);
             SaveCommand = new DelegateCommand<PasswordBox>(Save);
         }
@@ -143,11 +144,7 @@ namespace Vk.Dbp.AccountModule.ViewModels
 
         private string HashPassword(string password)
         {
-            using (var sha256 = SHA256.Create())
-            {
-                var bytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
-                return Convert.ToBase64String(bytes);
-            }
+            return _passwordHasher.HashPassword(password);
         }
     }
 }
