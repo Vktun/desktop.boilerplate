@@ -4,9 +4,6 @@
   <img src="docs/images/login.png" alt="Dabp Login" width="120" />
 </p>
 
-[!\[CI Status\](https://github.com/yourorg/desktop.boilerplate/workflows/CI/badge.svg null)](https://github.com/yourorg/desktop.boilerplate/actions)
-[!\[License\](https://img.shields.io/badge/license-MIT-blue.svg null)](LICENSE)
-
 企业级WPF桌面应用框架 - 基于Prism + HandyControl，支持模块化插件架构，开箱即用。
 
 ## 特性
