@@ -35,7 +35,14 @@ namespace Dabp.WpfWindow.Services
                     errors.Add("Security:TokenExpiryHours 必须大于0");
                 }
             }
-            
+
+            var redisEnabled = configuration.GetValue<bool>("Redis:Enabled");
+            var redisConnectionString = configuration.GetValue<string>("Redis:ConnectionString");
+            if (redisEnabled && string.IsNullOrWhiteSpace(redisConnectionString))
+            {
+                errors.Add("Redis 启用时必须配置 Redis:ConnectionString 或环境变量 Redis__ConnectionString");
+            }
+             
             // 如果有错误，抛出异常
             if (errors.Count > 0)
             {
@@ -51,7 +58,6 @@ namespace Dabp.WpfWindow.Services
         {
             Console.WriteLine("=== 当前配置 ===");
             Console.WriteLine($"数据库连接: {MaskConnectionString(configuration.GetConnectionString("Default"))}");
-            Console.WriteLine($"Redis配置: {configuration["Redis:Configuration"] ?? "未配置"}");
             Console.WriteLine($"环境: {configuration["ASPNETCORE_ENVIRONMENT"] ?? "Production"}");
             Console.WriteLine("================");
         }

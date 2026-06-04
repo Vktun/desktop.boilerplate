@@ -66,13 +66,30 @@ dotnet build
     "Default": ""
   },
   "Redis": {
-    "Configuration": "127.0.0.1"
-  },
-  "Session": {
-    "TimeoutMinutes": 15
+    "Enabled": false,
+    "ConnectionString": "",
+    "InstanceName": "Vk.Dbp"
   }
 }
 ```
+
+> 会话超时等运行时配置存储在数据库 `SystemConfig` 表中，不在 appsettings.json 中。
+
+如需启用 Redis 缓存，可在 `appsettings.local.json` 中增加：
+
+```json
+{
+  "Redis": {
+    "Enabled": true,
+    "ConnectionString": "127.0.0.1:6379,abortConnect=false",
+    "InstanceName": "Vk.Dbp"
+  }
+}
+```
+
+- 默认 `Enabled=false`，应用使用内存缓存
+- 当 `Enabled=true` 时，必须配置 `Redis:ConnectionString`
+- Redis 初始化失败时，应用会回退到内存缓存
 
 ### 运行时配置
 
@@ -117,6 +134,9 @@ await _systemConfigService.SetSessionTimeoutMinutesAsync(30);
 | `ConnectionStrings__Default` | SQL Server连接字符串 | 覆盖配置文件中的连接串 |
 | `DBP_INITIAL_ADMIN_PASSWORD` | 首次启动时的管理员初始密码 | 数据库初始化种子数据（必填） |
 | `ASPNETCORE_ENVIRONMENT` | 环境名称 | 默认 "Production" |
+| `Redis__Enabled` | 是否启用 Redis 缓存 | 覆盖 `Redis:Enabled` |
+| `Redis__ConnectionString` | Redis 连接字符串 | 覆盖 `Redis:ConnectionString` |
+| `Redis__InstanceName` | Redis 键前缀 | 覆盖 `Redis:InstanceName` |
 
 ## 本地启动脚本
 

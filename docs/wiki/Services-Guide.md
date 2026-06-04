@@ -53,7 +53,7 @@ Bootstrapper中注册的Shell级服务：
 | IAppStartupService | AppStartupService | Singleton |
 | ILockScreenService | LockScreenService | Singleton |
 | ISessionTimeoutService | SessionTimeoutService | Singleton |
-| ICacheService | InMemoryCacheService | Singleton |
+| ICacheService | RedisCacheService / InMemoryCacheService | Singleton |
 | IViewModelFactory | ViewModelFactory | Singleton |
 | INavigationService | PrismNavigationService | Singleton |
 | ISqlSugarClient | SqlSugarScope | Singleton |
@@ -111,25 +111,46 @@ perf.LogStep("解析CSV");
        ↓
 2. 配置 Serilog 日志（文件滚动、用户上下文）
        ↓
-3. 验证配置（连接字符串必填）
+3. 验证配置（连接字符串必填；启用 Redis 时连接串必填）
        ↓
-4. 配置 SqlSugar（自动关闭连接、AOP日志、连接失败触发锁屏）
+4. 注册缓存服务（默认内存缓存；显式启用时切换到 Redis）
        ↓
-5. 显示启动画面（"正在初始化数据库，请稍候..."）
+5. 配置 SqlSugar（自动关闭连接、AOP日志、连接失败触发锁屏）
        ↓
-6. 执行 DatabaseInitializer.InitializeAsync()
+6. 显示启动画面（"正在初始化数据库，请稍候..."）
+       ↓
+7. 执行 DatabaseInitializer.InitializeAsync()
    ├── CodeFirst 创建/更新 13张表
    ├── 确保 NVARCHAR 列（Unicode支持）
    ├── 初始化管理员账号（环境变量密码）
    ├── 初始化角色和权限
    └── 初始化系统配置和告警配置
        ↓
-7. 显示主窗口
+8. 显示主窗口
    ├── 已登录 → 导航到 Dashboard
    └── 未登录 → 导航到 LoginView
        ↓
-8. 启动会话超时监控（读取SystemConfig配置）
+9. 启动会话超时监控（读取SystemConfig配置）
 ```
+
+### 缓存配置
+
+Shell 在启动时根据 `Redis` 配置节注册 `ICacheService`：
+
+```json
+{
+  "Redis": {
+    "Enabled": false,
+    "ConnectionString": "",
+    "InstanceName": "Vk.Dbp"
+  }
+}
+```
+
+- 默认 `Enabled=false`，注册 `InMemoryCacheService`
+- `Enabled=true` 且配置了连接串时，注册 `RedisCacheService`
+- 如果 Redis 初始化失败，启动阶段会记录告警日志并回退到 `InMemoryCacheService`
+- 可通过环境变量 `Redis__Enabled`、`Redis__ConnectionString`、`Redis__InstanceName` 覆盖
 
 ## 脚本工具
 

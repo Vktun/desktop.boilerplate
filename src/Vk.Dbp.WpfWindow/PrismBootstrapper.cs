@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -133,7 +134,7 @@ namespace Dabp.WpfWindow
             containerRegistry.RegisterSingleton<IAppStartupService, AppStartupService>();
             containerRegistry.RegisterSingleton<ILockScreenService, LockScreenService>();
             containerRegistry.RegisterSingleton<ISessionTimeoutService, SessionTimeoutService>();
-            containerRegistry.RegisterSingleton<AppCacheService, InMemoryCacheService>();
+            RegisterCacheService(containerRegistry, configuration);
             containerRegistry.RegisterSingleton<IViewModelFactory, ViewModelFactory>();
             containerRegistry.RegisterSingleton<INavigationService, PrismNavigationService>();
             containerRegistry.RegisterSingleton<LockScreenViewModel>();
@@ -180,6 +181,34 @@ namespace Dabp.WpfWindow
                     retainedFileCountLimit: 10,
                     fileSizeLimitBytes: 100 * 1024)
                 .CreateLogger();
+        }
+
+        private static void RegisterCacheService(IContainerRegistry containerRegistry, IConfiguration configuration)
+        {
+            RedisCacheOptions redisOptions = configuration.GetSection("Redis").Get<RedisCacheOptions>() ?? new RedisCacheOptions();
+
+            if (string.IsNullOrWhiteSpace(redisOptions.InstanceName))
+            {
+                redisOptions.InstanceName = Assembly.GetEntryAssembly()?.GetName().Name ?? "DabpDesktopBoilerplate";
+            }
+
+            containerRegistry.RegisterSingleton<AppCacheService>(_ =>
+            {
+                if (!redisOptions.Enabled)
+                {
+                    return new InMemoryCacheService();
+                }
+
+                try
+                {
+                    return new RedisCacheService(redisOptions);
+                }
+                catch (Exception ex)
+                {
+                    Log.Warning(ex, "Failed to initialize Redis cache. Falling back to in-memory cache.");
+                    return new InMemoryCacheService();
+                }
+            });
         }
 
         private void ConfigureSqlSugarDb(IContainerRegistry containerRegistry, IConfiguration configuration)

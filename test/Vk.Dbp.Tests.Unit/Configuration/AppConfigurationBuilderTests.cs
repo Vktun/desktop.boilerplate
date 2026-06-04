@@ -25,9 +25,6 @@ public sealed class AppConfigurationBuilderTests : IDisposable
         {
           "ConnectionStrings": {
             "Default": "Server=base;"
-          },
-          "Session": {
-            "TimeoutMinutes": 15
           }
         }
         """);
@@ -36,8 +33,8 @@ public sealed class AppConfigurationBuilderTests : IDisposable
           "ConnectionStrings": {
             "Default": "Server=local;"
           },
-          "Session": {
-            "TimeoutMinutes": 30
+          "Encryption": {
+            "SM4Key": "CustomKey12345678"
           }
         }
         """);
@@ -45,7 +42,7 @@ public sealed class AppConfigurationBuilderTests : IDisposable
         IConfigurationRoot configuration = AppConfigurationBuilder.Build(_tempDirectory);
 
         configuration.GetConnectionString("Default").Should().Be("Server=local;");
-        configuration.GetValue<int>("Session:TimeoutMinutes").Should().Be(30);
+        configuration.GetValue<string>("Encryption:SM4Key").Should().Be("CustomKey12345678");
     }
 
     [Fact]
