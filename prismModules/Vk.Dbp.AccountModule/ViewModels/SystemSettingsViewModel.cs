@@ -87,9 +87,9 @@ namespace Vk.Dbp.AccountModule.ViewModels
             ISessionTimeoutService timeoutService,
             IUserSession userSession)
         {
-            _configService = configService;
-            _timeoutService = timeoutService;
-            _userSession = userSession;
+            _configService = configService ?? throw new ArgumentNullException(nameof(configService));
+            _timeoutService = timeoutService ?? throw new ArgumentNullException(nameof(timeoutService));
+            _userSession = userSession ?? throw new ArgumentNullException(nameof(userSession));
 
             SaveCommand = new DelegateCommand(async () => await ExecuteSaveAsync());
             ResetCommand = new DelegateCommand(async () => await ExecuteResetAsync());

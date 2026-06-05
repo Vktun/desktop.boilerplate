@@ -2,6 +2,8 @@ using Prism.Commands;
 using Prism.Mvvm;
 using Prism.Navigation.Regions;
 using Vk.Dbp.AccountModule.Services;
+using Vk.Dbp.Contracts.Constants;
+using Vk.Dbp.Contracts.Services;
 using Vk.Dbp.Services.Session;
 
 namespace Vk.Dbp.AccountModule.ViewModels;
@@ -9,7 +11,7 @@ namespace Vk.Dbp.AccountModule.ViewModels;
 public class ChangePasswordViewModel : BindableBase, INavigationAware
 {
     private readonly IUserService _userService;
-    private readonly IRegionManager _regionManager;
+    private readonly INavigationService _navigationService;
     private readonly IUserSession _userSession;
 
     private string _message = string.Empty;
@@ -48,10 +50,10 @@ public class ChangePasswordViewModel : BindableBase, INavigationAware
 
     public DelegateCommand CancelCommand { get; }
 
-    public ChangePasswordViewModel(IUserService userService, IRegionManager regionManager, IUserSession userSession)
+    public ChangePasswordViewModel(IUserService userService, INavigationService navigationService, IUserSession userSession)
     {
         _userService = userService ?? throw new ArgumentNullException(nameof(userService));
-        _regionManager = regionManager ?? throw new ArgumentNullException(nameof(regionManager));
+        _navigationService = navigationService ?? throw new ArgumentNullException(nameof(navigationService));
         _userSession = userSession ?? throw new ArgumentNullException(nameof(userSession));
 
         ChangeCommand = new DelegateCommand<object[]>(async passwords => await ChangeAsync(passwords), CanChange);
@@ -155,7 +157,7 @@ public class ChangePasswordViewModel : BindableBase, INavigationAware
             confirmPasswordBox.Clear();
 
             await Task.Delay(1500);
-            _regionManager.RequestNavigate("ContentRegion", "Dashboard");
+            _navigationService.NavigateTo(ViewNames.Dashboard);
         }
         catch (Exception ex)
         {
@@ -171,7 +173,7 @@ public class ChangePasswordViewModel : BindableBase, INavigationAware
 
     private void Cancel()
     {
-        _regionManager.RequestNavigate("ContentRegion", "Dashboard");
+        _navigationService.NavigateTo(ViewNames.Dashboard);
     }
 
     public void OnNavigatedTo(NavigationContext navigationContext)

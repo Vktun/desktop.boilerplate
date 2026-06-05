@@ -4,7 +4,8 @@ using Dabp.Utils.Security;
 using Prism.Commands;
 using Prism.Mvvm;
 using Prism.Navigation.Regions;
-using SqlSugar;
+using Vk.Dbp.Contracts.Constants;
+using Vk.Dbp.Contracts.Services;
 using UserModel = Vk.Dbp.AccountModule.Models.User;
 using PermissionModel = Vk.Dbp.AccountModule.Models.Permission;
 using Vk.Dbp.AccountModule.Services;
@@ -20,7 +21,7 @@ public class LoginViewModel : BindableBase, INavigationAware
 
     private readonly IUserService _userService;
     private readonly IPermissionService _permissionService;
-    private readonly IRegionManager _regionManager;
+    private readonly INavigationService _navigationService;
     private readonly IPasswordHasher _passwordHasher;
     private readonly IUserSession _userSession;
     private readonly IAuditLogService _auditLogService;
@@ -71,7 +72,7 @@ public class LoginViewModel : BindableBase, INavigationAware
     public LoginViewModel(
         IUserService userService,
         IPermissionService permissionService,
-        IRegionManager regionManager,
+        INavigationService navigationService,
         IPasswordHasher passwordHasher,
         IUserSession userSession,
         IAuditLogService auditLogService,
@@ -79,7 +80,7 @@ public class LoginViewModel : BindableBase, INavigationAware
     {
         _userService = userService ?? throw new ArgumentNullException(nameof(userService));
         _permissionService = permissionService ?? throw new ArgumentNullException(nameof(permissionService));
-        _regionManager = regionManager ?? throw new ArgumentNullException(nameof(regionManager));
+        _navigationService = navigationService ?? throw new ArgumentNullException(nameof(navigationService));
         _passwordHasher = passwordHasher ?? throw new ArgumentNullException(nameof(passwordHasher));
         _userSession = userSession ?? throw new ArgumentNullException(nameof(userSession));
         _auditLogService = auditLogService ?? throw new ArgumentNullException(nameof(auditLogService));
@@ -184,9 +185,11 @@ public class LoginViewModel : BindableBase, INavigationAware
             await _auditLogService.LogLoginAsync(user.Id, user.Username ?? Username);
 
             passwordBox.Clear();
-            _regionManager.RequestNavigate("ContentRegion", "Dashboard");
+            _navigationService.NavigateTo(ViewNames.Dashboard);
         }
-        catch (Exception ex) when (ex is SqlSugarException)
+        catch (Exception ex) when (
+            ex.GetType().FullName?.Contains("SqlSugar") == true
+            || ex is System.Data.Common.DbException)
         {
             await _auditLogService.LogFailureAsync(
                 0,
@@ -265,7 +268,7 @@ public class LoginViewModel : BindableBase, INavigationAware
     {
         if (_userSession.IsLoggedIn)
         {
-            _regionManager.RequestNavigate("ContentRegion", "Dashboard");
+            _navigationService.NavigateTo(ViewNames.Dashboard);
             return;
         }
 

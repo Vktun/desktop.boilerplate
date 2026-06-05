@@ -1,7 +1,7 @@
 ﻿using System;
 using Prism.Navigation.Regions;
 using Vk.Dbp.Contracts.Services;
-using Vk.Dbp.WpfWindow.Constants;
+using Vk.Dbp.Contracts.Constants;
 
 namespace Dabp.WpfWindow.Services;
 

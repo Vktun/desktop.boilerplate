@@ -479,19 +479,21 @@ namespace Vk.Dbp.Contracts.Events
 **导航操作**：
 
 ```csharp
+using Vk.Dbp.Contracts.Services;
+
 public class YourViewModel : BindableBase
 {
-    private readonly IRegionManager _regionManager;
+    private readonly INavigationService _navigationService;
 
-    public YourViewModel(IRegionManager regionManager)
+    public YourViewModel(INavigationService navigationService)
     {
-        _regionManager = regionManager;
+        _navigationService = navigationService ?? throw new ArgumentNullException(nameof(navigationService));
     }
 
     public void NavigateToDetail(int id)
     {
         var parameters = new NavigationParameters { { "Id", id } };
-        _regionManager.RequestNavigate("ContentRegion", "YourDetailView", parameters);
+        _navigationService.NavigateTo("YourDetailView", parameters);
     }
 }
 ```

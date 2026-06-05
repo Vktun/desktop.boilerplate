@@ -103,7 +103,7 @@ namespace Dabp.WpfWindow.ViewModels
 
         public LockScreenViewModel(ILockScreenService lockScreenService)
         {
-            _lockScreenService = lockScreenService;
+            _lockScreenService = lockScreenService ?? throw new ArgumentNullException(nameof(lockScreenService));
 
             UnlockCommand = new DelegateCommand<PasswordBox>(ExecuteUnlock, CanExecuteUnlock);
             ExitCommand = new DelegateCommand(ExecuteExit);

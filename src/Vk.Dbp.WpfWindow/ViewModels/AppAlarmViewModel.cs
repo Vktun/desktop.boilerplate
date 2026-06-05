@@ -6,11 +6,11 @@ using Dabp.Infrastructure.Entities;
 using Prism.Commands;
 using Prism.Events;
 using Prism.Mvvm;
-using Prism.Navigation.Regions;
+using Vk.Dbp.Contracts.Constants;
 using Vk.Dbp.Contracts.Events;
+using Vk.Dbp.Contracts.Services;
 using Vk.Dbp.Services.Alarm;
 using Vk.Dbp.Services.Session;
-using Vk.Dbp.WpfWindow.Constants;
 
 namespace Vk.Dbp.WpfWindow.ViewModels
 {
@@ -21,7 +21,7 @@ namespace Vk.Dbp.WpfWindow.ViewModels
     {
         private readonly IAlarmService _alarmService;
         private readonly IUserSession _userSession;
-        private readonly IRegionManager _regionManager;
+        private readonly INavigationService _navigationService;
         private readonly IEventAggregator _eventAggregator;
         private bool _isDisposed = false;
 
@@ -86,12 +86,12 @@ namespace Vk.Dbp.WpfWindow.ViewModels
         public AppAlarmViewModel(
             IAlarmService alarmService,
             IUserSession userSession,
-            IRegionManager regionManager,
+            INavigationService navigationService,
             IEventAggregator eventAggregator)
         {
             _alarmService = alarmService ?? throw new ArgumentNullException(nameof(alarmService));
             _userSession = userSession ?? throw new ArgumentNullException(nameof(userSession));
-            _regionManager = regionManager ?? throw new ArgumentNullException(nameof(regionManager));
+            _navigationService = navigationService ?? throw new ArgumentNullException(nameof(navigationService));
             _eventAggregator = eventAggregator ?? throw new ArgumentNullException(nameof(eventAggregator));
 
             ActiveAlarms = new ObservableCollection<AlarmRecord>();
@@ -262,14 +262,13 @@ namespace Vk.Dbp.WpfWindow.ViewModels
 
         private void NavigateToAlarmRecord()
         {
-            _regionManager.RequestNavigate(RegionNames.ContentRegion, ViewNames.AlarmRecord);
+            _navigationService.NavigateTo(ViewNames.AlarmRecord);
             CloseAlarmPopup();
         }
 
         private void NavigateToAlarmConfig()
         {
-            // Navigate to alarm config view (to be created)
-            _regionManager.RequestNavigate(RegionNames.ContentRegion, "AlarmConfigView");
+            _navigationService.NavigateTo(ViewNames.AlarmConfigView);
             CloseAlarmPopup();
         }
 

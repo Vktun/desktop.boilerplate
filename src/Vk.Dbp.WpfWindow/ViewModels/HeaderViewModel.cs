@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using Vk.Dbp.WpfWindow.Views;
-using Vk.Dbp.WpfWindow.Constants;
+using Vk.Dbp.Contracts.Constants;
 using Dabp.WpfWindow.Services;
 using Vk.Dbp.Services.Session;
 using Vk.Dbp.Services.Alarm;

@@ -22,7 +22,7 @@ using SqlSugar;
 using AppCacheService = Vk.Dbp.Contracts.Caching.ICacheService;
 using Vk.Dbp.Contracts.Services;
 using Vk.Dbp.Services.Session;
-using Vk.Dbp.WpfWindow.Constants;
+using Vk.Dbp.Contracts.Constants;
 using Vk.Dbp.WpfWindow.ViewModels;
 
 namespace Dabp.WpfWindow

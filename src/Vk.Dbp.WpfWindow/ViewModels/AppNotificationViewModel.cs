@@ -12,11 +12,14 @@ using Vk.Dbp.Services.Session;
 
 namespace Vk.Dbp.WpfWindow.ViewModels
 {
-    public class AppNotificationViewModel : BindableBase
+    public class AppNotificationViewModel : BindableBase, IDisposable
     {
         private readonly INotificationService _notificationService;
         private readonly IUserSession _userSession;
         private readonly IEventAggregator _eventAggregator;
+        private SubscriptionToken? _notificationToken;
+        private SubscriptionToken? _countChangedToken;
+        private bool _isDisposed;
 
         private ObservableCollection<Notification> _notifications = new();
         public ObservableCollection<Notification> Notifications
@@ -76,14 +79,12 @@ namespace Vk.Dbp.WpfWindow.ViewModels
         /// </summary>
         private void SubscribeToEvents()
         {
-            // Subscribe to GlobalNotificationEvent with UIThread option for thread safety
-            _eventAggregator.GetEvent<GlobalNotificationEvent>()
+            _notificationToken = _eventAggregator.GetEvent<GlobalNotificationEvent>()
                 .Subscribe(OnNotificationReceived,
-                    ThreadOption.UIThread,  // Automatically marshal to UI thread
-                    keepSubscriberReferenceAlive: true);  // Keep subscription alive during ViewModel lifetime
+                    ThreadOption.UIThread,
+                    keepSubscriberReferenceAlive: true);
 
-            // Subscribe to NotificationCountChangedEvent to update badge
-            _eventAggregator.GetEvent<NotificationCountChangedEvent>()
+            _countChangedToken = _eventAggregator.GetEvent<NotificationCountChangedEvent>()
                 .Subscribe(OnNotificationCountChanged,
                     ThreadOption.UIThread,
                     keepSubscriberReferenceAlive: true);
@@ -94,6 +95,7 @@ namespace Vk.Dbp.WpfWindow.ViewModels
         /// </summary>
         private void OnNotificationReceived(GlobalNotificationPayload payload)
         {
+            if (_isDisposed) return;
             // Filter: only show notifications for current user or broadcast notifications
             if (!_userSession.IsLoggedIn)
                 return;
@@ -128,6 +130,7 @@ namespace Vk.Dbp.WpfWindow.ViewModels
         /// </summary>
         private void OnNotificationCountChanged(NotificationCountChangedPayload payload)
         {
+            if (_isDisposed) return;
             // Only update if this event is for the current user
             if (_userSession.IsLoggedIn && payload.UserId == _userSession.UserId)
             {
@@ -211,6 +214,16 @@ namespace Vk.Dbp.WpfWindow.ViewModels
                 return;
 
             UnreadCount = await _notificationService.GetUnreadCountAsync(_userSession.UserId);
+        }
+
+        public void Dispose()
+        {
+            if (_isDisposed) return;
+
+            _notificationToken?.Dispose();
+            _countChangedToken?.Dispose();
+
+            _isDisposed = true;
         }
     }
 }

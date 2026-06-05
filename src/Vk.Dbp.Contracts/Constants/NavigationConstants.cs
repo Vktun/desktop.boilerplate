@@ -1,4 +1,4 @@
-namespace Vk.Dbp.WpfWindow.Constants
+namespace Vk.Dbp.Contracts.Constants
 {
     public static class RegionNames
     {
@@ -20,6 +20,7 @@ namespace Vk.Dbp.WpfWindow.Constants
         public const string Production = "Production";
         public const string ProductionRecord = "ProductionRecord";
         public const string AlarmRecord = "AlarmRecord";
+        public const string AlarmConfigView = "AlarmConfigView";
         public const string AuditRecord = "AuditRecord";
     }
 
