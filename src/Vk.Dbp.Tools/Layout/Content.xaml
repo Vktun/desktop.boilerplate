@@ -22,6 +22,10 @@
             <TextBox x:Name="txt_decry" Width="300" Text="{Binding EncText}"/>
             <Button Content="SM4解密" Command="{Binding Sm4Command}" CommandParameter="2"></Button>
         </StackPanel>
+        <StackPanel Grid.Row="1" Orientation="Horizontal">
+            <TextBlock Margin="10 0 10 0" Text="SM4密钥"></TextBlock>
+            <TextBox Width="300" Text="{Binding Sm4Key, UpdateSourceTrigger=PropertyChanged}" />
+        </StackPanel>
         <TextBlock Grid.Row="2" Text="View Content" FontSize="38" />
     </Grid>
 </UserControl>

@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json;
+using Dabp.Utils.Exceptions;
 using SqlSugar;
 using Vk.Dbp.Services.Audit;
 using AuditLogEntity = Dabp.Infrastructure.Entities.AuditLog;
@@ -208,7 +209,7 @@ public sealed class DbAuditLogService : IAuditLogService
             {
                 payload = JsonSerializer.Deserialize<AuditPayload>(entity.Parameters, JsonOptions);
             }
-            catch
+            catch (Exception ex) when (ExpectedOperationExceptionFilter.IsExpectedFileOperationException(ex))
             {
                 payload = null;
             }

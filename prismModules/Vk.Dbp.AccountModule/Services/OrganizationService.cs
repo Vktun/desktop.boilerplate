@@ -59,7 +59,7 @@ public class OrganizationService : IOrganizationService
 
             return result > 0;
         }
-        catch (Exception ex)
+        catch (Exception ex) when (AccountOperationExceptionFilter.IsExpectedDataOperationException(ex))
         {
             await _auditLogService.LogFailureAsync(
                 _userSession.GetAuditUserId(),
@@ -106,7 +106,7 @@ public class OrganizationService : IOrganizationService
 
             return result > 0;
         }
-        catch (Exception ex)
+        catch (Exception ex) when (AccountOperationExceptionFilter.IsExpectedDataOperationException(ex))
         {
             await _auditLogService.LogFailureAsync(
                 _userSession.GetAuditUserId(),
@@ -168,7 +168,7 @@ public class OrganizationService : IOrganizationService
 
             return result > 0;
         }
-        catch (Exception ex)
+        catch (Exception ex) when (AccountOperationExceptionFilter.IsExpectedDataOperationException(ex))
         {
             await _auditLogService.LogFailureAsync(
                 _userSession.GetAuditUserId(),
@@ -205,6 +205,7 @@ public class OrganizationService : IOrganizationService
 
     public async Task<bool> AssignUsersToOrganizationAsync(int orgUnitId, List<int> userIds)
     {
+        var committed = false;
         try
         {
             OrganizationUnit? orgUnit = await _db.Queryable<OrganizationUnit>()
@@ -237,6 +238,7 @@ public class OrganizationService : IOrganizationService
             }
 
             _db.Ado.CommitTran();
+            committed = true;
 
             await _auditLogService.LogOperationAsync(
                 _userSession.GetAuditUserId(),
@@ -249,10 +251,12 @@ public class OrganizationService : IOrganizationService
 
             return true;
         }
-        catch
+        finally
         {
-            _db.Ado.RollbackTran();
-            throw;
+            if (!committed)
+            {
+                _db.Ado.RollbackTran();
+            }
         }
     }
 
@@ -275,7 +279,7 @@ public class OrganizationService : IOrganizationService
 
             return result > 0;
         }
-        catch (Exception ex)
+        catch (Exception ex) when (AccountOperationExceptionFilter.IsExpectedDataOperationException(ex))
         {
             await _auditLogService.LogFailureAsync(
                 _userSession.GetAuditUserId(),

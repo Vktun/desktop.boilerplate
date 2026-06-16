@@ -7,6 +7,7 @@ using System.Linq;
 using Vk.Dbp.WpfWindow.Views;
 using Vk.Dbp.Contracts.Constants;
 using Dabp.WpfWindow.Services;
+using Dabp.Utils.Exceptions;
 using Vk.Dbp.Services.Session;
 using Vk.Dbp.Services.Alarm;
 using Prism.Commands;
@@ -264,7 +265,7 @@ namespace Vk.Dbp.WpfWindow.ViewModels
                 AlarmBadgeCount = activeCount;
                 HasCriticalAlarm = criticalCount > 0;
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ExpectedOperationExceptionFilter.IsExpectedDataOperationException(ex))
             {
                 System.Diagnostics.Debug.WriteLine($"Update alarm badge error: {ex.Message}");
             }

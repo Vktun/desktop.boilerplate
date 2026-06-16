@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using System.Windows.Media;
+using Dabp.Utils.Exceptions;
 using HandyControl.Controls;
 using Prism.Commands;
 using Prism.Mvvm;
@@ -120,7 +121,7 @@ namespace Vk.Dbp.AccountModule.ViewModels
                 SessionTimeoutMinutes = await _configService.GetSessionTimeoutMinutesAsync();
                 StatusMessage = null;
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ExpectedOperationExceptionFilter.IsExpectedDataOperationException(ex))
             {
                 Growl.Error($"加载设置失败: {ex.Message}");
             }
@@ -166,7 +167,7 @@ namespace Vk.Dbp.AccountModule.ViewModels
                 StatusMessage = "设置已保存并生效";
                 Growl.Success("系统设置已保存");
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ExpectedOperationExceptionFilter.IsExpectedDataOperationException(ex))
             {
                 StatusColor = Colors.Red;
                 StatusMessage = $"保存失败: {ex.Message}";

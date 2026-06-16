@@ -4,6 +4,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Windows;
+using Dabp.Utils.Exceptions;
 using Dabp.Utils.Security;
 using HandyControl.Controls;
 using Microsoft.Win32;
@@ -198,7 +199,7 @@ public class UserManagementViewModel : BindableBase
             Growl.Success("创建用户成功");
             await LoadUsersAsync(PageIndex);
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ExpectedOperationExceptionFilter.IsExpectedDataOperationException(ex))
         {
             Growl.Error($"创建用户失败: {ex.Message}");
         }
@@ -244,7 +245,7 @@ public class UserManagementViewModel : BindableBase
             Growl.Success("更新用户成功");
             await LoadUsersAsync(PageIndex);
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ExpectedOperationExceptionFilter.IsExpectedDataOperationException(ex))
         {
             Growl.Error($"更新用户失败: {ex.Message}");
         }
@@ -291,7 +292,7 @@ public class UserManagementViewModel : BindableBase
             int reloadPage = Users.Count == 1 && PageIndex > 1 ? PageIndex - 1 : PageIndex;
             await LoadUsersAsync(reloadPage);
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ExpectedOperationExceptionFilter.IsExpectedDataOperationException(ex))
         {
             Growl.Error($"删除用户失败: {ex.Message}");
         }
@@ -337,7 +338,7 @@ public class UserManagementViewModel : BindableBase
 
             Growl.Success($"密码重置成功，初始密码为: {newPassword}\n请提醒用户并及时修改密码。");
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ExpectedOperationExceptionFilter.IsExpectedDataOperationException(ex))
         {
             Growl.Error($"重置密码失败: {ex.Message}");
         }
@@ -374,7 +375,7 @@ public class UserManagementViewModel : BindableBase
             Growl.Success($"用户已{status}");
             RaisePropertyChanged(nameof(Users));
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ExpectedOperationExceptionFilter.IsExpectedDataOperationException(ex))
         {
             user.IsEnabled = !user.IsEnabled;
             Growl.Error($"操作失败: {ex.Message}");
@@ -420,7 +421,7 @@ public class UserManagementViewModel : BindableBase
                 "UserManagement",
                 "导出用户列表");
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ExpectedOperationExceptionFilter.IsExpectedUserOperationException(ex))
         {
             Growl.Error($"导出失败: {ex.Message}");
         }
@@ -454,5 +455,4 @@ public class UserManagementViewModel : BindableBase
         return RandomNumberGenerator.GetInt32(maxValue);
     }
 }
-
 

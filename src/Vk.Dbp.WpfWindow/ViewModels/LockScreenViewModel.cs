@@ -2,6 +2,7 @@ using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using Dabp.Utils.Exceptions;
 using Prism.Commands;
 using Prism.Mvvm;
 using Dabp.WpfWindow.Services;
@@ -151,7 +152,7 @@ namespace Dabp.WpfWindow.ViewModels
                     passwordBox.Clear();
                 }
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ExpectedOperationExceptionFilter.IsExpectedUserOperationException(ex))
             {
                 ShowError = true;
                 ErrorMessage = $"解锁失败: {ex.Message}";

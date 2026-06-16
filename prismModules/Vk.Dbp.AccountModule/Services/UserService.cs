@@ -122,7 +122,7 @@ public class UserService : IUserService
 
             return result > 0;
         }
-        catch (Exception ex)
+        catch (Exception ex) when (AccountOperationExceptionFilter.IsExpectedDataOperationException(ex))
         {
             await _auditLogService.LogFailureAsync(
                 _userSession.GetAuditUserId(),
@@ -181,7 +181,7 @@ public class UserService : IUserService
 
             return result > 0;
         }
-        catch (Exception ex)
+        catch (Exception ex) when (AccountOperationExceptionFilter.IsExpectedDataOperationException(ex))
         {
             await _auditLogService.LogFailureAsync(
                 _userSession.GetAuditUserId(),
@@ -227,7 +227,7 @@ public class UserService : IUserService
 
             return result > 0;
         }
-        catch (Exception ex)
+        catch (Exception ex) when (AccountOperationExceptionFilter.IsExpectedDataOperationException(ex))
         {
             await _auditLogService.LogFailureAsync(
                 _userSession.GetAuditUserId(),
@@ -336,6 +336,7 @@ public class UserService : IUserService
             return false;
         }
 
+        var committed = false;
         try
         {
             _db.Ado.BeginTran();
@@ -356,6 +357,7 @@ public class UserService : IUserService
             }
 
             _db.Ado.CommitTran();
+            committed = true;
 
             await _auditLogService.LogOperationAsync(
                 _userSession.GetAuditUserId(),
@@ -368,10 +370,12 @@ public class UserService : IUserService
 
             return true;
         }
-        catch
+        finally
         {
-            _db.Ado.RollbackTran();
-            throw;
+            if (!committed)
+            {
+                _db.Ado.RollbackTran();
+            }
         }
     }
 

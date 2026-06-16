@@ -1,3 +1,4 @@
+using Dabp.Utils.Exceptions;
 using Prism.Commands;
 using Prism.Mvvm;
 using Prism.Navigation.Regions;
@@ -159,7 +160,7 @@ public class ChangePasswordViewModel : BindableBase, INavigationAware
             await Task.Delay(1500);
             _navigationService.NavigateTo(ViewNames.Dashboard);
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ExpectedOperationExceptionFilter.IsExpectedDataOperationException(ex))
         {
             ShowMessage = true;
             IsError = true;

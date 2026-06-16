@@ -10,6 +10,7 @@ using Microsoft.Win32;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
+using Dabp.Utils.Exceptions;
 using Vk.Dbp.Contracts.Services;
 
 namespace Dabp.Services.Export
@@ -19,6 +20,13 @@ namespace Dabp.Services.Export
     /// </summary>
     public class ExportService : IExportService
     {
+        private static readonly HashSet<string> SafeExportExtensions = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ".csv",
+            ".xlsx",
+            ".pdf"
+        };
+
         /// <summary>
         /// 导出数据到CSV文件
         /// </summary>
@@ -31,6 +39,8 @@ namespace Dabp.Services.Export
             if (string.IsNullOrEmpty(filePath))
                 throw new OperationCanceledException("用户取消了保存操作");
             
+            filePath = ValidateExportPath(filePath, ".csv");
+
             var csv = new System.Text.StringBuilder();
             
             // 获取属性信息
@@ -96,6 +106,8 @@ namespace Dabp.Services.Export
             }
             
             // 写入数据行
+            filePath = ValidateExportPath(filePath, ".xlsx");
+
             var dataList = data.ToList();
             for (int row = 2; row <= dataList.Count + 1; row++)
             {
@@ -149,6 +161,8 @@ namespace Dabp.Services.Export
             if (string.IsNullOrEmpty(filePath))
                 throw new OperationCanceledException("用户取消了保存操作");
             
+            filePath = ValidateExportPath(filePath, ".pdf");
+
             var dataList = data.ToList();
             var properties = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance);
             
@@ -233,6 +247,8 @@ namespace Dabp.Services.Export
         /// </summary>
         public async Task<IEnumerable<T>> ImportFromCsvAsync<T>(string filePath) where T : class, new()
         {
+            filePath = ValidateReadableFilePath(filePath, ".csv");
+
             if (!File.Exists(filePath))
                 throw new FileNotFoundException("文件不存在", filePath);
             
@@ -271,7 +287,7 @@ namespace Dabp.Services.Export
         /// <summary>
         /// 打开文件保存对话框
         /// </summary>
-        public string? ShowSaveFileDialog(string defaultFileName, string filter)
+        public virtual string? ShowSaveFileDialog(string defaultFileName, string filter)
         {
             var dialog = new SaveFileDialog
             {
@@ -286,7 +302,7 @@ namespace Dabp.Services.Export
         /// <summary>
         /// 打开文件选择对话框
         /// </summary>
-        public string? ShowOpenFileDialog(string filter)
+        public virtual string? ShowOpenFileDialog(string filter)
         {
             var dialog = new OpenFileDialog()
             {
@@ -302,19 +318,21 @@ namespace Dabp.Services.Export
         /// </summary>
         public async Task<bool> OpenExportedFileAsync(string filePath)
         {
-            if (!File.Exists(filePath))
+            if (!TryValidateExportedFilePath(filePath, out var safeFilePath) || !File.Exists(safeFilePath))
                 return false;
             
             try
             {
                 Process.Start(new ProcessStartInfo
                 {
-                    FileName = filePath,
+                    FileName = safeFilePath,
                     UseShellExecute = true
                 });
                 return await Task.FromResult(true);
             }
-            catch
+            catch (Exception ex) when (
+                ExpectedOperationExceptionFilter.IsExpectedFileOperationException(ex) ||
+                ex is InvalidOperationException)
             {
                 return false;
             }
@@ -322,6 +340,79 @@ namespace Dabp.Services.Export
         
         #region 私有辅助方法
         
+        private static string ValidateExportPath(string filePath, string expectedExtension)
+        {
+            var fullPath = ValidateFilePath(filePath);
+            var directory = Path.GetDirectoryName(fullPath);
+            if (string.IsNullOrWhiteSpace(directory))
+            {
+                throw new ArgumentException("Export directory is required.", nameof(filePath));
+            }
+
+            if (!Directory.Exists(directory))
+            {
+                throw new DirectoryNotFoundException(directory);
+            }
+
+            if (!Path.GetExtension(fullPath).Equals(expectedExtension, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new ArgumentException($"Export file must use the {expectedExtension} extension.", nameof(filePath));
+            }
+
+            return fullPath;
+        }
+
+        private static string ValidateReadableFilePath(string filePath, string expectedExtension)
+        {
+            var fullPath = ValidateFilePath(filePath);
+            if (!Path.GetExtension(fullPath).Equals(expectedExtension, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new ArgumentException($"Import file must use the {expectedExtension} extension.", nameof(filePath));
+            }
+
+            return fullPath;
+        }
+
+        private static bool TryValidateExportedFilePath(string filePath, out string safeFilePath)
+        {
+            safeFilePath = string.Empty;
+            try
+            {
+                var fullPath = ValidateFilePath(filePath);
+                if (!SafeExportExtensions.Contains(Path.GetExtension(fullPath)))
+                {
+                    return false;
+                }
+
+                safeFilePath = fullPath;
+                return true;
+            }
+            catch (ArgumentException)
+            {
+                return false;
+            }
+            catch (NotSupportedException)
+            {
+                return false;
+            }
+        }
+
+        private static string ValidateFilePath(string filePath)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(filePath, nameof(filePath));
+
+            var fullPath = Path.GetFullPath(filePath);
+            var fileName = Path.GetFileName(fullPath);
+            if (string.IsNullOrWhiteSpace(fileName) ||
+                fileName.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0 ||
+                fullPath.IndexOfAny(Path.GetInvalidPathChars()) >= 0)
+            {
+                throw new ArgumentException("Invalid file path.", nameof(filePath));
+            }
+
+            return fullPath;
+        }
+
         private string GetColumnName(PropertyInfo property, ExcelExportOptions? options)
         {
             // 优先使用配置的显示名称
@@ -437,7 +528,7 @@ namespace Dabp.Services.Export
             if (value == null)
                 return "";
             
-            var stringValue = value.ToString() ?? "";
+            var stringValue = EscapeCsvFormula(value.ToString() ?? "");
             
             // 如果包含逗号、引号或换行符，需要用引号包围并转义内部引号
             if (stringValue.Contains(",") || stringValue.Contains("\"") || stringValue.Contains("\n"))
@@ -446,6 +537,22 @@ namespace Dabp.Services.Export
             }
             
             return stringValue;
+        }
+
+        private static string EscapeCsvFormula(string value)
+        {
+            if (string.IsNullOrEmpty(value))
+            {
+                return value;
+            }
+
+            var trimmedValue = value.TrimStart();
+            if (trimmedValue.Length == 0)
+            {
+                return value;
+            }
+
+            return trimmedValue[0] is '=' or '+' or '-' or '@' ? $"'{value}" : value;
         }
         
         private List<string> ParseCsvLine(string line)

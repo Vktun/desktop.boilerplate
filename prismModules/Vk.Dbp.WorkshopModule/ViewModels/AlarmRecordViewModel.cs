@@ -2,6 +2,7 @@
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
+using Dabp.Utils.Exceptions;
 using Dabp.Infrastructure.Entities;
 using Prism.Commands;
 using Prism.Events;
@@ -244,7 +245,7 @@ namespace Vk.Dbp.WorkshopModule.ViewModels
                 CriticalCount = await _alarmService.GetCriticalAlarmCountAsync(userId);
                 TodayCount = await _alarmService.GetTodayAlarmCountAsync(userId);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ExpectedOperationExceptionFilter.IsExpectedDataOperationException(ex))
             {
                 System.Diagnostics.Debug.WriteLine($"Load alarms error: {ex.Message}");
             }
@@ -295,7 +296,7 @@ namespace Vk.Dbp.WorkshopModule.ViewModels
                     await LoadAlarmsAsync();
                 }
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ExpectedOperationExceptionFilter.IsExpectedDataOperationException(ex))
             {
                 System.Diagnostics.Debug.WriteLine($"Acknowledge alarm error: {ex.Message}");
             }
@@ -323,7 +324,7 @@ namespace Vk.Dbp.WorkshopModule.ViewModels
                     await LoadAlarmsAsync();
                 }
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ExpectedOperationExceptionFilter.IsExpectedDataOperationException(ex))
             {
                 System.Diagnostics.Debug.WriteLine($"Resolve alarm error: {ex.Message}");
             }
@@ -351,7 +352,7 @@ namespace Vk.Dbp.WorkshopModule.ViewModels
                     await LoadAlarmsAsync();
                 }
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ExpectedOperationExceptionFilter.IsExpectedDataOperationException(ex))
             {
                 System.Diagnostics.Debug.WriteLine($"Ignore alarm error: {ex.Message}");
             }
@@ -459,7 +460,7 @@ namespace Vk.Dbp.WorkshopModule.ViewModels
             {
                 // 用户取消了保存操作
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ExpectedOperationExceptionFilter.IsExpectedUserOperationException(ex))
             {
                 System.Windows.MessageBox.Show($"导出失败：{ex.Message}", "错误", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
                 System.Diagnostics.Debug.WriteLine($"Export alarms error: {ex.Message}");

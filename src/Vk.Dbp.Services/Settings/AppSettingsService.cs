@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Text.Json;
+using Dabp.Utils.Exceptions;
 
 namespace Dabp.Services.Settings;
 
@@ -43,7 +44,7 @@ public sealed class AppSettingsService : IAppSettingsService
                 T? result = value.Deserialize<T>(JsonOptions);
                 return result is null ? defaultValue : result;
             }
-            catch
+            catch (Exception ex) when (ExpectedOperationExceptionFilter.IsExpectedFileOperationException(ex))
             {
                 return defaultValue;
             }
@@ -86,7 +87,7 @@ public sealed class AppSettingsService : IAppSettingsService
             Dictionary<string, JsonElement>? loaded = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json, JsonOptions);
             return loaded ?? new Dictionary<string, JsonElement>(StringComparer.OrdinalIgnoreCase);
         }
-        catch
+        catch (Exception ex) when (ExpectedOperationExceptionFilter.IsExpectedFileOperationException(ex))
         {
             return new Dictionary<string, JsonElement>(StringComparer.OrdinalIgnoreCase);
         }

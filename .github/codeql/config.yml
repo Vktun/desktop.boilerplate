@@ -1,21 +1,20 @@
 name: "Custom CodeQL Configuration"
 
-# 指定要使用的查询套件
 queries:
   - uses: security-and-quality
 
-# 路径过滤
+paths:
+  - 'src'
+  - 'prismModules'
+  - 'dbpframework'
+
 paths-ignore:
   - '**/bin/**'
   - '**/obj/**'
   - '**/*.g.cs'
+  - '**/*.g.i.cs'
   - '**/*.Designer.cs'
+  - '**/GeneratedInternalTypeHelper.g.cs'
   - 'test/**'
   - 'docs/**'
   - '.github/**'
-
-# 路径包含
-paths:
-  - 'src/**/*.cs'
-  - 'prismModules/**/*.cs'
-  - 'dbpframework/**/*.cs'

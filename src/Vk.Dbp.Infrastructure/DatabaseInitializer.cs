@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Dabp.Infrastructure.Entities;
+using Dabp.Utils.Exceptions;
 using Dabp.Utils.Security;
 using Serilog;
 using Vk.Dbp.Contracts.Navigation;
@@ -73,7 +74,7 @@ namespace Dabp.Infrastructure
                 {
                     await _db.Ado.ExecuteCommandAsync(statement);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (ExpectedOperationExceptionFilter.IsExpectedDataOperationException(ex))
                 {
                     Log.Warning(ex, "Failed to ensure Unicode text column");
                 }
@@ -353,36 +354,95 @@ namespace Dabp.Infrastructure
 
         private async Task MergeDuplicateRolesAsync(int keepRoleId, List<int> duplicateRoleIds)
         {
-            var duplicateIds = string.Join(",", duplicateRoleIds);
-            if (string.IsNullOrWhiteSpace(duplicateIds))
+            var duplicateIds = duplicateRoleIds
+                .Where(id => id > 0 && id != keepRoleId)
+                .Distinct()
+                .ToList();
+            if (duplicateIds.Count == 0)
             {
                 return;
             }
 
-            var sql = $@"
-INSERT INTO [UserRole] ([UserId], [RoleId])
-SELECT ur.[UserId], {keepRoleId}
-FROM [UserRole] ur
-WHERE ur.[RoleId] IN ({duplicateIds})
-  AND NOT EXISTS (
-      SELECT 1 FROM [UserRole] existing
-      WHERE existing.[UserId] = ur.[UserId] AND existing.[RoleId] = {keepRoleId});
+            var committed = false;
+            _db.Ado.BeginTran();
+            try
+            {
+                var duplicateUserRoles = await _db.Queryable<UserRole>()
+                    .Where(ur => duplicateIds.Contains(ur.RoleId))
+                    .ToListAsync();
+                var existingKeepUserIds = (await _db.Queryable<UserRole>()
+                        .Where(ur => ur.RoleId == keepRoleId)
+                        .ToListAsync())
+                    .Select(ur => ur.UserId)
+                    .ToHashSet();
 
-DELETE FROM [UserRole] WHERE [RoleId] IN ({duplicateIds});
+                var userRolesToInsert = duplicateUserRoles
+                    .Where(ur => !existingKeepUserIds.Contains(ur.UserId))
+                    .GroupBy(ur => ur.UserId)
+                    .Select(group => new UserRole
+                    {
+                        UserId = group.Key,
+                        RoleId = keepRoleId
+                    })
+                    .ToList();
+                if (userRolesToInsert.Count > 0)
+                {
+                    await _db.Insertable(userRolesToInsert).ExecuteCommandAsync();
+                }
 
-INSERT INTO [RolePermission] ([RoleId], [PermissionId], [CreationTime], [CreatorId])
-SELECT {keepRoleId}, rp.[PermissionId], COALESCE(rp.[CreationTime], GETDATE()), COALESCE(rp.[CreatorId], 0)
-FROM [RolePermission] rp
-WHERE rp.[RoleId] IN ({duplicateIds})
-  AND NOT EXISTS (
-      SELECT 1 FROM [RolePermission] existing
-      WHERE existing.[RoleId] = {keepRoleId} AND existing.[PermissionId] = rp.[PermissionId]);
+                await _db.Deleteable<UserRole>()
+                    .Where(ur => duplicateIds.Contains(ur.RoleId))
+                    .ExecuteCommandAsync();
 
-DELETE FROM [RolePermission] WHERE [RoleId] IN ({duplicateIds});
-DELETE FROM [RoleOrganizationUnit] WHERE [RoleId] IN ({duplicateIds});
-DELETE FROM [Role] WHERE [Id] IN ({duplicateIds});";
+                var duplicateRolePermissions = await _db.Queryable<RolePermission>()
+                    .Where(rp => duplicateIds.Contains(rp.RoleId))
+                    .ToListAsync();
+                var existingKeepPermissionIds = (await _db.Queryable<RolePermission>()
+                        .Where(rp => rp.RoleId == keepRoleId)
+                        .ToListAsync())
+                    .Select(rp => rp.PermissionId)
+                    .ToHashSet();
 
-            await _db.Ado.ExecuteCommandAsync(sql);
+                var rolePermissionsToInsert = duplicateRolePermissions
+                    .Where(rp => !existingKeepPermissionIds.Contains(rp.PermissionId))
+                    .GroupBy(rp => rp.PermissionId)
+                    .Select(group =>
+                    {
+                        var permission = group.First();
+                        return new RolePermission
+                        {
+                            RoleId = keepRoleId,
+                            PermissionId = group.Key,
+                            CreationTime = permission.CreationTime == default ? DateTime.Now : permission.CreationTime,
+                            CreatorId = permission.CreatorId
+                        };
+                    })
+                    .ToList();
+                if (rolePermissionsToInsert.Count > 0)
+                {
+                    await _db.Insertable(rolePermissionsToInsert).ExecuteCommandAsync();
+                }
+
+                await _db.Deleteable<RolePermission>()
+                    .Where(rp => duplicateIds.Contains(rp.RoleId))
+                    .ExecuteCommandAsync();
+                await _db.Deleteable<RoleOrganizationUnit>()
+                    .Where(rou => duplicateIds.Contains(rou.RoleId))
+                    .ExecuteCommandAsync();
+                await _db.Deleteable<Role>()
+                    .Where(role => duplicateIds.Contains(role.Id))
+                    .ExecuteCommandAsync();
+
+                _db.Ado.CommitTran();
+                committed = true;
+            }
+            finally
+            {
+                if (!committed)
+                {
+                    _db.Ado.RollbackTran();
+                }
+            }
         }
 
         private async Task<List<Permission>> EnsureSeedPermissionsAsync()
@@ -436,6 +496,7 @@ DELETE FROM [Role] WHERE [Id] IN ({duplicateIds});";
                 .Select(definition => new Permission
                 {
                     DisplyName = definition.DisplayName,
+                    ParentName = string.Empty,
                     ProviderKey = definition.PermissionCode,
                     ProviderId = definition.ProviderId,
                     IsEnabled = true,

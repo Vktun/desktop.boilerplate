@@ -1,6 +1,7 @@
 using System;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
+using Dabp.Utils.Exceptions;
 using Prism.Commands;
 using Prism.Mvvm;
 using Vk.Dbp.AccountModule.Models;
@@ -85,7 +86,7 @@ namespace Vk.Dbp.AccountModule.ViewModels
                 var permissions = await _permissionService.GetAllPermissionsAsync();
                 AvailablePermissions = new ObservableCollection<Permission>(permissions);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ExpectedOperationExceptionFilter.IsExpectedDataOperationException(ex))
             {
                 HandyControl.Controls.Growl.Error($"加载角色失败: {ex.Message}");
             }

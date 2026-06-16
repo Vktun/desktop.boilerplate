@@ -35,6 +35,7 @@ namespace Vk.Dbp.Tests.Common
                 typeof(Dabp.Infrastructure.Entities.UserRole),
                 typeof(Dabp.Infrastructure.Entities.UserOrganizationUnit),
                 typeof(Dabp.Infrastructure.Entities.RolePermission),
+                typeof(Dabp.Infrastructure.Entities.RoleOrganizationUnit),
                 typeof(Dabp.Infrastructure.Entities.OrganizationUnit),
                 typeof(Dabp.Infrastructure.Entities.AuditLog),
                 typeof(Dabp.Infrastructure.Entities.Notification),
@@ -54,18 +55,28 @@ namespace Vk.Dbp.Tests.Common
                 {
                     File.Delete(_databasePath);
                 }
+                catch (IOException) when (attempt < 2)
+                {
+                    DelayBeforeDeleteRetry(attempt);
+                }
+                catch (UnauthorizedAccessException) when (attempt < 2)
+                {
+                    DelayBeforeDeleteRetry(attempt);
+                }
                 catch (IOException)
                 {
-                    if (attempt == 2)
-                    {
-                        return;
-                    }
-
-                    GC.Collect();
-                    GC.WaitForPendingFinalizers();
-                    Thread.Sleep(50);
+                    return;
+                }
+                catch (UnauthorizedAccessException)
+                {
+                    return;
                 }
             }
+        }
+
+        private static void DelayBeforeDeleteRetry(int attempt)
+        {
+            Thread.Sleep(TimeSpan.FromMilliseconds(50 * (attempt + 1)));
         }
     }
 

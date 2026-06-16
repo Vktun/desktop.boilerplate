@@ -59,7 +59,7 @@ public class RoleService : IRoleService
 
             return true;
         }
-        catch (Exception ex)
+        catch (Exception ex) when (AccountOperationExceptionFilter.IsExpectedDataOperationException(ex))
         {
             await _auditLogService.LogFailureAsync(
                 _userSession.GetAuditUserId(),
@@ -110,7 +110,7 @@ public class RoleService : IRoleService
 
             return true;
         }
-        catch (Exception ex)
+        catch (Exception ex) when (AccountOperationExceptionFilter.IsExpectedDataOperationException(ex))
         {
             await _auditLogService.LogFailureAsync(
                 _userSession.GetAuditUserId(),
@@ -159,7 +159,7 @@ public class RoleService : IRoleService
 
             return true;
         }
-        catch (Exception ex)
+        catch (Exception ex) when (AccountOperationExceptionFilter.IsExpectedDataOperationException(ex))
         {
             await _auditLogService.LogFailureAsync(
                 _userSession.GetAuditUserId(),
@@ -213,7 +213,7 @@ public class RoleService : IRoleService
 
             return true;
         }
-        catch (Exception ex)
+        catch (Exception ex) when (AccountOperationExceptionFilter.IsExpectedDataOperationException(ex))
         {
             await _auditLogService.LogFailureAsync(
                 _userSession.GetAuditUserId(),

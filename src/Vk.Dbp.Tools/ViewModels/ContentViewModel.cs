@@ -23,7 +23,7 @@ namespace Dabp.Tools.ViewModels
             set => SetProperty(ref _encText, value);
         }
 
-        private string _sm4Key = "DabpSm4DefaultKey";
+        private string _sm4Key = string.Empty;
         public string Sm4Key
         {
             get => _sm4Key;

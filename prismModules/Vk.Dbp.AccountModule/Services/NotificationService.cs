@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Dabp.Utils.Exceptions;
 using SqlSugar;
 using Vk.Dbp.AccountModule.Models;
 using NotificationEntity = Dabp.Infrastructure.Entities.Notification;
@@ -57,7 +58,7 @@ namespace Vk.Dbp.AccountModule.Services
                 notification.CreatedTime = entity.CreatedTime;
                 return id > 0;
             }
-            catch
+            catch (Exception ex) when (ExpectedOperationExceptionFilter.IsExpectedDataOperationException(ex))
             {
                 return false;
             }
@@ -85,7 +86,7 @@ namespace Vk.Dbp.AccountModule.Services
 
                 return result > 0;
             }
-            catch
+            catch (Exception ex) when (ExpectedOperationExceptionFilter.IsExpectedDataOperationException(ex))
             {
                 return false;
             }
@@ -100,7 +101,7 @@ namespace Vk.Dbp.AccountModule.Services
                     .ExecuteCommandAsync();
                 return result > 0;
             }
-            catch
+            catch (Exception ex) when (ExpectedOperationExceptionFilter.IsExpectedDataOperationException(ex))
             {
                 return false;
             }

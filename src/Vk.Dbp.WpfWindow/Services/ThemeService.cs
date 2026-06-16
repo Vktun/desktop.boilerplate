@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.Windows;
 using Dabp.Services.Settings;
+using Dabp.Utils.Exceptions;
 
 namespace Dabp.WpfWindow.Services
 {
@@ -77,7 +78,10 @@ namespace Dabp.WpfWindow.Services
                     NewTheme = themeName
                 });
             }
-            catch
+            catch (Exception ex) when (
+                ExpectedOperationExceptionFilter.IsExpectedFileOperationException(ex) ||
+                ex is InvalidOperationException ||
+                ex is UriFormatException)
             {
                 _currentTheme = oldTheme;
                 throw;
@@ -127,7 +131,7 @@ namespace Dabp.WpfWindow.Services
             {
                 return _appSettingsService.GetValue<string?>(ThemeKey, null);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ExpectedOperationExceptionFilter.IsExpectedFileOperationException(ex))
             {
                 Debug.WriteLine($"[ThemeService] Failed to load theme: {ex.Message}");
                 return null;
@@ -140,7 +144,7 @@ namespace Dabp.WpfWindow.Services
             {
                 _appSettingsService.SetValue(ThemeKey, themeName);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ExpectedOperationExceptionFilter.IsExpectedFileOperationException(ex))
             {
                 Debug.WriteLine($"[ThemeService] Failed to save theme: {ex.Message}");
             }

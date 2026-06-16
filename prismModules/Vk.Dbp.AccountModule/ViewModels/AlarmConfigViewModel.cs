@@ -2,6 +2,7 @@ using System;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 using Dabp.Infrastructure.Entities;
+using Dabp.Utils.Exceptions;
 using Prism.Commands;
 using Prism.Mvvm;
 using Vk.Dbp.Services.Alarm;
@@ -135,7 +136,7 @@ namespace Vk.Dbp.AccountModule.ViewModels
                 var configs = await _alarmConfigService.GetAlarmConfigsAsync();
                 AlarmConfigs = new ObservableCollection<AlarmConfig>(configs);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedOperationException(ex))
             {
                 ShowMessage($"加载配置失败: {ex.Message}");
             }
@@ -222,7 +223,7 @@ namespace Vk.Dbp.AccountModule.ViewModels
                     ShowMessage("配置保存失败");
                 }
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedOperationException(ex))
             {
                 ShowMessage($"保存失败: {ex.Message}");
             }
@@ -256,7 +257,7 @@ namespace Vk.Dbp.AccountModule.ViewModels
                     ShowMessage("配置删除失败");
                 }
             }
-            catch (Exception ex)
+            catch (Exception ex) when (IsExpectedOperationException(ex))
             {
                 ShowMessage($"删除失败: {ex.Message}");
             }
@@ -280,6 +281,11 @@ namespace Vk.Dbp.AccountModule.ViewModels
         {
             DialogMessage = message;
             ShowDialog = true;
+        }
+
+        private static bool IsExpectedOperationException(Exception exception)
+        {
+            return ExpectedOperationExceptionFilter.IsExpectedDataOperationException(exception);
         }
 
         #endregion

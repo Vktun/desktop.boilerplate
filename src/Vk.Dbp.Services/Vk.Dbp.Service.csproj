@@ -17,6 +17,7 @@
     <ProjectReference Include="..\Vk.Dbp.Contracts\Vk.Dbp.Contracts.csproj" />
     <ProjectReference Include="..\Vk.Dbp.Domain\Vk.Dbp.Domain.csproj" />
     <ProjectReference Include="..\Vk.Dbp.Infrastructure\Vk.Dbp.Infrastructure.csproj" />
+    <ProjectReference Include="..\Vk.Dbp.Utils\Vk.Dbp.Utils.csproj" />
   </ItemGroup>
 
 </Project>

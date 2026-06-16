@@ -2,6 +2,7 @@ using System;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
+using Dabp.Utils.Exceptions;
 using Prism.Commands;
 using Prism.Mvvm;
 using Vk.Dbp.Contracts.Services;
@@ -162,7 +163,7 @@ namespace Vk.Dbp.AccountModule.ViewModels
             {
                 // 用户取消了保存操作
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ExpectedOperationExceptionFilter.IsExpectedUserOperationException(ex))
             {
                 System.Windows.MessageBox.Show($"导出失败：{ex.Message}", "错误", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
                 System.Diagnostics.Debug.WriteLine($"Export audit logs error: {ex.Message}");

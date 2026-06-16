@@ -1,6 +1,7 @@
 using Dabp.Infrastructure;
 using Prism.Ioc;
 using Serilog;
+using Dabp.Utils.Exceptions;
 using Vk.Dbp.AccountModule.Services;
 using Vk.Dbp.Contracts.Services;
 
@@ -36,7 +37,9 @@ public sealed class AppStartupService(
                 enabled,
                 minutes);
         }
-        catch (Exception ex)
+        catch (Exception ex) when (
+            ExpectedOperationExceptionFilter.IsExpectedDataOperationException(ex) ||
+            ex is InvalidOperationException)
         {
             Log.Warning(ex, "Failed to load session config from database, using defaults");
             sessionTimeoutService.TimeoutMinutes = 15;

@@ -1,5 +1,6 @@
 using System.Windows.Controls;
 using Dabp.Services.Settings;
+using Dabp.Utils.Exceptions;
 using Dabp.Utils.Security;
 using Prism.Commands;
 using Prism.Mvvm;
@@ -187,9 +188,7 @@ public class LoginViewModel : BindableBase, INavigationAware
             passwordBox.Clear();
             _navigationService.NavigateTo(ViewNames.Dashboard);
         }
-        catch (Exception ex) when (
-            ex.GetType().FullName?.Contains("SqlSugar") == true
-            || ex is System.Data.Common.DbException)
+        catch (Exception ex) when (ExpectedOperationExceptionFilter.IsExpectedDataOperationException(ex))
         {
             await _auditLogService.LogFailureAsync(
                 0,
@@ -203,7 +202,7 @@ public class LoginViewModel : BindableBase, INavigationAware
             ShowError = true;
             ErrorMessage = "数据库连接失败，请稍后重试";
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ExpectedOperationExceptionFilter.IsExpectedUserOperationException(ex))
         {
             await _auditLogService.LogFailureAsync(
                 0,

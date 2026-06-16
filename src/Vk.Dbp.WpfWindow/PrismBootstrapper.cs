@@ -11,6 +11,7 @@ using Dabp.Infrastructure.Repositories;
 using Dabp.Services.Caching;
 using Dabp.Services.Export;
 using Dabp.Services.Settings;
+using Dabp.Utils.Exceptions;
 using Dabp.Utils.Security;
 using Dabp.WpfWindow.Layout;
 using Dabp.WpfWindow.Services;
@@ -71,7 +72,17 @@ namespace Dabp.WpfWindow
 
                 _ = startupService.StartSessionTimeoutMonitoringAsync();
             }
-            catch (Exception ex)
+            catch (InvalidOperationException ex)
+            {
+                Log.Error(ex, "Application startup failed");
+                MessageBox.Show(
+                    $"Application startup failed: {ex.Message}",
+                    "Startup Error",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+                Application.Current?.Shutdown();
+            }
+            catch (Exception ex) when (ExpectedOperationExceptionFilter.IsExpectedUserOperationException(ex))
             {
                 Log.Error(ex, "Application startup failed");
                 MessageBox.Show(
@@ -203,7 +214,7 @@ namespace Dabp.WpfWindow
                 {
                     return new RedisCacheService(redisOptions);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (ExpectedOperationExceptionFilter.IsExpectedExternalServiceException(ex))
                 {
                     Log.Warning(ex, "Failed to initialize Redis cache. Falling back to in-memory cache.");
                     return new InMemoryCacheService();
@@ -251,7 +262,11 @@ namespace Dabp.WpfWindow
                                         var lockScreenService = Container.Resolve<ILockScreenService>();
                                         lockScreenService.Lock("数据库连接失败，请检查网络后解锁重试");
                                     }
-                                    catch (Exception lockEx)
+                                    catch (InvalidOperationException lockEx)
+                                    {
+                                        Log.Error(lockEx, "Failed to trigger lock screen");
+                                    }
+                                    catch (ArgumentException lockEx)
                                     {
                                         Log.Error(lockEx, "Failed to trigger lock screen");
                                     }
@@ -322,4 +337,3 @@ namespace Dabp.WpfWindow
         }
     }
 }
-

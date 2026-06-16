@@ -3,6 +3,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
 using Dabp.Infrastructure.Entities;
+using Dabp.Utils.Exceptions;
 using Prism.Commands;
 using Prism.Events;
 using Prism.Mvvm;
@@ -154,7 +155,7 @@ namespace Vk.Dbp.WpfWindow.ViewModels
                     UserId = userId
                 });
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ExpectedOperationExceptionFilter.IsExpectedDataOperationException(ex))
             {
                 System.Diagnostics.Debug.WriteLine($"Load active alarms error: {ex.Message}");
             }
@@ -191,7 +192,7 @@ namespace Vk.Dbp.WpfWindow.ViewModels
                     await LoadActiveAlarmsAsync();
                 }
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ExpectedOperationExceptionFilter.IsExpectedDataOperationException(ex))
             {
                 System.Diagnostics.Debug.WriteLine($"Acknowledge alarm error: {ex.Message}");
             }
@@ -217,7 +218,7 @@ namespace Vk.Dbp.WpfWindow.ViewModels
                     await LoadActiveAlarmsAsync();
                 }
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ExpectedOperationExceptionFilter.IsExpectedDataOperationException(ex))
             {
                 System.Diagnostics.Debug.WriteLine($"Acknowledge all alarms error: {ex.Message}");
             }
@@ -245,7 +246,7 @@ namespace Vk.Dbp.WpfWindow.ViewModels
                     await LoadActiveAlarmsAsync();
                 }
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ExpectedOperationExceptionFilter.IsExpectedDataOperationException(ex))
             {
                 System.Diagnostics.Debug.WriteLine($"Resolve alarm error: {ex.Message}");
             }

@@ -36,7 +36,19 @@ public class PrismNavigationService : INavigationService
                 Success = true
             });
         }
-        catch (Exception ex)
+        catch (InvalidOperationException ex)
+        {
+            NavigationCompleted?.Invoke(this, new NavigationEventArgs
+            {
+                ViewName = viewName,
+                Parameters = parameters,
+                Success = false,
+                ErrorMessage = ex.Message
+            });
+
+            throw;
+        }
+        catch (ArgumentException ex)
         {
             NavigationCompleted?.Invoke(this, new NavigationEventArgs
             {
@@ -60,4 +72,3 @@ public class PrismNavigationService : INavigationService
         throw new NotSupportedException("Prism region navigation back stack is not implemented in this service.");
     }
 }
-

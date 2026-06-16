@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using System.Windows;
 using Dabp.Utils.Security;
+using Dabp.Utils.Exceptions;
 using Dabp.WpfWindow.ViewModels;
 using Dabp.WpfWindow.Views;
 using HandyControl.Controls;
@@ -81,7 +82,7 @@ namespace Dabp.WpfWindow.Services
             try
             {
                 var userService = _container.Resolve<IUserService>();
-                var user = userService.GetUserByIdAsync(_userSession.UserId).Result;
+                var user = userService.GetUserByIdAsync(_userSession.UserId).GetAwaiter().GetResult();
                 if (user == null)
                     return false;
 
@@ -108,7 +109,7 @@ namespace Dabp.WpfWindow.Services
                 Growl.Error("瀵嗙爜閿欒锛岃閲嶆柊杈撳叆");
                 return false;
             }
-            catch (Exception)
+            catch (Exception ex) when (ExpectedOperationExceptionFilter.IsExpectedUserOperationException(ex))
             {
                 Growl.Error("瑙ｉ攣澶辫触锛岃绋嶅悗閲嶈瘯");
                 return false;

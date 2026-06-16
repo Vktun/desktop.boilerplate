@@ -8,11 +8,8 @@ using Serilog;
 using Serilog.Events;
 using SqlSugar;
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -53,6 +50,8 @@ namespace Dabp.Tools
             var config = new ConfigurationBuilder()
                 .SetBasePath(Directory.GetCurrentDirectory())
                 .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+                .AddJsonFile("appsettings.local.json", optional: true, reloadOnChange: true)
+                .AddEnvironmentVariables()
                 .Build();
             return config;
         }
@@ -83,13 +82,20 @@ namespace Dabp.Tools
         #region 配置数据库
         void ConfigureSqlSugarDb(IContainerRegistry containerRegistry, IConfiguration configuration)
         {
-            string connectionString = string.Empty;
             var connectValue = configuration["ConnectionStrings:Default"];
-            if (!string.IsNullOrWhiteSpace(connectValue))
+            if (string.IsNullOrWhiteSpace(connectValue))
             {
-                var sm4Key = configuration["Encryption:SM4Key"] ?? "DabpSm4DefaultKey";
+                Log.Information("Tools database connection is not configured. Database services will not be registered.");
+                return;
+            }
+
+            var connectionString = connectValue;
+            var sm4Key = configuration["Encryption:SM4Key"];
+            if (!string.IsNullOrWhiteSpace(sm4Key))
+            {
                 connectionString = SM4.Decrypt(connectValue, sm4Key);
             }
+
             containerRegistry.RegisterScoped<ISqlSugarClient>(s =>
             {
                 //Scoped用SqlSugarClient 
