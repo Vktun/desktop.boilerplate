@@ -41,7 +41,7 @@ namespace Vk.Dbp.Services.Alarm
         /// </summary>
         /// <param name="id">告警记录ID</param>
         /// <returns>告警记录</returns>
-        Task<AlarmRecord> GetAlarmByIdAsync(int id);
+        Task<AlarmRecord?> GetAlarmByIdAsync(int id);
 
         /// <summary>
         /// 创建新告警

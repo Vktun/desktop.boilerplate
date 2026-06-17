@@ -38,7 +38,7 @@ public partial class LoginView : UserControl
 
     private void PasswordToggleButton_Click(object sender, RoutedEventArgs e)
     {
-        bool isRevealed = PasswordToggleButton.IsChecked == true;
+        bool isRevealed = PasswordToggleButton.IsChecked is true;
 
         PasswordRevealTextBox.Visibility = isRevealed ? Visibility.Visible : Visibility.Collapsed;
         PasswordBox.Visibility = isRevealed ? Visibility.Collapsed : Visibility.Visible;

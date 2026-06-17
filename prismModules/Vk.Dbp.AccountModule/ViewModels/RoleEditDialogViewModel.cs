@@ -88,18 +88,13 @@ namespace Vk.Dbp.AccountModule.ViewModels
             IsAddMode = isAddMode;
             DialogTitle = isAddMode ? "新增角色" : "编辑角色";
             
-            if (isAddMode)
-            {
-                Role = new Role
+            Role = isAddMode
+                ? new Role
                 {
                     IsEnabled = true,
                     CreatedTime = DateTime.Now
-                };
-            }
-            else
-            {
-                Role = role ?? throw new ArgumentNullException(nameof(role));
-            }
+                }
+                : role ?? throw new ArgumentNullException(nameof(role));
         }
     }
 }

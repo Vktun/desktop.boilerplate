@@ -126,7 +126,7 @@ namespace Vk.Dbp.AccountModule.Services
         public async Task<bool> MarkAllAsReadAsync(int userId)
         {
             int result = await _db.Updateable<NotificationEntity>()
-                .SetColumns(n => n.IsRead == true)
+                .SetColumns(n => new NotificationEntity { IsRead = true })
                 .Where(n => n.UserId == userId && !n.IsRead)
                 .ExecuteCommandAsync();
 

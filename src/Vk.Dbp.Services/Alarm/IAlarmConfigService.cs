@@ -28,7 +28,7 @@ namespace Vk.Dbp.Services.Alarm
         /// </summary>
         /// <param name="id">配置ID</param>
         /// <returns>告警配置</returns>
-        Task<AlarmConfig> GetAlarmConfigByIdAsync(int id);
+        Task<AlarmConfig?> GetAlarmConfigByIdAsync(int id);
 
         /// <summary>
         /// 保存告警配置

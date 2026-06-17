@@ -21,12 +21,12 @@ public sealed class AppSettingsService : IAppSettingsService
     public AppSettingsService()
     {
         string appName = Assembly.GetEntryAssembly()?.GetName().Name ?? "DabpDesktopBoilerplate";
-        string settingsDirectory = Path.Combine(
+        string settingsDirectory = Path.Join(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             appName);
 
         Directory.CreateDirectory(settingsDirectory);
-        _settingsFilePath = Path.Combine(settingsDirectory, "settings.json");
+        _settingsFilePath = Path.Join(settingsDirectory, "settings.json");
         _settings = LoadSettings();
     }
 

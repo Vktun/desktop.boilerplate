@@ -171,7 +171,7 @@ namespace Dabp.WpfWindow
 
         private void ConfigureLogging()
         {
-            string logDirectory = Path.Combine(GetLocalAppDataDirectory(), "Logs");
+            string logDirectory = Path.Join(GetLocalAppDataDirectory(), "Logs");
             Directory.CreateDirectory(logDirectory);
 
             Log.Logger = new LoggerConfiguration()
@@ -184,7 +184,7 @@ namespace Dabp.WpfWindow
                 .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Warning)
                 .Enrich.FromLogContext()
                 .WriteTo.File(
-                    Path.Combine(logDirectory, "logs.txt"),
+                    Path.Join(logDirectory, "logs.txt"),
                     outputTemplate: "[{Timestamp:MM-dd HH:mm:ss}] [{Level:u3}] {Message:lj}{NewLine}{Exception}",
                     rollingInterval: RollingInterval.Day,
                     rollOnFileSizeLimit: true,
@@ -301,7 +301,7 @@ namespace Dabp.WpfWindow
         private static string GetLocalAppDataDirectory()
         {
             string appName = AppDomain.CurrentDomain.FriendlyName;
-            return Path.Combine(
+            return Path.Join(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                 appName);
         }

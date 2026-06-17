@@ -19,8 +19,8 @@ namespace Vk.Dbp.Services.Alarm
             ISqlSugarClient db,
             IRepository<AlarmConfig> alarmConfigRepository)
         {
-            _db = db;
-            _alarmConfigRepository = alarmConfigRepository;
+            _db = db ?? throw new ArgumentNullException(nameof(db));
+            _alarmConfigRepository = alarmConfigRepository ?? throw new ArgumentNullException(nameof(alarmConfigRepository));
         }
 
         public async Task<List<AlarmConfig>> GetAlarmConfigsAsync()
@@ -37,7 +37,7 @@ namespace Vk.Dbp.Services.Alarm
                 .FirstAsync();
         }
 
-        public async Task<AlarmConfig> GetAlarmConfigByIdAsync(int id)
+        public async Task<AlarmConfig?> GetAlarmConfigByIdAsync(int id)
         {
             return await _alarmConfigRepository.GetByIdAsync(id);
         }

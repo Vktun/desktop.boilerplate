@@ -15,7 +15,7 @@ namespace Dabp.Infrastructure.Repositories
             _db = db;
         }
 
-        public async Task<T> GetByIdAsync(object id)
+        public async Task<T?> GetByIdAsync(object id)
         {
             return await _db.Queryable<T>().InSingleAsync(id);
         }

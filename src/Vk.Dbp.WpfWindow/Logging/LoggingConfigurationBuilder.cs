@@ -48,7 +48,7 @@ namespace Dabp.WpfWindow.Logging
             
             // 配置输出
             config.WriteTo.File(
-                path: System.IO.Path.Combine(logDirectory, "logs-.txt"),
+                path: System.IO.Path.Join(logDirectory, "logs-.txt"),
                 rollingInterval: RollingInterval.Day,
                 outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff}] [{Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}",
                 fileSizeLimitBytes: 100 * 1024 * 1024, // 100MB
@@ -58,7 +58,7 @@ namespace Dabp.WpfWindow.Logging
             
             // 添加JSON日志（便于日志分析）
             config.WriteTo.File(
-                path: System.IO.Path.Combine(logDirectory, "logs-.json"),
+                path: System.IO.Path.Join(logDirectory, "logs-.json"),
                 rollingInterval: RollingInterval.Day,
                 formatter: new Serilog.Formatting.Json.JsonFormatter(renderMessage: true),
                 fileSizeLimitBytes: 100 * 1024 * 1024,

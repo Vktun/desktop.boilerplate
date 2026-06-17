@@ -21,8 +21,8 @@ namespace Vk.Dbp.Services.Alarm
             ISqlSugarClient db,
             IRepository<AlarmRecord> alarmRecordRepository)
         {
-            _db = db;
-            _alarmRecordRepository = alarmRecordRepository;
+            _db = db ?? throw new ArgumentNullException(nameof(db));
+            _alarmRecordRepository = alarmRecordRepository ?? throw new ArgumentNullException(nameof(alarmRecordRepository));
         }
 
         public async Task<List<AlarmRecord>> GetAlarmRecordsAsync(int userId, AlarmStatus? status = null, AlarmLevel? level = null, DateTime? startTime = null, DateTime? endTime = null)
@@ -67,7 +67,7 @@ namespace Vk.Dbp.Services.Alarm
                 .CountAsync();
         }
 
-        public async Task<AlarmRecord> GetAlarmByIdAsync(int id)
+        public async Task<AlarmRecord?> GetAlarmByIdAsync(int id)
         {
             return await _alarmRecordRepository.GetByIdAsync(id);
         }
@@ -182,12 +182,10 @@ namespace Vk.Dbp.Services.Alarm
                 query = query.Where(a => a.AlarmLevel == level.Value);
             }
 
-            var total = 0;
+            RefAsync<int> total = 0;
             var list = await query
                 .OrderByDescending(a => a.TriggeredTime)
                 .ToPageListAsync(pageIndex, pageSize, total);
-
-            total = await query.CountAsync();
 
             return (list, total);
         }

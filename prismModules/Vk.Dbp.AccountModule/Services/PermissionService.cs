@@ -38,9 +38,11 @@ public class PermissionService : IPermissionService
             entities = entities.Where(e => e.ProviderId == (int)type.Value).ToList();
         }
 
+        Dictionary<int, PermissionEntity> entityMap = entities.ToDictionary(entity => entity.Id);
         List<PermissionModel> models = entities.Select(MapToModel).ToList();
         List<PermissionModel> rootPermissions = models
-            .Where(p => string.IsNullOrEmpty(GetParentName(entities.First(e => e.Id == p.Id))))
+            .Where(p => entityMap.TryGetValue(p.Id, out PermissionEntity? entity) &&
+                        string.IsNullOrEmpty(GetParentName(entity)))
             .ToList();
 
         foreach (PermissionModel root in rootPermissions)

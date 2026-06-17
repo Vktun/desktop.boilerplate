@@ -10,16 +10,17 @@ namespace Dabp.WpfWindow.Services
     /// </summary>
     public class ConfigurationWizard
     {
+        private const string LocalConfigFileName = "appsettings.local.json";
         private readonly string _configFilePath;
         
         public ConfigurationWizard()
         {
-            var appDataPath = Path.Combine(
+            var appDataPath = Path.Join(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                 AppDomain.CurrentDomain.FriendlyName
             );
             Directory.CreateDirectory(appDataPath);
-            _configFilePath = Path.Combine(appDataPath, "appsettings.wizard.json");
+            _configFilePath = Path.Join(appDataPath, "appsettings.wizard.json");
         }
         
         /// <summary>
@@ -28,7 +29,7 @@ namespace Dabp.WpfWindow.Services
         public bool ShouldShowWizard()
         {
             // 检查是否存在appsettings.local.json
-            var localConfigPath = Path.Combine(AppContext.BaseDirectory, "appsettings.local.json");
+            var localConfigPath = GetLocalConfigPath();
             if (File.Exists(localConfigPath))
             {
                 return false;
@@ -149,7 +150,7 @@ namespace Dabp.WpfWindow.Services
   }}
 }}";
                 
-                var localConfigPath = Path.Combine(AppContext.BaseDirectory, "appsettings.local.json");
+                var localConfigPath = GetLocalConfigPath();
                 File.WriteAllText(localConfigPath, configContent);
                 
                 // 标记向导已完成
@@ -159,6 +160,11 @@ namespace Dabp.WpfWindow.Services
             }
             
             return false;
+        }
+
+        private static string GetLocalConfigPath()
+        {
+            return Path.Join(AppContext.BaseDirectory, LocalConfigFileName);
         }
     }
 }

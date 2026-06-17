@@ -122,7 +122,7 @@ namespace Vk.Dbp.AccountModule.ViewModels
 
             var allPermissions = await _permissionService.GetAllPermissionsAsync();
             var rolePermissions = await _roleService.GetRolePermissionsAsync(_role.Id);
-            var rolePermissionIds = rolePermissions.Select(p => p.Id).ToList();
+            var rolePermissionIds = rolePermissions.Select(p => p.Id).ToHashSet();
 
             Permissions.Clear();
             foreach (var permission in allPermissions)

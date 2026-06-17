@@ -1,7 +1,6 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using Vk.Dbp.Account.Permissions;
 
 namespace Vk.Dbp.Account.Users
@@ -13,55 +12,55 @@ namespace Vk.Dbp.Account.Users
     public class CurrentUser : ICurrentUser
     {
         private readonly IDictionary<string, object> _principalAccessor;
+
         public CurrentUser(IDictionary<string, object> principalAccessor)
         {
             _principalAccessor = principalAccessor;
         }
+
         public virtual bool IsAuthenticated => Id.HasValue;
 
         public virtual Guid? Id => FindGuid("Id");
 
-        public virtual string? UserName => (_principalAccessor[nameof(UserName)] ?? string.Empty).ToString();
+        public virtual string? UserName => GetPrincipalValue(nameof(UserName));
 
-        public virtual string? Name => (_principalAccessor[nameof(Name)] ?? string.Empty).ToString();
+        public virtual string? Name => GetPrincipalValue(nameof(Name));
 
-        public virtual string? SurName => (_principalAccessor[nameof(SurName)] ?? string.Empty).ToString();
+        public virtual string? SurName => GetPrincipalValue(nameof(SurName));
 
-        public virtual string? PhoneNumber => (_principalAccessor[nameof(PhoneNumber)] ?? string.Empty).ToString();
+        public virtual string? PhoneNumber => GetPrincipalValue(nameof(PhoneNumber));
+
         /// <summary>
         /// 角色列表
         /// </summary>
-        public virtual List<RoleDto> Roles => _principalAccessor["Roles"] == null ? new List<RoleDto> { } : (List<RoleDto>)_principalAccessor["Roles"];
+        public virtual List<RoleDto> Roles => _principalAccessor.TryGetValue("Roles", out var roles) && roles is List<RoleDto> roleList
+            ? roleList
+            : new List<RoleDto>();
+
         /// <summary>
         /// 权限列表
         /// </summary>
-        public virtual List<PermissionDto> permissions => _principalAccessor["permissions"] == null ? new List<PermissionDto>() { } : (List<PermissionDto>)_principalAccessor["permissions"];
+        public virtual List<PermissionDto> permissions => _principalAccessor.TryGetValue("permissions", out var permissions) && permissions is List<PermissionDto> permissionList
+            ? permissionList
+            : new List<PermissionDto>();
+
         public virtual bool IsInRole(string roleName)
         {
-            var roles = _principalAccessor["Roles"];
-            if (roles == null)
-            {
-                return false;
-            }
-            else
-            {
-                var rs = (List<RoleDto>)roles;
-                return rs.Any(r => r.Name == roleName);
-            }
+            return _principalAccessor.TryGetValue("Roles", out var roles) &&
+                   roles is List<RoleDto> roleList &&
+                   roleList.Any(r => r.Name == roleName);
         }
-        Guid? FindGuid(string name)
-        {
-            Guid _id;
-            var res = Guid.TryParse((_principalAccessor[name]).ToString(), out _id);
-            if (res)
-            {
-                return _id;
-            }
-            else
-            {
-                return null;
-            }
 
+        private Guid? FindGuid(string name)
+        {
+            return _principalAccessor.TryGetValue(name, out var value) && Guid.TryParse(value?.ToString(), out Guid id)
+                ? id
+                : null;
+        }
+
+        private string? GetPrincipalValue(string name)
+        {
+            return _principalAccessor.TryGetValue(name, out var value) ? value?.ToString() : string.Empty;
         }
     }
 }

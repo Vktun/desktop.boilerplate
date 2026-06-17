@@ -7,7 +7,7 @@ namespace Dabp.Infrastructure.Repositories
 {
     public interface IRepository<T> where T : class, new()
     {
-        Task<T> GetByIdAsync(object id);
+        Task<T?> GetByIdAsync(object id);
         Task<T> GetFirstAsync(Expression<Func<T, bool>> whereExpression);
         Task<List<T>> GetListAsync();
         Task<List<T>> GetListAsync(Expression<Func<T, bool>> whereExpression);
