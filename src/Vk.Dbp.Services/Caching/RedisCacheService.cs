@@ -155,25 +155,16 @@ public sealed class RedisCacheService : ICacheService, IDisposable
 
     private void DeleteKeys(string pattern)
     {
-        HashSet<RedisKey> keysToDelete = [];
+        RedisKey[] keysToDelete = _multiplexer.GetEndPoints()
+            .Select(endpoint => _multiplexer.GetServer(endpoint))
+            .Where(server => server.IsConnected)
+            .SelectMany(server => server.Keys(_database.Database, pattern: pattern))
+            .Distinct()
+            .ToArray();
 
-        foreach (EndPoint endpoint in _multiplexer.GetEndPoints())
+        if (keysToDelete.Length > 0)
         {
-            IServer server = _multiplexer.GetServer(endpoint);
-            if (!server.IsConnected)
-            {
-                continue;
-            }
-
-            foreach (RedisKey redisKey in server.Keys(_database.Database, pattern: pattern))
-            {
-                keysToDelete.Add(redisKey);
-            }
-        }
-
-        if (keysToDelete.Count > 0)
-        {
-            _database.KeyDelete(keysToDelete.ToArray());
+            _database.KeyDelete(keysToDelete);
         }
     }
 

@@ -33,9 +33,9 @@ public class PermissionService : IPermissionService
             .Where(p => p.IsEnabled)
             .ToListAsync();
 
-        if (type.HasValue)
+        if (type is { } permissionType)
         {
-            entities = entities.Where(e => e.ProviderId == (int)type.Value).ToList();
+            entities = entities.Where(e => e.ProviderId == (int)permissionType).ToList();
         }
 
         Dictionary<int, PermissionEntity> entityMap = entities.ToDictionary(entity => entity.Id);

@@ -151,7 +151,7 @@ namespace Vk.Dbp.WpfWindow.ViewModels
         public DelegateCommand LoginCommand { get; private set; }
         public DelegateCommand LockCommand { get; private set; }
 
-        private INotifyPropertyChanged? _userSessionNotifier;
+        private readonly INotifyPropertyChanged? _userSessionNotifier;
 
         public HeaderViewModel(
             INavigationService navigationService,

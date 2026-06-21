@@ -47,17 +47,24 @@ namespace Dabp.Services.Export
             var properties = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance);
             
             // 写入标题行
-            var headers = properties.Select(p => p.Name);
+            var headers = new List<string>(properties.Length);
+            foreach (var property in properties)
+            {
+                headers.Add(property.Name);
+            }
+
             csv.AppendLine(string.Join(",", headers));
             
             // 写入数据行
             foreach (var item in data)
             {
-                var values = properties.Select(p =>
+                var values = new List<string>(properties.Length);
+                foreach (var property in properties)
                 {
-                    var value = p.GetValue(item);
-                    return FormatCsvValue(value);
-                });
+                    var value = property.GetValue(item);
+                    values.Add(FormatCsvValue(value));
+                }
+
                 csv.AppendLine(string.Join(",", values));
             }
             
@@ -258,7 +265,7 @@ namespace Dabp.Services.Export
             
             var properties = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance);
             var headerLine = lines[0];
-            var headers = headerLine.Split(',').Select(h => h.Trim()).ToList();
+            var headers = ParseCsvLine(headerLine);
             
             var result = new List<T>();
             

@@ -8,12 +8,7 @@ namespace Vk.Dbp.WorkshopModule.ViewModels
 {
     public class ProductionRecordViewModel : BindableBase, INavigationAware
     {
-        private string _title = "ViewA";
-        public string Title
-        {
-            get { return _title; }
-            set { SetProperty(ref _title, value); }
-        }
+        public string Title { get; } = "ViewA";
 
         private int _pageViews;
         public int PageViews

@@ -40,7 +40,7 @@ namespace Vk.Dbp.Account.Users
         /// <summary>
         /// 权限列表
         /// </summary>
-        public virtual List<PermissionDto> permissions => _principalAccessor.TryGetValue("permissions", out var permissions) && permissions is List<PermissionDto> permissionList
+        public virtual List<PermissionDto> permissions => _principalAccessor.TryGetValue("permissions", out var permissionValues) && permissionValues is List<PermissionDto> permissionList
             ? permissionList
             : new List<PermissionDto>();
 

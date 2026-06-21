@@ -13,21 +13,48 @@ namespace Dabp.Tools.ViewModels
         public string DenText
         {
             get => _denText;
-            set => SetProperty(ref _denText, value);
+            set
+            {
+                if (_denText == value)
+                {
+                    return;
+                }
+
+                _denText = value;
+                RaisePropertyChanged();
+            }
         }
 
         private string _encText = string.Empty;
         public string EncText
         {
             get => _encText;
-            set => SetProperty(ref _encText, value);
+            set
+            {
+                if (_encText == value)
+                {
+                    return;
+                }
+
+                _encText = value;
+                RaisePropertyChanged();
+            }
         }
 
         private string _sm4Key = string.Empty;
         public string Sm4Key
         {
             get => _sm4Key;
-            set => SetProperty(ref _sm4Key, value);
+            set
+            {
+                if (_sm4Key == value)
+                {
+                    return;
+                }
+
+                _sm4Key = value;
+                RaisePropertyChanged();
+            }
         }
 
         private DelegateCommand<string>? _sm4Command;

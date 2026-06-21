@@ -30,24 +30,24 @@ namespace Vk.Dbp.Services.Alarm
             var query = _db.Queryable<AlarmRecord>()
                 .Where(a => a.UserId == userId || a.UserId == 0); // UserId=0 表示全局告警
 
-            if (status.HasValue)
+            if (status is { } alarmStatus)
             {
-                query = query.Where(a => a.AlarmStatus == status.Value);
+                query = query.Where(a => a.AlarmStatus == alarmStatus);
             }
 
-            if (level.HasValue)
+            if (level is { } alarmLevel)
             {
-                query = query.Where(a => a.AlarmLevel == level.Value);
+                query = query.Where(a => a.AlarmLevel == alarmLevel);
             }
 
-            if (startTime.HasValue)
+            if (startTime is { } from)
             {
-                query = query.Where(a => a.TriggeredTime >= startTime.Value);
+                query = query.Where(a => a.TriggeredTime >= from);
             }
 
-            if (endTime.HasValue)
+            if (endTime is { } to)
             {
-                query = query.Where(a => a.TriggeredTime <= endTime.Value);
+                query = query.Where(a => a.TriggeredTime <= to);
             }
 
             return await query.OrderByDescending(a => a.TriggeredTime).ToListAsync();
@@ -172,14 +172,14 @@ namespace Vk.Dbp.Services.Alarm
             var query = _db.Queryable<AlarmRecord>()
                 .Where(a => a.UserId == userId || a.UserId == 0);
 
-            if (status.HasValue)
+            if (status is { } alarmStatus)
             {
-                query = query.Where(a => a.AlarmStatus == status.Value);
+                query = query.Where(a => a.AlarmStatus == alarmStatus);
             }
 
-            if (level.HasValue)
+            if (level is { } alarmLevel)
             {
-                query = query.Where(a => a.AlarmLevel == level.Value);
+                query = query.Where(a => a.AlarmLevel == alarmLevel);
             }
 
             RefAsync<int> total = 0;

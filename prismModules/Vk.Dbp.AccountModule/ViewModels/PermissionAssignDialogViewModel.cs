@@ -31,7 +31,7 @@ namespace Vk.Dbp.AccountModule.ViewModels
         private int _selectedCount;
         private Action<bool>? _closeAction;
 
-        public ObservableCollection<PermissionItem> Permissions { get; set; }
+        public ObservableCollection<PermissionItem> Permissions { get; }
 
         public string DialogTitle
         {
@@ -124,6 +124,11 @@ namespace Vk.Dbp.AccountModule.ViewModels
             var rolePermissions = await _roleService.GetRolePermissionsAsync(_role.Id);
             var rolePermissionIds = rolePermissions.Select(p => p.Id).ToHashSet();
 
+            foreach (var item in Permissions)
+            {
+                item.PropertyChanged -= OnPermissionItemPropertyChanged;
+            }
+
             Permissions.Clear();
             foreach (var permission in allPermissions)
             {
@@ -132,13 +137,7 @@ namespace Vk.Dbp.AccountModule.ViewModels
                     Permission = permission,
                     IsSelected = rolePermissionIds.Contains(permission.Id)
                 };
-                item.PropertyChanged += (s, e) =>
-                {
-                    if (e.PropertyName == nameof(PermissionItem.IsSelected))
-                    {
-                        UpdateSelectedCount();
-                    }
-                };
+                item.PropertyChanged += OnPermissionItemPropertyChanged;
                 Permissions.Add(item);
             }
 
@@ -148,6 +147,14 @@ namespace Vk.Dbp.AccountModule.ViewModels
         private void UpdateSelectedCount()
         {
             SelectedCount = Permissions.Count(p => p.IsSelected);
+        }
+
+        private void OnPermissionItemPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(PermissionItem.IsSelected))
+            {
+                UpdateSelectedCount();
+            }
         }
     }
 }

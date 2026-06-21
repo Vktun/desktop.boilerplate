@@ -16,7 +16,7 @@ public sealed class AppSettingsService : IAppSettingsService
 
     private readonly object _lockObject = new();
     private readonly string _settingsFilePath;
-    private Dictionary<string, JsonElement> _settings;
+    private readonly Dictionary<string, JsonElement> _settings;
 
     public AppSettingsService()
     {

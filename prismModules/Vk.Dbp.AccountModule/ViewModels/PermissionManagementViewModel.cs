@@ -177,9 +177,9 @@ namespace Vk.Dbp.AccountModule.ViewModels
         {
             var query = Permissions.AsEnumerable();
 
-            if (_selectedPermissionType.HasValue)
+            if (_selectedPermissionType is { } permissionType)
             {
-                query = query.Where(p => p.Type == _selectedPermissionType.Value);
+                query = query.Where(p => p.Type == permissionType);
             }
 
             if (!string.IsNullOrEmpty(_selectedModule))
