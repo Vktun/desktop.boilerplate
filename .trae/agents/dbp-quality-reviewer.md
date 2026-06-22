@@ -29,7 +29,18 @@ Read before reviewing:
 3. Current user identity, audit correctness, and permission consistency.
 4. Layer and module boundary violations.
 5. WPF UI thread, binding, and rendering risks.
-6. Missing focused tests.
+6. GitHub CodeQL security/quality cleanliness.
+7. Missing focused tests.
+
+## CodeQL Checks
+
+When reviewing or fixing GitHub scan results, explicitly check for:
+
+- Nullable dereference: replace `.Value` guarded by `HasValue` with pattern matching captures such as `if (status is { } alarmStatus)`.
+- Shadowed variables: avoid local names that hide fields, properties, parameters, or outer variables.
+- Missed readonly opportunities: use `readonly` fields or getter-only properties for construction-only state, but do not make Prism `SetProperty(ref field, value)` backing fields readonly.
+- Missed `Select`: use `Select(...)` for simple projections or object creation; keep loops for side effects such as event subscription after object creation.
+- Nested `if` statements: combine single-guard checks, especially chained dictionary or mapping lookups.
 
 ## Output Format
 
@@ -50,4 +61,3 @@ Verification
 ```
 
 If there are no findings, say that directly and mention residual risk or test gaps.
-

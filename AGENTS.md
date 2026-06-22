@@ -44,6 +44,8 @@ The codebase is organized around a reusable host shell, shared contracts and ser
 - Module class naming: `Dbp{Name}Module : IModule`.
 - View registration: `RegisterForNavigation<TView>()` relying on ViewModelLocator convention.
 - Service registration: `RegisterSingleton<IService, Impl>()` for shared stateful services.
+- Keep CodeQL clean for common C# quality rules: avoid nullable `.Value` access by pattern matching (`if (value is { } typedValue)`), do not shadow class members with local variables, mark fields/properties `readonly` or getter-only when they are assigned only during initialization, use `Select(...)` for simple collection projections, and combine nested `if` statements when the conditions form one guard.
+- For Prism `SetProperty(ref _field, value)` properties, keep the backing field mutable; if CodeQL reports a readonly false positive on a simple bindable property, prefer an explicit setter with `RaisePropertyChanged()` only when it remains consistent with nearby ViewModel style.
 
 ## Commands
 
@@ -85,5 +87,6 @@ When reviewing or changing this project, pay special attention to:
 - secret handling and local configuration
 - module boundaries and navigation registration
 - WPF binding performance and UI thread safety (`Dispatcher.Invoke`)
+- GitHub CodeQL security/quality alerts, especially nullable dereference, shadowed variables, missed readonly opportunities, missed `Select`, and combinable nested `if` statements
 - tests around service behavior, failure paths, and persistence-sensitive logic
 - SqlSugar connection error handling (auto lock-screen in AOP)

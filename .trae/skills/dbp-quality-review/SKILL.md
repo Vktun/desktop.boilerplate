@@ -63,6 +63,14 @@ Lead with concrete risks, ordered by severity:
    - Integration-sensitive change without documented database requirements.
    - Build/test command not run or not feasible.
 
+7. GitHub CodeQL security and quality cleanliness.
+   - Nullable values are dereferenced with `.Value` in lambdas, query predicates, or callbacks instead of captured with pattern matching.
+   - Local variables shadow fields, properties, parameters, or meaningful outer-scope names.
+   - Fields, command properties, collections, or settings assigned only during initialization are not `readonly` or getter-only.
+   - Simple one-to-one projections are implemented with manual list-building loops instead of `Select(...)`.
+   - Nested `if` statements form a single guard and can be combined without changing behavior.
+   - Prism `SetProperty(ref _field, value)` backing fields are incorrectly made `readonly`; prefer leaving them mutable or using an explicit setter when resolving a confirmed CodeQL false positive.
+
 ## Analysis Method
 
 - Trace behavior from entry point to service to persistence or event sink.
@@ -70,6 +78,7 @@ Lead with concrete risks, ordered by severity:
 - Prefer targeted fixes over broad refactors.
 - Call out pre-existing risks separately from regressions introduced by a change.
 - If a finding is uncertain, name the evidence needed to validate it.
+- When reviewing GitHub CodeQL alerts, map each alert to the exact line and prefer the smallest rewrite that satisfies both CodeQL and repository readability.
 
 ## Report Format
 

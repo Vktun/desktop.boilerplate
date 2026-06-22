@@ -51,6 +51,15 @@ Primary directories:
 - ViewModels that subscribe to events must implement `IDisposable` with `_isDisposed` guard.
 - UI updates in event callbacks: wrap in `Application.Current.Dispatcher.Invoke()`.
 
+## GitHub CodeQL Cleanliness
+
+- Treat GitHub CodeQL security and quality alerts as required cleanup unless the alert is clearly a false positive and the reason is documented in the handoff.
+- Avoid dereferencing nullable values with `.Value` in query predicates or callbacks. Prefer pattern matching that captures a non-null local, for example `if (status is { } alarmStatus)`.
+- Avoid local variables whose names shadow fields, properties, parameters, or members. Use intent-revealing names such as `permissionValues`, `rolePermissionIds`, or `alarmStatus`.
+- Use `readonly` fields or getter-only auto-properties for values assigned only during construction or initialization. Do not mark Prism `SetProperty(ref _field, value)` backing fields readonly.
+- Prefer `Select(...)` for simple one-to-one collection projection and object creation. Keep `foreach` when there are side effects, event subscriptions, early exits, or multiple operations that would make LINQ less clear.
+- Combine nested `if` statements when they are a single guard, especially dictionary lookup chains such as `TryGetValue` followed by another `TryGetValue`.
+
 ## Configuration And Security
 
 - Do not commit real database credentials or customer secrets.

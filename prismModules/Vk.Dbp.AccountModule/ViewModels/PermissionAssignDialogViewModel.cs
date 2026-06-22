@@ -130,13 +130,12 @@ namespace Vk.Dbp.AccountModule.ViewModels
             }
 
             Permissions.Clear();
-            foreach (var permission in allPermissions)
+            foreach (var item in allPermissions.Select(permission => new PermissionItem
             {
-                var item = new PermissionItem
-                {
-                    Permission = permission,
-                    IsSelected = rolePermissionIds.Contains(permission.Id)
-                };
+                Permission = permission,
+                IsSelected = rolePermissionIds.Contains(permission.Id)
+            }))
+            {
                 item.PropertyChanged += OnPermissionItemPropertyChanged;
                 Permissions.Add(item);
             }

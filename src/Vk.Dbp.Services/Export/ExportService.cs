@@ -58,13 +58,7 @@ namespace Dabp.Services.Export
             // 写入数据行
             foreach (var item in data)
             {
-                var values = new List<string>(properties.Length);
-                foreach (var property in properties)
-                {
-                    var value = property.GetValue(item);
-                    values.Add(FormatCsvValue(value));
-                }
-
+                var values = properties.Select(property => FormatCsvValue(property.GetValue(item)));
                 csv.AppendLine(string.Join(",", values));
             }
             
@@ -219,11 +213,8 @@ namespace Dabp.Services.Export
                                 // 数据行
                                 foreach (var item in dataList)
                                 {
-                                    foreach (var property in properties)
+                                    foreach (var displayValue in properties.Select(property => FormatValue(property.GetValue(item))))
                                     {
-                                        var value = property.GetValue(item);
-                                        var displayValue = FormatValue(value);
-                                        
                                         table.Cell()
                                             .Border(1)
                                             .BorderColor(Colors.Grey.Lighten2)
@@ -491,17 +482,12 @@ namespace Dabp.Services.Export
             var enumType = enumValue.GetType().FullName;
             
             // 检查配置的枚举映射
-            if (options?.EnumMappings != null && enumType != null)
+            if (options?.EnumMappings != null &&
+                enumType != null &&
+                options.EnumMappings.TryGetValue(enumType, out var mapping) &&
+                mapping.TryGetValue((object)enumValue, out var displayText))
             {
-                if (options.EnumMappings.TryGetValue(enumType, out var mapping))
-                {
-                    // 枚举值需要封箱才能作为字典key
-                    var boxedValue = (object)enumValue;
-                    if (mapping.TryGetValue(boxedValue, out var displayText))
-                    {
-                        return displayText;
-                    }
-                }
+                return displayText;
             }
             
             // 使用Display特性

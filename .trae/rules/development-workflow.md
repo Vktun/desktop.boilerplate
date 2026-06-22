@@ -15,6 +15,15 @@
 - When adding services, add interfaces only when they create a real testing or boundary benefit.
 - Avoid duplicating permission, menu, session, or audit concepts. Check existing services before adding new ones.
 
+### CodeQL Quality Patterns
+
+- Before finishing C# changes, scan the touched code for the CodeQL patterns recently flagged in GitHub: nullable dereference, local variable shadowing, missed readonly opportunities, missed `Select`, and combinable nested `if` statements.
+- For nullable filters, avoid `.Value` after `HasValue` in lambdas or query expressions. Capture a non-null local with pattern matching, for example `if (level is { } alarmLevel)`.
+- For simple projections, prefer `source.Select(item => ...)` over building a temporary list in a `foreach`.
+- Keep `foreach` when the loop performs side effects such as event subscription, command execution, UI mutation, logging, or multiple statements that are clearer imperatively.
+- Mark constructor-only fields `readonly` and initialization-only public collections as getter-only. Leave mutable bindable backing fields mutable when `SetProperty(ref field, value)` needs a `ref` argument.
+- Combine nested `if` statements into one guard when all conditions must be true and there is no useful intermediate branch.
+
 ### Constructor And Dependency Injection
 
 - All constructor-injected dependencies must have null-guard: `_svc = svc ?? throw new ArgumentNullException(nameof(svc))`.
