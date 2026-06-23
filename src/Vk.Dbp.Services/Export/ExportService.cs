@@ -485,7 +485,7 @@ namespace Dabp.Services.Export
             if (options?.EnumMappings != null &&
                 enumType != null &&
                 options.EnumMappings.TryGetValue(enumType, out var mapping) &&
-                mapping.TryGetValue((object)enumValue, out var displayText))
+                mapping.TryGetValue(enumValue, out var displayText))
             {
                 return displayText;
             }
