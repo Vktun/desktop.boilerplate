@@ -69,6 +69,22 @@ namespace Dabp.Infrastructure.Entities
         [SugarColumn(IsNullable = true)]
         public int? LastModifierId { get; set; }
         /// <summary>
+        /// 最后登录时间
+        /// </summary>
+        [AllowNull]
+        [SugarColumn(IsNullable = true)]
+        public DateTime? LastLoginTime { get; set; }
+        /// <summary>
+        /// 连续登录失败次数
+        /// </summary>
+        public int FailedLoginCount { get; set; }
+        /// <summary>
+        /// 账号锁定结束时间
+        /// </summary>
+        [AllowNull]
+        [SugarColumn(IsNullable = true)]
+        public DateTime? LockoutEndTime { get; set; }
+        /// <summary>
         /// 删除时间
         /// </summary>
         [AllowNull]

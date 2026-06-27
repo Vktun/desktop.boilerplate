@@ -207,6 +207,44 @@ public sealed class UserServiceTests : IClassFixture<TestDatabaseFixture>
         UserEntity entity = await _db.Queryable<UserEntity>().FirstAsync(x => x.Id == 1);
         entity.PasswordHash.Should().Be("old-hash");
         _passwordHasher.Verify(x => x.HashPassword(It.IsAny<string>()), Times.Never);
+        _auditLogService.Verify(x => x.LogFailureAsync(
+            1,
+            "alice",
+            AuditActionType.ChangePassword,
+            "Account",
+            It.IsAny<string>(),
+            "Invalid old password",
+            "User",
+            1,
+            It.IsAny<string?>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task RecordLoginSuccessAsync_UpdatesLastLoginAndClearsFailures()
+    {
+        SeedUser(id: 1, username: "alice", realName: "Alice", phone: "13800000000");
+
+        bool result = await _userService.RecordLoginSuccessAsync(1);
+
+        result.Should().BeTrue();
+        UserEntity entity = await _db.Queryable<UserEntity>().FirstAsync(x => x.Id == 1);
+        entity.LastLoginTime.Should().NotBeNull();
+        entity.FailedLoginCount.Should().Be(0);
+        entity.LockoutEndTime.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task RecordLoginFailureAsync_LocksUserWhenThresholdReached()
+    {
+        SeedUser(id: 1, username: "alice", realName: "Alice", phone: "13800000000");
+
+        DateTime? lockoutEndTime = await _userService.RecordLoginFailureAsync(1, 1, TimeSpan.FromMinutes(15));
+
+        lockoutEndTime.Should().NotBeNull();
+        lockoutEndTime.Should().BeAfter(DateTime.Now);
+        UserEntity entity = await _db.Queryable<UserEntity>().FirstAsync(x => x.Id == 1);
+        entity.FailedLoginCount.Should().Be(1);
+        entity.LockoutEndTime.Should().NotBeNull();
     }
 
     [Fact]

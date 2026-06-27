@@ -283,6 +283,15 @@ public class UserService : IUserService
 
         if (!_passwordHasher.VerifyPassword(oldPassword, entity.PasswordHash))
         {
+            await _auditLogService.LogFailureAsync(
+                userId,
+                entity.UserName,
+                AuditActionType.ChangePassword,
+                "Account",
+                $"修改密码失败: {entity.UserName}",
+                "Invalid old password",
+                "User",
+                userId);
             return false;
         }
 
@@ -324,6 +333,66 @@ public class UserService : IUserService
             userId);
 
         return result > 0;
+    }
+
+    public async Task<bool> RecordLoginSuccessAsync(int userId)
+    {
+        UserEntity? entity = await _db.Queryable<UserEntity>()
+            .FirstAsync(u => u.Id == userId && !u.IsDeleted);
+
+        if (entity is null)
+        {
+            return false;
+        }
+
+        entity.LastLoginTime = DateTime.Now;
+        entity.FailedLoginCount = 0;
+        entity.LockoutEndTime = null;
+
+        return await _db.Updateable(entity)
+            .Where(u => u.Id == userId)
+            .ExecuteCommandAsync() > 0;
+    }
+
+    public async Task<DateTime?> RecordLoginFailureAsync(int userId, int maxFailedAttempts, TimeSpan lockoutDuration)
+    {
+        UserEntity? entity = await _db.Queryable<UserEntity>()
+            .FirstAsync(u => u.Id == userId && !u.IsDeleted);
+
+        if (entity is null)
+        {
+            return null;
+        }
+
+        entity.FailedLoginCount++;
+        if (entity.FailedLoginCount >= maxFailedAttempts)
+        {
+            entity.LockoutEndTime = DateTime.Now.Add(lockoutDuration);
+        }
+
+        await _db.Updateable(entity)
+            .Where(u => u.Id == userId)
+            .ExecuteCommandAsync();
+
+        return entity.LockoutEndTime;
+    }
+
+    public async Task<bool> ClearLoginFailuresAsync(int userId)
+    {
+        UserEntity? entity = await _db.Queryable<UserEntity>()
+            .FirstAsync(u => u.Id == userId && !u.IsDeleted);
+
+        if (entity is null)
+        {
+            return false;
+        }
+
+        entity.FailedLoginCount = 0;
+        entity.LockoutEndTime = null;
+
+        return await _db.Updateable(entity)
+            .Where(u => u.Id == userId)
+            .ExecuteCommandAsync() > 0;
     }
 
     public async Task<bool> AssignRolesToUserAsync(int userId, List<int> roleIds)
@@ -415,6 +484,9 @@ public class UserService : IUserService
             IsEnabled = entity.IsActive,
             CreatedTime = entity.CreationTime,
             LastModifiedTime = entity.LastModificationTime,
+            LastLoginTime = entity.LastLoginTime,
+            FailedLoginCount = entity.FailedLoginCount,
+            LockoutEndTime = entity.LockoutEndTime,
             RoleIds = roleIds
         };
     }

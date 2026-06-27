@@ -16,6 +16,7 @@ using Prism.Ioc;
 using Prism.Mvvm;
 using Vk.Dbp.Contracts.Events;
 using Vk.Dbp.Contracts.Services;
+using Vk.Dbp.Services.Audit;
 using System.Windows;
 
 namespace Vk.Dbp.WpfWindow.ViewModels
@@ -395,12 +396,32 @@ namespace Vk.Dbp.WpfWindow.ViewModels
 
         private void handleLogout()
         {
+            int userId = _userSession.UserId;
+            string username = _userSession.Username;
+
+            _ = LogLogoutAsync(userId, username);
             _userSession.Logout();
 
             UpdateUserInfo();
             UpdateMenuVisibility();
 
             _navigationService.NavigateTo(ViewNames.LoginView);
+        }
+
+        private async Task LogLogoutAsync(int userId, string username)
+        {
+            try
+            {
+                var auditLogService = _container.Resolve<IAuditLogService>();
+                await auditLogService.LogLogoutAsync(userId, username);
+            }
+            catch (Exception ex) when (
+                ex is InvalidOperationException ||
+                ex is ArgumentException ||
+                ExpectedOperationExceptionFilter.IsExpectedUserOperationException(ex))
+            {
+                System.Diagnostics.Debug.WriteLine($"Logout audit failed: {ex.Message}");
+            }
         }
 
         private void handleLogin()

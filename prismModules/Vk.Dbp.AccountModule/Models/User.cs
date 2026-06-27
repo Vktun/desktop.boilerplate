@@ -25,6 +25,12 @@ namespace Vk.Dbp.AccountModule.Models
 
         public DateTime? LastLoginTime { get; set; }
 
+        public int FailedLoginCount { get; set; }
+
+        public DateTime? LockoutEndTime { get; set; }
+
+        public bool IsLockedOut => LockoutEndTime is { } lockoutEndTime && lockoutEndTime > DateTime.Now;
+
         public List<int> RoleIds { get; set; } = new();
 
         public string? Remarks { get; set; }

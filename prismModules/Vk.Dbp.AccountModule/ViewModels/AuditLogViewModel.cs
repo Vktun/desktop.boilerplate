@@ -8,170 +8,306 @@ using Prism.Mvvm;
 using Vk.Dbp.Contracts.Services;
 using Vk.Dbp.Services.Audit;
 
-namespace Vk.Dbp.AccountModule.ViewModels
+namespace Vk.Dbp.AccountModule.ViewModels;
+
+/// <summary>
+/// 审计日志ViewModel。
+/// </summary>
+public class AuditLogViewModel : BindableBase
 {
-    /// <summary>
-    /// 审计日志ViewModel
-    /// </summary>
-    public class AuditLogViewModel : BindableBase
+    private readonly IAuditLogService _auditLogService;
+    private readonly IExportService _exportService;
+
+    private ObservableCollection<AuditLog> _auditLogs = new();
+    private AuditLog? _selectedLog;
+    private DateTime _startDate = DateTime.Now.AddMonths(-1);
+    private DateTime _endDate = DateTime.Now;
+    private string _moduleFilter = string.Empty;
+    private string _selectedActionType = "全部";
+    private string _selectedResult = "全部";
+    private bool _isLoading;
+    private string _detailsText = "请选择一条审计日志";
+
+    public ObservableCollection<AuditLog> AuditLogs
     {
-        private readonly IAuditLogService _auditLogService;
-        private readonly IExportService _exportService;
+        get => _auditLogs;
+        set => SetProperty(ref _auditLogs, value);
+    }
 
-        private ObservableCollection<AuditLog> _auditLogs = new();
-        public ObservableCollection<AuditLog> AuditLogs
+    public AuditLog? SelectedLog
+    {
+        get => _selectedLog;
+        set
         {
-            get { return _auditLogs; }
-            set { SetProperty(ref _auditLogs, value); }
-        }
-
-        private AuditLog? _selectedLog;
-        public AuditLog? SelectedLog
-        {
-            get { return _selectedLog; }
-            set { SetProperty(ref _selectedLog, value); }
-        }
-
-        private DateTime _startDate = DateTime.Now.AddMonths(-1);
-        public DateTime StartDate
-        {
-            get { return _startDate; }
-            set { SetProperty(ref _startDate, value); }
-        }
-
-        private DateTime _endDate = DateTime.Now;
-        public DateTime EndDate
-        {
-            get { return _endDate; }
-            set { SetProperty(ref _endDate, value); }
-        }
-
-        private bool _isLoading;
-        public bool IsLoading
-        {
-            get { return _isLoading; }
-            set { SetProperty(ref _isLoading, value); }
-        }
-
-        public DelegateCommand LoadCommand { get; }
-        public DelegateCommand<AuditLog?> ViewDetailsCommand { get; }
-        public DelegateCommand ExportCommand { get; }
-        public DelegateCommand SearchCommand { get; }
-
-        public AuditLogViewModel(IAuditLogService auditLogService, IExportService exportService)
-        {
-            _auditLogService = auditLogService ?? throw new ArgumentNullException(nameof(auditLogService));
-            _exportService = exportService ?? throw new ArgumentNullException(nameof(exportService));
-
-            AuditLogs = new ObservableCollection<AuditLog>();
-
-            LoadCommand = new DelegateCommand(async () => await LoadAuditLogs());
-            ViewDetailsCommand = new DelegateCommand<AuditLog?>(ViewDetails, CanViewDetails);
-            ExportCommand = new DelegateCommand(async () => await Export());
-            SearchCommand = new DelegateCommand(async () => await SearchLogs());
-        }
-
-        private async Task LoadAuditLogs()
-        {
-            IsLoading = true;
-            try
+            if (SetProperty(ref _selectedLog, value))
             {
-                var logs = await _auditLogService.GetAllLogsAsync();
-                AuditLogs = new ObservableCollection<AuditLog>(logs);
-            }
-            finally
-            {
-                IsLoading = false;
+                DetailsText = BuildDetailsText(value);
+                ViewDetailsCommand.RaiseCanExecuteChanged();
             }
         }
+    }
 
-        private async Task SearchLogs()
+    public DateTime StartDate
+    {
+        get => _startDate;
+        set => SetProperty(ref _startDate, value);
+    }
+
+    public DateTime EndDate
+    {
+        get => _endDate;
+        set => SetProperty(ref _endDate, value);
+    }
+
+    public string ModuleFilter
+    {
+        get => _moduleFilter;
+        set => SetProperty(ref _moduleFilter, value);
+    }
+
+    public ObservableCollection<string> ActionTypes { get; } = new(
+        new[] { "全部" }.Concat(Enum.GetNames<AuditActionType>()));
+
+    public string SelectedActionType
+    {
+        get => _selectedActionType;
+        set => SetProperty(ref _selectedActionType, value);
+    }
+
+    public ObservableCollection<string> ResultOptions { get; } = new() { "全部", "成功", "失败" };
+
+    public string SelectedResult
+    {
+        get => _selectedResult;
+        set => SetProperty(ref _selectedResult, value);
+    }
+
+    public bool IsLoading
+    {
+        get => _isLoading;
+        set => SetProperty(ref _isLoading, value);
+    }
+
+    public string DetailsText
+    {
+        get => _detailsText;
+        set => SetProperty(ref _detailsText, value);
+    }
+
+    public DelegateCommand LoadCommand { get; }
+
+    public DelegateCommand ViewDetailsCommand { get; }
+
+    public DelegateCommand ExportCommand { get; }
+
+    public DelegateCommand SearchCommand { get; }
+
+    public AuditLogViewModel(IAuditLogService auditLogService, IExportService exportService)
+    {
+        _auditLogService = auditLogService ?? throw new ArgumentNullException(nameof(auditLogService));
+        _exportService = exportService ?? throw new ArgumentNullException(nameof(exportService));
+
+        LoadCommand = new DelegateCommand(async () => await LoadAuditLogs());
+        SearchCommand = new DelegateCommand(async () => await SearchLogs());
+        ViewDetailsCommand = new DelegateCommand(ViewDetails, CanViewDetails);
+        ExportCommand = new DelegateCommand(async () => await Export());
+    }
+
+    private async Task LoadAuditLogs()
+    {
+        await LoadLogsAsync(() => _auditLogService.GetAllLogsAsync());
+    }
+
+    private async Task SearchLogs()
+    {
+        await LoadLogsAsync(() => _auditLogService.GetLogsByDateRangeAsync(StartDate.Date, EndDate.Date.AddDays(1).AddTicks(-1)));
+    }
+
+    private async Task LoadLogsAsync(Func<Task<List<AuditLog>>> loader)
+    {
+        IsLoading = true;
+        try
         {
-            IsLoading = true;
-            try
-            {
-                var logs = await _auditLogService.GetLogsByDateRangeAsync(StartDate, EndDate);
-                AuditLogs = new ObservableCollection<AuditLog>(logs);
-            }
-            finally
-            {
-                IsLoading = false;
-            }
+            List<AuditLog> logs = await loader();
+            logs = ApplyFilters(logs);
+            AuditLogs = new ObservableCollection<AuditLog>(logs);
+            SelectedLog = AuditLogs.FirstOrDefault();
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private List<AuditLog> ApplyFilters(List<AuditLog> logs)
+    {
+        IEnumerable<AuditLog> filteredLogs = logs;
+
+        if (!string.IsNullOrWhiteSpace(ModuleFilter))
+        {
+            string moduleFilter = ModuleFilter.Trim();
+            filteredLogs = filteredLogs.Where(log => (log.Module ?? string.Empty).Contains(moduleFilter, StringComparison.OrdinalIgnoreCase));
         }
 
-        private void ViewDetails(AuditLog? log)
+        if (Enum.TryParse(SelectedActionType, out AuditActionType actionType))
         {
-            if (log == null)
-                return;
-            // TODO: 打开日志详情对话框
+            filteredLogs = filteredLogs.Where(log => log.ActionType == actionType);
         }
 
-        private bool CanViewDetails(AuditLog? log)
+        filteredLogs = SelectedResult switch
         {
-            return log != null;
+            "成功" => filteredLogs.Where(log => log.IsSuccess),
+            "失败" => filteredLogs.Where(log => !log.IsSuccess),
+            _ => filteredLogs
+        };
+
+        return filteredLogs
+            .OrderByDescending(log => log.OperationTime)
+            .ToList();
+    }
+
+    private void ViewDetails()
+    {
+        DetailsText = BuildDetailsText(SelectedLog);
+    }
+
+    private bool CanViewDetails()
+    {
+        return SelectedLog is not null;
+    }
+
+    private async Task Export()
+    {
+        if (AuditLogs.Count == 0)
+        {
+            System.Windows.MessageBox.Show("没有可导出的审计日志数据", "提示", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
+            return;
         }
 
-        private async Task Export()
+        IsLoading = true;
+        try
         {
-            if (AuditLogs == null || AuditLogs.Count == 0)
+            var options = new ExcelExportOptions
             {
-                System.Windows.MessageBox.Show("没有可导出的审计日志数据", "提示", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
-                return;
-            }
-
-            IsLoading = true;
-            try
-            {
-                // 配置导出选项
-                var options = new ExcelExportOptions
+                Title = "审计日志",
+                ColumnDisplayNames = new Dictionary<string, string>
                 {
-                    Title = "审计日志",
-                    ColumnDisplayNames = new Dictionary<string, string>
-                    {
-                        { "Id", "ID" },
-                        { "ModuleName", "模块名称" },
-                        { "ServiceName", "服务名称" },
-                        { "MethodName", "方法名称" },
-                        { "IsSuccess", "是否成功" },
-                        { "Parameters", "参数" },
-                        { "UserId", "用户ID" },
-                        { "UserName", "用户名" },
-                        { "ExecutionTime", "执行时间" },
-                        { "ExecutionDuration", "执行时长(ms)" },
-                        { "Exceptions", "异常信息" }
-                    }
-                };
-
-                // 生成带时间戳的文件名
-                var fileName = $"审计日志_{DateTime.Now:yyyyMMdd_HHmmss}";
-                
-                var filePath = await _exportService.ExportToExcelAsync(AuditLogs.ToList(), fileName, options);
-                
-                // 提示用户并询问是否打开文件
-                var result = System.Windows.MessageBox.Show(
-                    $"导出成功！文件已保存到：\n{filePath}\n\n是否立即打开文件？",
-                    "导出完成",
-                    System.Windows.MessageBoxButton.YesNo,
-                    System.Windows.MessageBoxImage.Information);
-                
-                if (result == System.Windows.MessageBoxResult.Yes)
-                {
-                    await _exportService.OpenExportedFileAsync(filePath);
+                    { nameof(AuditLogExportRow.Id), "ID" },
+                    { nameof(AuditLogExportRow.Module), "模块" },
+                    { nameof(AuditLogExportRow.ActionType), "操作类型" },
+                    { nameof(AuditLogExportRow.Description), "描述" },
+                    { nameof(AuditLogExportRow.IsSuccess), "是否成功" },
+                    { nameof(AuditLogExportRow.UserId), "用户ID" },
+                    { nameof(AuditLogExportRow.Username), "用户名" },
+                    { nameof(AuditLogExportRow.EntityType), "实体类型" },
+                    { nameof(AuditLogExportRow.EntityId), "实体ID" },
+                    { nameof(AuditLogExportRow.OperationTime), "操作时间" },
+                    { nameof(AuditLogExportRow.ExecutionTime), "耗时(ms)" },
+                    { nameof(AuditLogExportRow.FailureReason), "失败原因" },
+                    { nameof(AuditLogExportRow.ClientIp), "客户端IP" }
                 }
-            }
-            catch (OperationCanceledException)
+            };
+
+            List<AuditLogExportRow> exportRows = AuditLogs.Select(AuditLogExportRow.FromAuditLog).ToList();
+            string fileName = $"审计日志_{DateTime.Now:yyyyMMdd_HHmmss}";
+            string filePath = await _exportService.ExportToExcelAsync(exportRows, fileName, options);
+
+            var result = System.Windows.MessageBox.Show(
+                $"导出成功，文件已保存到：\n{filePath}\n\n是否立即打开文件？",
+                "导出完成",
+                System.Windows.MessageBoxButton.YesNo,
+                System.Windows.MessageBoxImage.Information);
+
+            if (result == System.Windows.MessageBoxResult.Yes)
             {
-                // 用户取消了保存操作
+                await _exportService.OpenExportedFileAsync(filePath);
             }
-            catch (Exception ex) when (ExpectedOperationExceptionFilter.IsExpectedUserOperationException(ex))
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (Exception ex) when (ExpectedOperationExceptionFilter.IsExpectedUserOperationException(ex))
+        {
+            System.Windows.MessageBox.Show($"导出失败：{ex.Message}", "错误", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+            System.Diagnostics.Debug.WriteLine($"Export audit logs error: {ex.Message}");
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private static string BuildDetailsText(AuditLog? log)
+    {
+        if (log is null)
+        {
+            return "请选择一条审计日志";
+        }
+
+        return string.Join(Environment.NewLine, new[]
+        {
+            $"ID: {log.Id}",
+            $"时间: {log.OperationTime:yyyy-MM-dd HH:mm:ss}",
+            $"用户: {log.Username} ({log.UserId})",
+            $"模块: {log.Module}",
+            $"操作: {log.ActionType}",
+            $"结果: {(log.IsSuccess ? "成功" : "失败")}",
+            $"描述: {log.Description}",
+            $"实体: {log.EntityType} #{log.EntityId}",
+            $"旧数据: {log.OldData}",
+            $"新数据: {log.NewData}",
+            $"失败原因: {log.FailureReason}",
+            $"客户端IP: {log.ClientIp}",
+            $"耗时: {log.ExecutionTime} ms"
+        });
+    }
+
+    private sealed class AuditLogExportRow
+    {
+        public int Id { get; init; }
+
+        public string? Module { get; init; }
+
+        public string ActionType { get; init; } = string.Empty;
+
+        public string? Description { get; init; }
+
+        public bool IsSuccess { get; init; }
+
+        public int UserId { get; init; }
+
+        public string? Username { get; init; }
+
+        public string? EntityType { get; init; }
+
+        public int? EntityId { get; init; }
+
+        public DateTime OperationTime { get; init; }
+
+        public long ExecutionTime { get; init; }
+
+        public string? FailureReason { get; init; }
+
+        public string? ClientIp { get; init; }
+
+        public static AuditLogExportRow FromAuditLog(AuditLog log)
+        {
+            return new AuditLogExportRow
             {
-                System.Windows.MessageBox.Show($"导出失败：{ex.Message}", "错误", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
-                System.Diagnostics.Debug.WriteLine($"Export audit logs error: {ex.Message}");
-            }
-            finally
-            {
-                IsLoading = false;
-            }
+                Id = log.Id,
+                Module = log.Module,
+                ActionType = log.ActionType.ToString(),
+                Description = log.Description,
+                IsSuccess = log.IsSuccess,
+                UserId = log.UserId,
+                Username = log.Username,
+                EntityType = log.EntityType,
+                EntityId = log.EntityId,
+                OperationTime = log.OperationTime,
+                ExecutionTime = log.ExecutionTime,
+                FailureReason = log.FailureReason,
+                ClientIp = log.ClientIp
+            };
         }
     }
 }

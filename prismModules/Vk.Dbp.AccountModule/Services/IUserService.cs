@@ -27,6 +27,12 @@ namespace Vk.Dbp.AccountModule.Services
 
         Task<bool> ResetPasswordAsync(int userId, string newPassword);
 
+        Task<bool> RecordLoginSuccessAsync(int userId);
+
+        Task<DateTime?> RecordLoginFailureAsync(int userId, int maxFailedAttempts, TimeSpan lockoutDuration);
+
+        Task<bool> ClearLoginFailuresAsync(int userId);
+
         Task<bool> AssignRolesToUserAsync(int userId, List<int> roleIds);
 
         Task<List<Role>> GetUserRolesAsync(int userId);

@@ -8,6 +8,7 @@ using Dabp.WpfWindow.Views;
 using HandyControl.Controls;
 using Prism.Ioc;
 using Vk.Dbp.AccountModule.Services;
+using Vk.Dbp.Services.Audit;
 using Vk.Dbp.Services.Session;
 
 namespace Dabp.WpfWindow.Services
@@ -33,9 +34,9 @@ namespace Dabp.WpfWindow.Services
             IUserSession userSession,
             IPasswordHasher passwordHasher)
         {
-            _container = container;
-            _userSession = userSession;
-            _passwordHasher = passwordHasher;
+            _container = container ?? throw new ArgumentNullException(nameof(container));
+            _userSession = userSession ?? throw new ArgumentNullException(nameof(userSession));
+            _passwordHasher = passwordHasher ?? throw new ArgumentNullException(nameof(passwordHasher));
         }
 
         /// <summary>
@@ -84,10 +85,16 @@ namespace Dabp.WpfWindow.Services
                 var userService = _container.Resolve<IUserService>();
                 var user = userService.GetUserByIdAsync(_userSession.UserId).GetAwaiter().GetResult();
                 if (user == null)
+                {
+                    LogUnlockFailure("User not found");
                     return false;
+                }
 
                 if (string.IsNullOrWhiteSpace(user.PasswordHash))
+                {
+                    LogUnlockFailure("Missing password hash");
                     return false;
+                }
 
                 // 楠岃瘉瀵嗙爜
                 bool isValid = _passwordHasher.VerifyPassword(password, user.PasswordHash);
@@ -95,6 +102,7 @@ namespace Dabp.WpfWindow.Services
                 {
                     // 瑙ｉ攣浼氳瘽
                     _userSession.Unlock();
+                    LogUnlockSuccess();
 
                     // 鍏抽棴閿佸睆绐楀彛
                     CloseLockScreenWindow();
@@ -107,12 +115,71 @@ namespace Dabp.WpfWindow.Services
                 }
 
                 Growl.Error("瀵嗙爜閿欒锛岃閲嶆柊杈撳叆");
+                LogUnlockFailure("Invalid password");
                 return false;
             }
             catch (Exception ex) when (ExpectedOperationExceptionFilter.IsExpectedUserOperationException(ex))
             {
                 Growl.Error("瑙ｉ攣澶辫触锛岃绋嶅悗閲嶈瘯");
+                LogUnlockFailure(ex.Message);
                 return false;
+            }
+        }
+
+        private void LogUnlockSuccess()
+        {
+            _ = LogUnlockSuccessAsync();
+        }
+
+        private void LogUnlockFailure(string reason)
+        {
+            _ = LogUnlockFailureAsync(reason);
+        }
+
+        private async Task LogUnlockSuccessAsync()
+        {
+            try
+            {
+                var auditLogService = _container.Resolve<IAuditLogService>();
+                await auditLogService.LogOperationAsync(
+                    _userSession.GetAuditUserId(),
+                    _userSession.GetAuditUsername(),
+                    AuditActionType.Update,
+                    "Account",
+                    $"用户解锁成功: {_userSession.Username}",
+                    "Session",
+                    _userSession.UserId);
+            }
+            catch (Exception ex) when (
+                ex is InvalidOperationException ||
+                ex is ArgumentException ||
+                ExpectedOperationExceptionFilter.IsExpectedUserOperationException(ex))
+            {
+                System.Diagnostics.Debug.WriteLine($"Unlock audit failed: {ex.Message}");
+            }
+        }
+
+        private async Task LogUnlockFailureAsync(string reason)
+        {
+            try
+            {
+                var auditLogService = _container.Resolve<IAuditLogService>();
+                await auditLogService.LogFailureAsync(
+                    _userSession.GetAuditUserId(),
+                    _userSession.GetAuditUsername(),
+                    AuditActionType.Update,
+                    "Account",
+                    $"用户解锁失败: {_userSession.Username}",
+                    reason,
+                    "Session",
+                    _userSession.UserId);
+            }
+            catch (Exception ex) when (
+                ex is InvalidOperationException ||
+                ex is ArgumentException ||
+                ExpectedOperationExceptionFilter.IsExpectedUserOperationException(ex))
+            {
+                System.Diagnostics.Debug.WriteLine($"Unlock audit failed: {ex.Message}");
             }
         }
 

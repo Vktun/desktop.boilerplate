@@ -4,11 +4,69 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:prism="http://prismlibrary.com/"
     prism:ViewModelLocator.AutoWireViewModel="True">
-    <Grid Background="{DynamicResource PrimaryBackgroundBrush}">
-        <StackPanel Margin="20">
-            <TextBlock Text="审计日志" FontSize="20" FontWeight="Bold" Foreground="{DynamicResource PrimaryTextBrush}" Margin="0,0,0,20"/>
-            <Button Content="加载日志" Command="{Binding LoadCommand}" Margin="0,0,0,10"/>
-            <DataGrid ItemsSource="{Binding AuditLogs}" Height="400"/>
-        </StackPanel>
+    <Grid Background="{DynamicResource PrimaryBackgroundBrush}" Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="150"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0"
+                   Text="审计日志"
+                   FontSize="20"
+                   FontWeight="Bold"
+                   Foreground="{DynamicResource PrimaryTextBrush}"
+                   Margin="0,0,0,16"/>
+
+        <WrapPanel Grid.Row="1" Margin="0,0,0,12" VerticalAlignment="Center">
+            <TextBlock Text="开始" VerticalAlignment="Center" Margin="0,0,6,0"/>
+            <DatePicker SelectedDate="{Binding StartDate, Mode=TwoWay}" Width="130" Margin="0,0,12,0"/>
+
+            <TextBlock Text="结束" VerticalAlignment="Center" Margin="0,0,6,0"/>
+            <DatePicker SelectedDate="{Binding EndDate, Mode=TwoWay}" Width="130" Margin="0,0,12,0"/>
+
+            <TextBlock Text="模块" VerticalAlignment="Center" Margin="0,0,6,0"/>
+            <TextBox Text="{Binding ModuleFilter, UpdateSourceTrigger=PropertyChanged}" Width="130" Margin="0,0,12,0"/>
+
+            <TextBlock Text="操作" VerticalAlignment="Center" Margin="0,0,6,0"/>
+            <ComboBox ItemsSource="{Binding ActionTypes}" SelectedItem="{Binding SelectedActionType}" Width="100" Margin="0,0,12,0"/>
+
+            <TextBlock Text="结果" VerticalAlignment="Center" Margin="0,0,6,0"/>
+            <ComboBox ItemsSource="{Binding ResultOptions}" SelectedItem="{Binding SelectedResult}" Width="80" Margin="0,0,12,0"/>
+
+            <Button Content="查询" Command="{Binding SearchCommand}" Width="72" Margin="0,0,8,0"/>
+            <Button Content="全部" Command="{Binding LoadCommand}" Width="72" Margin="0,0,8,0"/>
+            <Button Content="导出" Command="{Binding ExportCommand}" Width="72"/>
+        </WrapPanel>
+
+        <DataGrid Grid.Row="2"
+                  ItemsSource="{Binding AuditLogs}"
+                  SelectedItem="{Binding SelectedLog, Mode=TwoWay}"
+                  AutoGenerateColumns="False"
+                  IsReadOnly="True"
+                  CanUserAddRows="False"
+                  EnableRowVirtualization="True"
+                  VirtualizingStackPanel.IsVirtualizing="True"
+                  VirtualizingStackPanel.VirtualizationMode="Recycling">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="时间" Binding="{Binding OperationTime, StringFormat='{}{0:yyyy-MM-dd HH:mm:ss}'}" Width="150"/>
+                <DataGridTextColumn Header="用户" Binding="{Binding Username}" Width="110"/>
+                <DataGridTextColumn Header="模块" Binding="{Binding Module}" Width="110"/>
+                <DataGridTextColumn Header="操作" Binding="{Binding ActionType}" Width="90"/>
+                <DataGridCheckBoxColumn Header="成功" Binding="{Binding IsSuccess}" Width="60"/>
+                <DataGridTextColumn Header="描述" Binding="{Binding Description}" Width="*"/>
+                <DataGridTextColumn Header="失败原因" Binding="{Binding FailureReason}" Width="180"/>
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <GroupBox Grid.Row="3" Header="详情" Margin="0,12,0,0">
+            <TextBox Text="{Binding DetailsText, Mode=OneWay}"
+                     IsReadOnly="True"
+                     TextWrapping="Wrap"
+                     VerticalScrollBarVisibility="Auto"
+                     BorderThickness="0"
+                     Background="Transparent"/>
+        </GroupBox>
     </Grid>
 </UserControl>

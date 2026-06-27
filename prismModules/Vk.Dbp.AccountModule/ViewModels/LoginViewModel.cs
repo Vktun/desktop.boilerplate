@@ -19,6 +19,8 @@ public class LoginViewModel : BindableBase, INavigationAware
 {
     private const string RememberUsernameKey = "auth.remember_username";
     private const string UsernameKey = "auth.username";
+    private const int MaxFailedLoginAttempts = 5;
+    private static readonly TimeSpan LoginLockoutDuration = TimeSpan.FromMinutes(15);
 
     private readonly IUserService _userService;
     private readonly IPermissionService _permissionService;
@@ -156,7 +158,7 @@ public class LoginViewModel : BindableBase, INavigationAware
                 return;
             }
 
-            if (!ValidatePassword(passwordBox.Password, user.PasswordHash))
+            if (user.LockoutEndTime is { } lockoutEndTime && lockoutEndTime > DateTime.Now)
             {
                 await _auditLogService.LogFailureAsync(
                     user.Id,
@@ -164,16 +166,51 @@ public class LoginViewModel : BindableBase, INavigationAware
                     AuditActionType.Login,
                     "Account",
                     $"用户登录失败: {Username}",
-                    "Invalid password",
+                    $"User locked until {lockoutEndTime:yyyy-MM-dd HH:mm:ss}",
                     "User",
                     user.Id);
 
                 ShowError = true;
-                ErrorMessage = "用户名或密码错误";
+                ErrorMessage = $"账号已锁定，请在 {lockoutEndTime:HH:mm} 后重试";
+                return;
+            }
+
+            if (user.LockoutEndTime is { } expiredLockoutEndTime && expiredLockoutEndTime <= DateTime.Now)
+            {
+                await _userService.ClearLoginFailuresAsync(user.Id);
+                user.LockoutEndTime = null;
+                user.FailedLoginCount = 0;
+            }
+
+            if (!ValidatePassword(passwordBox.Password, user.PasswordHash))
+            {
+                DateTime? newLockoutEndTime = await _userService.RecordLoginFailureAsync(
+                    user.Id,
+                    MaxFailedLoginAttempts,
+                    LoginLockoutDuration);
+                string failureReason = newLockoutEndTime is { } lockedUntil
+                    ? $"Invalid password; user locked until {lockedUntil:yyyy-MM-dd HH:mm:ss}"
+                    : "Invalid password";
+
+                await _auditLogService.LogFailureAsync(
+                    user.Id,
+                    user.Username ?? Username,
+                    AuditActionType.Login,
+                    "Account",
+                    $"用户登录失败: {Username}",
+                    failureReason,
+                    "User",
+                    user.Id);
+
+                ShowError = true;
+                ErrorMessage = newLockoutEndTime is { } lockedUntilMessage
+                    ? $"密码错误次数过多，账号已锁定至 {lockedUntilMessage:HH:mm}"
+                    : "用户名或密码错误";
                 return;
             }
 
             _userSession.Login(user.Id, user.Username ?? Username, user.RealName ?? "", user.Email ?? "", user.Phone ?? "", GenerateToken());
+            await _userService.RecordLoginSuccessAsync(user.Id);
 
             List<PermissionModel> permissions = await _permissionService.GetUserPermissionsAsync(user.Id);
             List<string> permissionCodes = permissions.Select(p => p.Code)
