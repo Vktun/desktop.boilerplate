@@ -7,6 +7,7 @@ using Prism.Commands;
 using Prism.Mvvm;
 using Vk.Dbp.Contracts.Services;
 using Vk.Dbp.Services.Audit;
+using Vk.Dbp.Services.Session;
 
 namespace Vk.Dbp.AccountModule.ViewModels;
 
@@ -17,6 +18,7 @@ public class AuditLogViewModel : BindableBase
 {
     private readonly IAuditLogService _auditLogService;
     private readonly IExportService _exportService;
+    private readonly IUserSession _userSession;
 
     private ObservableCollection<AuditLog> _auditLogs = new();
     private AuditLog? _selectedLog;
@@ -102,10 +104,11 @@ public class AuditLogViewModel : BindableBase
 
     public DelegateCommand SearchCommand { get; }
 
-    public AuditLogViewModel(IAuditLogService auditLogService, IExportService exportService)
+    public AuditLogViewModel(IAuditLogService auditLogService, IExportService exportService, IUserSession userSession)
     {
         _auditLogService = auditLogService ?? throw new ArgumentNullException(nameof(auditLogService));
         _exportService = exportService ?? throw new ArgumentNullException(nameof(exportService));
+        _userSession = userSession ?? throw new ArgumentNullException(nameof(userSession));
 
         LoadCommand = new DelegateCommand(async () => await LoadAuditLogs());
         SearchCommand = new DelegateCommand(async () => await SearchLogs());
@@ -211,6 +214,11 @@ public class AuditLogViewModel : BindableBase
             List<AuditLogExportRow> exportRows = AuditLogs.Select(AuditLogExportRow.FromAuditLog).ToList();
             string fileName = $"审计日志_{DateTime.Now:yyyyMMdd_HHmmss}";
             string filePath = await _exportService.ExportToExcelAsync(exportRows, fileName, options);
+            await _auditLogService.LogExportAsync(
+                _userSession.GetAuditUserId(),
+                _userSession.GetAuditUsername(),
+                "Audit",
+                $"导出审计日志: {exportRows.Count} 条");
 
             var result = System.Windows.MessageBox.Show(
                 $"导出成功，文件已保存到：\n{filePath}\n\n是否立即打开文件？",
@@ -228,6 +236,14 @@ public class AuditLogViewModel : BindableBase
         }
         catch (Exception ex) when (ExpectedOperationExceptionFilter.IsExpectedUserOperationException(ex))
         {
+            await _auditLogService.LogFailureAsync(
+                _userSession.GetAuditUserId(),
+                _userSession.GetAuditUsername(),
+                AuditActionType.Export,
+                "Audit",
+                "导出审计日志失败",
+                ex.Message,
+                "AuditLog");
             System.Windows.MessageBox.Show($"导出失败：{ex.Message}", "错误", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
             System.Diagnostics.Debug.WriteLine($"Export audit logs error: {ex.Message}");
         }

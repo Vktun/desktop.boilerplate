@@ -8,6 +8,7 @@ using Prism.Mvvm;
 using Prism.Navigation.Regions;
 using Vk.Dbp.AccountModule.Services;
 using Vk.Dbp.Contracts.Services;
+using Vk.Dbp.Services.Audit;
 using Vk.Dbp.Services.Session;
 
 namespace Vk.Dbp.AccountModule.ViewModels
@@ -17,6 +18,7 @@ namespace Vk.Dbp.AccountModule.ViewModels
         private readonly ISystemConfigService _configService;
         private readonly ISessionTimeoutService _timeoutService;
         private readonly IUserSession _userSession;
+        private readonly IAuditLogService _auditLogService;
 
         private bool _sessionTimeoutEnabled = true;
         private int _sessionTimeoutMinutes = 15;
@@ -86,11 +88,13 @@ namespace Vk.Dbp.AccountModule.ViewModels
         public SystemSettingsViewModel(
             ISystemConfigService configService,
             ISessionTimeoutService timeoutService,
-            IUserSession userSession)
+            IUserSession userSession,
+            IAuditLogService auditLogService)
         {
             _configService = configService ?? throw new ArgumentNullException(nameof(configService));
             _timeoutService = timeoutService ?? throw new ArgumentNullException(nameof(timeoutService));
             _userSession = userSession ?? throw new ArgumentNullException(nameof(userSession));
+            _auditLogService = auditLogService ?? throw new ArgumentNullException(nameof(auditLogService));
 
             SaveCommand = new DelegateCommand(async () => await ExecuteSaveAsync());
             ResetCommand = new DelegateCommand(async () => await ExecuteResetAsync());
@@ -137,6 +141,14 @@ namespace Vk.Dbp.AccountModule.ViewModels
                 // 验证权限 - 只有管理员可以修改
                 if (!_userSession.HasPermission("SystemConfig:Edit"))
                 {
+                    await _auditLogService.LogFailureAsync(
+                        _userSession.GetAuditUserId(),
+                        _userSession.GetAuditUsername(),
+                        AuditActionType.Update,
+                        "System",
+                        "保存系统设置失败",
+                        "Permission denied",
+                        "SystemConfig");
                     Growl.Warning("您没有权限修改系统设置");
                     return;
                 }

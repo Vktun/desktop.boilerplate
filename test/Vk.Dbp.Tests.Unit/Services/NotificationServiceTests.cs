@@ -1,7 +1,10 @@
-﻿using FluentAssertions;
+using FluentAssertions;
+using Moq;
 using SqlSugar;
 using Vk.Dbp.AccountModule.Models;
 using Vk.Dbp.AccountModule.Services;
+using Vk.Dbp.Services.Audit;
+using Vk.Dbp.Services.Session;
 using Vk.Dbp.Tests.Common;
 using Xunit;
 
@@ -10,17 +13,21 @@ namespace Vk.Dbp.Tests.Unit.Services;
 public sealed class NotificationServiceTests : IClassFixture<TestDatabaseFixture>
 {
     private readonly ISqlSugarClient _db;
+    private readonly Mock<IAuditLogService> _auditLogService = new();
+    private readonly UserSession _userSession = new();
 
     public NotificationServiceTests(TestDatabaseFixture fixture)
     {
         _db = fixture.Database;
         ResetDatabase();
+        _userSession.Login(1, "admin", "管理员", "", "", "");
+        SetupAuditLogService();
     }
 
     [Fact]
     public async Task NotificationService_PersistsAcrossServiceInstances()
     {
-        var firstService = new NotificationService(_db);
+        var firstService = CreateService();
         var createResult = await firstService.CreateNotificationAsync(new Notification
         {
             Title = "Test",
@@ -32,7 +39,7 @@ public sealed class NotificationServiceTests : IClassFixture<TestDatabaseFixture
 
         createResult.Should().BeTrue();
 
-        var secondService = new NotificationService(_db);
+        var secondService = CreateService();
         List<Notification> notifications = await secondService.GetNotificationsByUserIdAsync(1);
 
         notifications.Should().ContainSingle();
@@ -43,7 +50,7 @@ public sealed class NotificationServiceTests : IClassFixture<TestDatabaseFixture
     [Fact]
     public async Task NotificationService_SupportsReadCountAndDelete()
     {
-        var service = new NotificationService(_db);
+        var service = CreateService();
 
         await service.CreateNotificationAsync(new Notification
         {
@@ -87,5 +94,40 @@ public sealed class NotificationServiceTests : IClassFixture<TestDatabaseFixture
     private void ResetDatabase()
     {
         _db.Deleteable<Dabp.Infrastructure.Entities.Notification>().Where(_ => true).ExecuteCommand();
+    }
+
+    private NotificationService CreateService()
+    {
+        return new NotificationService(_db, _auditLogService.Object, _userSession);
+    }
+
+    private void SetupAuditLogService()
+    {
+        _auditLogService
+            .Setup(x => x.LogOperationAsync(
+                It.IsAny<int>(),
+                It.IsAny<string>(),
+                It.IsAny<AuditActionType>(),
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<string?>(),
+                It.IsAny<int?>(),
+                It.IsAny<string?>(),
+                It.IsAny<string?>(),
+                It.IsAny<string?>()))
+            .ReturnsAsync(true);
+
+        _auditLogService
+            .Setup(x => x.LogFailureAsync(
+                It.IsAny<int>(),
+                It.IsAny<string>(),
+                It.IsAny<AuditActionType>(),
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<string?>(),
+                It.IsAny<int?>(),
+                It.IsAny<string?>()))
+            .ReturnsAsync(true);
     }
 }

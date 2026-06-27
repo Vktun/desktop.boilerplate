@@ -3,7 +3,10 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Dabp.Infrastructure.Entities;
 using Dabp.Infrastructure.Repositories;
+using Dabp.Utils.Exceptions;
 using SqlSugar;
+using Vk.Dbp.Services.Audit;
+using Vk.Dbp.Services.Session;
 
 namespace Vk.Dbp.Services.Alarm
 {
@@ -14,13 +17,19 @@ namespace Vk.Dbp.Services.Alarm
     {
         private readonly ISqlSugarClient _db;
         private readonly IRepository<AlarmConfig> _alarmConfigRepository;
+        private readonly IAuditLogService _auditLogService;
+        private readonly IUserSession _userSession;
 
         public AlarmConfigService(
             ISqlSugarClient db,
-            IRepository<AlarmConfig> alarmConfigRepository)
+            IRepository<AlarmConfig> alarmConfigRepository,
+            IAuditLogService auditLogService,
+            IUserSession userSession)
         {
             _db = db ?? throw new ArgumentNullException(nameof(db));
             _alarmConfigRepository = alarmConfigRepository ?? throw new ArgumentNullException(nameof(alarmConfigRepository));
+            _auditLogService = auditLogService ?? throw new ArgumentNullException(nameof(auditLogService));
+            _userSession = userSession ?? throw new ArgumentNullException(nameof(userSession));
         }
 
         public async Task<List<AlarmConfig>> GetAlarmConfigsAsync()
@@ -44,24 +53,70 @@ namespace Vk.Dbp.Services.Alarm
 
         public async Task<bool> SaveAlarmConfigAsync(AlarmConfig config)
         {
-            if (config.Id == 0)
+            try
             {
-                // 新增配置
-                config.CreatedAt = DateTime.Now;
-                config.UpdatedAt = null;
-                return await _alarmConfigRepository.InsertAsync(config) > 0;
-            }
-            else
-            {
-                // 更新配置
+                if (config.Id == 0)
+                {
+                    config.CreatedAt = DateTime.Now;
+                    config.UpdatedAt = null;
+
+                    bool success = await _alarmConfigRepository.InsertAsync(config) > 0;
+                    if (success)
+                    {
+                        await LogAlarmConfigOperationAsync(AuditActionType.Create, config, "创建告警配置");
+                    }
+
+                    return success;
+                }
+
+                AlarmConfig? oldConfig = await GetAlarmConfigByIdAsync(config.Id);
                 config.UpdatedAt = DateTime.Now;
-                return await _alarmConfigRepository.UpdateAsync(config) > 0;
+
+                bool updateSuccess = await _alarmConfigRepository.UpdateAsync(config) > 0;
+                if (updateSuccess)
+                {
+                    await LogAlarmConfigOperationAsync(AuditActionType.Update, config, "更新告警配置", oldConfig);
+                }
+
+                return updateSuccess;
+            }
+            catch (Exception ex) when (ExpectedOperationExceptionFilter.IsExpectedDataOperationException(ex))
+            {
+                await LogAlarmConfigFailureAsync(
+                    config.Id == 0 ? AuditActionType.Create : AuditActionType.Update,
+                    config.Id,
+                    "保存告警配置失败",
+                    ex.Message);
+
+                return false;
             }
         }
 
         public async Task<bool> DeleteAlarmConfigAsync(int id)
         {
-            return await _alarmConfigRepository.DeleteByIdAsync(id) > 0;
+            try
+            {
+                AlarmConfig? config = await GetAlarmConfigByIdAsync(id);
+                bool success = await _alarmConfigRepository.DeleteByIdAsync(id) > 0;
+                if (success)
+                {
+                    await _auditLogService.LogDeleteAsync(
+                        _userSession.GetAuditUserId(),
+                        _userSession.GetAuditUsername(),
+                        "Alarm",
+                        "AlarmConfig",
+                        id,
+                        config,
+                        $"删除告警配置: {config?.AlarmCode ?? id.ToString()}");
+                }
+
+                return success;
+            }
+            catch (Exception ex) when (ExpectedOperationExceptionFilter.IsExpectedDataOperationException(ex))
+            {
+                await LogAlarmConfigFailureAsync(AuditActionType.Delete, id, "删除告警配置失败", ex.Message);
+                return false;
+            }
         }
 
         public async Task<List<AlarmConfig>> GetEnabledAlarmConfigsAsync()
@@ -109,6 +164,51 @@ namespace Vk.Dbp.Services.Alarm
                 default:
                     return false;
             }
+        }
+
+        private async Task LogAlarmConfigOperationAsync(
+            AuditActionType actionType,
+            AlarmConfig config,
+            string description,
+            AlarmConfig? oldConfig = null)
+        {
+            if (actionType == AuditActionType.Create)
+            {
+                await _auditLogService.LogCreateAsync(
+                    _userSession.GetAuditUserId(),
+                    _userSession.GetAuditUsername(),
+                    "Alarm",
+                    "AlarmConfig",
+                    config.Id,
+                    config,
+                    $"{description}: {config.AlarmCode}");
+                return;
+            }
+
+            object oldData = oldConfig is null ? new { config.Id } : oldConfig;
+
+            await _auditLogService.LogUpdateAsync(
+                _userSession.GetAuditUserId(),
+                _userSession.GetAuditUsername(),
+                "Alarm",
+                "AlarmConfig",
+                config.Id,
+                oldData,
+                config,
+                $"{description}: {config.AlarmCode}");
+        }
+
+        private async Task LogAlarmConfigFailureAsync(AuditActionType actionType, int id, string description, string reason)
+        {
+            await _auditLogService.LogFailureAsync(
+                _userSession.GetAuditUserId(),
+                _userSession.GetAuditUsername(),
+                actionType,
+                "Alarm",
+                description,
+                reason,
+                "AlarmConfig",
+                id == 0 ? null : id);
         }
     }
 }

@@ -6,6 +6,8 @@ using Dabp.Infrastructure.Entities;
 using Dabp.Infrastructure.Repositories;
 using SqlSugar;
 using Vk.Dbp.Contracts.Events;
+using Vk.Dbp.Services.Audit;
+using Vk.Dbp.Services.Session;
 
 namespace Vk.Dbp.Services.Alarm
 {
@@ -16,13 +18,19 @@ namespace Vk.Dbp.Services.Alarm
     {
         private readonly ISqlSugarClient _db;
         private readonly IRepository<AlarmRecord> _alarmRecordRepository;
+        private readonly IAuditLogService _auditLogService;
+        private readonly IUserSession _userSession;
 
         public AlarmService(
             ISqlSugarClient db,
-            IRepository<AlarmRecord> alarmRecordRepository)
+            IRepository<AlarmRecord> alarmRecordRepository,
+            IAuditLogService auditLogService,
+            IUserSession userSession)
         {
             _db = db ?? throw new ArgumentNullException(nameof(db));
             _alarmRecordRepository = alarmRecordRepository ?? throw new ArgumentNullException(nameof(alarmRecordRepository));
+            _auditLogService = auditLogService ?? throw new ArgumentNullException(nameof(auditLogService));
+            _userSession = userSession ?? throw new ArgumentNullException(nameof(userSession));
         }
 
         public async Task<List<AlarmRecord>> GetAlarmRecordsAsync(int userId, AlarmStatus? status = null, AlarmLevel? level = null, DateTime? startTime = null, DateTime? endTime = null)
@@ -87,15 +95,27 @@ namespace Vk.Dbp.Services.Alarm
             var alarm = await GetAlarmByIdAsync(id);
             if (alarm == null || alarm.AlarmStatus != AlarmStatus.Active)
             {
+                await LogAlarmFailureAsync(AuditActionType.Update, id, "确认告警失败", "Alarm not found or not active");
                 return false;
             }
 
+            AlarmStatus oldStatus = alarm.AlarmStatus;
             alarm.AlarmStatus = AlarmStatus.Acknowledged;
             alarm.AcknowledgedTime = DateTime.Now;
             alarm.AcknowledgedBy = userId;
 
             var result = await _alarmRecordRepository.UpdateAsync(alarm);
-            return result > 0;
+            bool success = result > 0;
+            if (success)
+            {
+                await LogAlarmStatusChangeAsync(alarm, oldStatus, alarm.AlarmStatus, "确认告警");
+            }
+            else
+            {
+                await LogAlarmFailureAsync(AuditActionType.Update, id, "确认告警失败", "Database update returned no affected rows");
+            }
+
+            return success;
         }
 
         public async Task<bool> ResolveAlarmAsync(int id, int userId)
@@ -103,15 +123,27 @@ namespace Vk.Dbp.Services.Alarm
             var alarm = await GetAlarmByIdAsync(id);
             if (alarm == null || alarm.AlarmStatus == AlarmStatus.Resolved)
             {
+                await LogAlarmFailureAsync(AuditActionType.Update, id, "解决告警失败", "Alarm not found or already resolved");
                 return false;
             }
 
+            AlarmStatus oldStatus = alarm.AlarmStatus;
             alarm.AlarmStatus = AlarmStatus.Resolved;
             alarm.ResolvedTime = DateTime.Now;
             alarm.ResolvedBy = userId;
 
             var result = await _alarmRecordRepository.UpdateAsync(alarm);
-            return result > 0;
+            bool success = result > 0;
+            if (success)
+            {
+                await LogAlarmStatusChangeAsync(alarm, oldStatus, alarm.AlarmStatus, "解决告警");
+            }
+            else
+            {
+                await LogAlarmFailureAsync(AuditActionType.Update, id, "解决告警失败", "Database update returned no affected rows");
+            }
+
+            return success;
         }
 
         public async Task<bool> IgnoreAlarmAsync(int id, int userId)
@@ -119,15 +151,27 @@ namespace Vk.Dbp.Services.Alarm
             var alarm = await GetAlarmByIdAsync(id);
             if (alarm == null || alarm.AlarmStatus == AlarmStatus.Resolved || alarm.AlarmStatus == AlarmStatus.Ignored)
             {
+                await LogAlarmFailureAsync(AuditActionType.Update, id, "忽略告警失败", "Alarm not found, resolved, or already ignored");
                 return false;
             }
 
+            AlarmStatus oldStatus = alarm.AlarmStatus;
             alarm.AlarmStatus = AlarmStatus.Ignored;
             alarm.ResolvedTime = DateTime.Now;
             alarm.ResolvedBy = userId;
 
             var result = await _alarmRecordRepository.UpdateAsync(alarm);
-            return result > 0;
+            bool success = result > 0;
+            if (success)
+            {
+                await LogAlarmStatusChangeAsync(alarm, oldStatus, alarm.AlarmStatus, "忽略告警");
+            }
+            else
+            {
+                await LogAlarmFailureAsync(AuditActionType.Update, id, "忽略告警失败", "Database update returned no affected rows");
+            }
+
+            return success;
         }
 
         public async Task<int> AcknowledgeAllAsync(int userId)
@@ -144,15 +188,25 @@ namespace Vk.Dbp.Services.Alarm
             int count = 0;
             foreach (var alarm in activeAlarms)
             {
+                AlarmStatus oldStatus = alarm.AlarmStatus;
                 alarm.AlarmStatus = AlarmStatus.Acknowledged;
                 alarm.AcknowledgedTime = DateTime.Now;
                 alarm.AcknowledgedBy = userId;
 
                 if (await _alarmRecordRepository.UpdateAsync(alarm) > 0)
                 {
+                    await LogAlarmStatusChangeAsync(alarm, oldStatus, alarm.AlarmStatus, "批量确认告警");
                     count++;
                 }
             }
+
+            await _auditLogService.LogOperationAsync(
+                _userSession.GetAuditUserId(),
+                _userSession.GetAuditUsername(),
+                AuditActionType.Update,
+                "Alarm",
+                $"批量确认告警: {count} 条",
+                "AlarmRecord");
 
             return count;
         }
@@ -188,6 +242,33 @@ namespace Vk.Dbp.Services.Alarm
                 .ToPageListAsync(pageIndex, pageSize, total);
 
             return (list, total);
+        }
+
+        private async Task LogAlarmStatusChangeAsync(AlarmRecord alarm, AlarmStatus oldStatus, AlarmStatus newStatus, string description)
+        {
+            await _auditLogService.LogOperationAsync(
+                _userSession.GetAuditUserId(),
+                _userSession.GetAuditUsername(),
+                AuditActionType.Update,
+                "Alarm",
+                $"{description}: {alarm.AlarmTitle}",
+                "AlarmRecord",
+                alarm.Id,
+                oldStatus.ToString(),
+                newStatus.ToString());
+        }
+
+        private async Task LogAlarmFailureAsync(AuditActionType actionType, int alarmId, string description, string reason)
+        {
+            await _auditLogService.LogFailureAsync(
+                _userSession.GetAuditUserId(),
+                _userSession.GetAuditUsername(),
+                actionType,
+                "Alarm",
+                description,
+                reason,
+                "AlarmRecord",
+                alarmId);
         }
     }
 }

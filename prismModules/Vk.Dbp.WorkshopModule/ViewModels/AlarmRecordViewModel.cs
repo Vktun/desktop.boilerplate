@@ -11,6 +11,7 @@ using Prism.Navigation.Regions;
 using Vk.Dbp.Contracts.Events;
 using Vk.Dbp.Contracts.Services;
 using Vk.Dbp.Services.Alarm;
+using Vk.Dbp.Services.Audit;
 using Vk.Dbp.Services.Session;
 
 namespace Vk.Dbp.WorkshopModule.ViewModels
@@ -23,6 +24,7 @@ namespace Vk.Dbp.WorkshopModule.ViewModels
         private readonly IEventAggregator _eventAggregator;
         private readonly IRegionManager _regionManager;
         private readonly IExportService _exportService;
+        private readonly IAuditLogService _auditLogService;
         private bool _isDisposed = false;
 
         #region Properties
@@ -171,7 +173,8 @@ namespace Vk.Dbp.WorkshopModule.ViewModels
             IUserSession userSession,
             IEventAggregator eventAggregator,
             IRegionManager regionManager,
-            IExportService exportService)
+            IExportService exportService,
+            IAuditLogService auditLogService)
         {
             _alarmService = alarmService ?? throw new ArgumentNullException(nameof(alarmService));
             _alarmConfigService = alarmConfigService ?? throw new ArgumentNullException(nameof(alarmConfigService));
@@ -179,6 +182,7 @@ namespace Vk.Dbp.WorkshopModule.ViewModels
             _eventAggregator = eventAggregator ?? throw new ArgumentNullException(nameof(eventAggregator));
             _regionManager = regionManager ?? throw new ArgumentNullException(nameof(regionManager));
             _exportService = exportService ?? throw new ArgumentNullException(nameof(exportService));
+            _auditLogService = auditLogService ?? throw new ArgumentNullException(nameof(auditLogService));
 
             AlarmRecords = new ObservableCollection<AlarmRecord>();
 
@@ -443,6 +447,11 @@ namespace Vk.Dbp.WorkshopModule.ViewModels
                 var fileName = $"告警记录_{DateTime.Now:yyyyMMdd_HHmmss}";
                 
                 var filePath = await _exportService.ExportToExcelAsync(AlarmRecords.ToList(), fileName, options);
+                await _auditLogService.LogExportAsync(
+                    _userSession.GetAuditUserId(),
+                    _userSession.GetAuditUsername(),
+                    "Alarm",
+                    $"导出告警记录: {AlarmRecords.Count} 条");
                 
                 // 提示用户并询问是否打开文件
                 var result = System.Windows.MessageBox.Show(
@@ -462,6 +471,14 @@ namespace Vk.Dbp.WorkshopModule.ViewModels
             }
             catch (Exception ex) when (ExpectedOperationExceptionFilter.IsExpectedUserOperationException(ex))
             {
+                await _auditLogService.LogFailureAsync(
+                    _userSession.GetAuditUserId(),
+                    _userSession.GetAuditUsername(),
+                    AuditActionType.Export,
+                    "Alarm",
+                    "导出告警记录失败",
+                    ex.Message,
+                    "AlarmRecord");
                 System.Windows.MessageBox.Show($"导出失败：{ex.Message}", "错误", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
                 System.Diagnostics.Debug.WriteLine($"Export alarms error: {ex.Message}");
             }
