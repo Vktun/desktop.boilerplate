@@ -233,6 +233,7 @@ public class AuditLogViewModel : BindableBase
         }
         catch (OperationCanceledException)
         {
+            System.Diagnostics.Debug.WriteLine("Export audit logs was canceled.");
         }
         catch (Exception ex) when (ExpectedOperationExceptionFilter.IsExpectedUserOperationException(ex))
         {
