@@ -189,7 +189,7 @@
 | 文件 | 关注原因 |
 |------|----------|
 | `src/Vk.Dbp.WpfWindow/PrismBootstrapper.cs` | 启动流程、DI注册、数据库初始化 |
-| `src/Vk.Dbp.WpfWindow/Constants/NavigationConstants.cs` | 导航常量定义 |
+| `src/Vk.Dbp.Contracts/Constants/NavigationConstants.cs` | 导航常量定义 |
 | `src/Vk.Dbp.Contracts/Services/INavigationService.cs` | 导航契约 |
 | `src/Vk.Dbp.Services/Session/UserSession.cs` | 会话状态核心 |
 | `src/Vk.Dbp.Infrastructure/DatabaseInitializer.cs` | 数据库初始化和种子数据 |

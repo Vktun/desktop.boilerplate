@@ -17,7 +17,7 @@ Before editing, read the closest relevant files:
 - `.trae/rules/architecture.md`
 - `docs/MODULE_DEVELOPMENT_GUIDE.md`
 - `src/Vk.Dbp.WpfWindow/PrismBootstrapper.cs`
-- `src/Vk.Dbp.WpfWindow/Constants/NavigationConstants.cs`
+- `src/Vk.Dbp.Contracts/Constants/NavigationConstants.cs`
 - an existing module entry file such as `prismModules/Vk.Dbp.AccountModule/DbpAccountModule.cs`
 - the nearest existing View, ViewModel, and service that resemble the requested feature
 

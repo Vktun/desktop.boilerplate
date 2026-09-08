@@ -17,14 +17,16 @@ Defined in `src/Vk.Dbp.Contracts/Events/`:
 
 ```csharp
 // Alarm triggered — new alarm occurred
-public class AlarmTriggeredEvent : PubSubEvent<AlarmTriggeredEventArgs> { }
+public class AlarmTriggeredEvent : PubSubEvent<AlarmTriggeredPayload> { }
 
 // Alarm count changed — update badge/count
-public class AlarmCountChangedEvent : PubSubEvent<int> { }
+public class AlarmCountChangedEvent : PubSubEvent<AlarmCountChangedPayload> { }
 
 // Alarm status changed — acknowledged, resolved, etc.
-public class AlarmStatusChangedEvent : PubSubEvent<AlarmStatusChangedEventArgs> { }
+public class AlarmStatusChangedEvent : PubSubEvent<AlarmStatusChangedPayload> { }
 ```
+
+Payload classes live in `AlarmPayloads.cs`, enums in `AlarmEnums.cs` (same folder).
 
 ### IAlarmService
 
@@ -55,7 +57,7 @@ _eventAggregator.GetEvent<AlarmStatusChangedEvent>().Subscribe(OnAlarmStatusChan
 Event handlers use `Dispatcher.Invoke` for UI thread safety:
 
 ```csharp
-private void OnAlarmTriggered(AlarmTriggeredEventArgs args)
+private void OnAlarmTriggered(AlarmTriggeredPayload args)
 {
     Application.Current.Dispatcher.Invoke(() =>
     {
@@ -133,7 +135,7 @@ private void OnAlarmCountChanged(int count)
 Use HandyControl's `Growl` or notification components for transient alarm notifications:
 
 ```csharp
-private void OnAlarmTriggered(AlarmTriggeredEventArgs args)
+private void OnAlarmTriggered(AlarmTriggeredPayload args)
 {
     Application.Current.Dispatcher.Invoke(() =>
     {
@@ -151,9 +153,8 @@ private void OnAlarmTriggered(AlarmTriggeredEventArgs args)
 
 | Component | Location |
 |-----------|----------|
-| Alarm events | `src/Vk.Dbp.Contracts/Events/` |
-| IAlarmService | `src/Vk.Dbp.Contracts/Services/` (interface) |
-| AlarmService | `prismModules/Vk.Dbp.AccountModule/Services/` (implementation) |
+| Alarm events | `src/Vk.Dbp.Contracts/Events/` (AlarmEvents.cs / AlarmPayloads.cs / AlarmEnums.cs) |
+| IAlarmService / AlarmService | `src/Vk.Dbp.Services/Alarm/` (interface + implementation; registered in `DbpAccountModule.RegisterTypes`) |
 | HeaderViewModel | `src/Vk.Dbp.WpfWindow/ViewModels/HeaderViewModel.cs` |
 | HeaderView | `src/Vk.Dbp.WpfWindow/Layout/HeaderView.xaml` |
 | Alarm config views | `prismModules/Vk.Dbp.AccountModule/Views/` |
@@ -185,6 +186,6 @@ public void AlarmTriggered_PublishesEvent()
         .Returns(alarmEvent.Object);
 
     // Trigger alarm
-    alarmEvent.Verify(e => e.Publish(It.IsAny<AlarmTriggeredEventArgs>()), Times.Once);
+    alarmEvent.Verify(e => e.Publish(It.IsAny<AlarmTriggeredPayload>()), Times.Once);
 }
 ```

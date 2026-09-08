@@ -34,6 +34,16 @@ desktop.boilerplate/
 └── scripts/                          # PowerShell scripts (start-wpf-local, publish)
 ```
 
+## Namespace Reality
+
+Project file names are `Vk.Dbp.*`, but most root namespaces inside them are `Dabp.*` (e.g. `Dabp.Infrastructure.Entities`, `Dabp.Utils.Security`, `Dabp.WpfWindow`; `Vk.Dbp.Services` is mixed). Mixed-prefix `using` directives in one file are normal. The shell bootstrapper class is `internal class Bootstrapper : PrismBootstrapper` in namespace `Dabp.WpfWindow` (file `PrismBootstrapper.cs`). See `.claude/rules/code-reality.md` for the full table and other project quirks — always match the neighboring file's namespace; do not "unify" prefixes.
+
+## Current State Notes
+
+- `dbpApps/*` are placeholder template entries (default `StartupUri`, not yet wired to the shell or module catalog).
+- `dbpframework/Vk.Dbp.Core`'s `ServiceCollectionExtensions`/`IDbpModule` are unwired stubs; all registration goes through Prism `IContainerRegistry`.
+- Dialogs use the established `Popup IsOpen` + dialog-ViewModel pattern, not Prism `IDialogService`.
+
 ## Layer Ownership
 
 | Project | Owns |
@@ -58,7 +68,7 @@ desktop.boilerplate/
 - Dependencies flow inward: Presentation → Application → Domain → Infrastructure.
 - `dbpframework` is the innermost layer; must NOT depend on `src/` or `prismModules/`.
 - Business modules must NOT depend on each other directly; use `Vk.Dbp.Contracts` for shared contracts.
-- ViewModels must NOT directly access SqlSugar or repository types; use service boundaries.
+- ViewModels must NOT directly access SqlSugar or repository types; use service boundaries.（现实说明：服务层普遍直接注入 `ISqlSugarClient` 使用 `Queryable/Insertable/Updateable`，`IRepository<T>` 存在但使用率低——这是既有现实，新服务可跟随；ViewModel 的边界规则不变。）
 - Shared behavior needed by multiple modules goes behind a contract in `Vk.Dbp.Contracts`.
 
 ### Prism And WPF Conventions
@@ -91,8 +101,9 @@ prismModules/Vk.Dbp.YourModule/
   Services/
   Models/
   Converters/
-  Constants/
 ```
+
+（这是 AccountModule 的现实形状；无 `Constants/` 文件夹——视图名/区域名常量一律加到 `Vk.Dbp.Contracts` 的 `NavigationConstants`。）
 
 Register in `PrismBootstrapper.ConfigureModuleCatalog` via `moduleCatalog.AddModule<DbpYourModule>()`.
 
@@ -169,10 +180,17 @@ When reviewing or changing this project, pay special attention to:
 | Purpose | File |
 |---------|------|
 | Bootstrapper | `src/Vk.Dbp.WpfWindow/PrismBootstrapper.cs` |
-| Navigation constants | `src/Vk.Dbp.WpfWindow/Constants/NavigationConstants.cs` |
+| Navigation constants | `src/Vk.Dbp.Contracts/Constants/NavigationConstants.cs` |
 | Navigation service interface | `src/Vk.Dbp.Contracts/Services/INavigationService.cs` |
 | Navigation implementation | `src/Vk.Dbp.WpfWindow/Services/PrismNavigationService.cs` |
 | Session interface | `src/Vk.Dbp.Services/Session/IUserSession.cs` |
 | Session implementation | `src/Vk.Dbp.Services/Session/UserSession.cs` |
 | Theme service | `src/Vk.Dbp.WpfWindow/Services/ThemeService.cs` |
 | Module registration example | `prismModules/Vk.Dbp.AccountModule/DbpAccountModule.cs` |
+
+## Agent Configuration
+
+- Reply in Chinese when the user writes in Chinese (项目文档与团队日常均为中文).
+- Path-scoped & always-on rules live in `.claude/rules/`: `code-reality.md` (namespaces & project quirks), `quality-patterns.md` (`**/*.cs`, CodeQL patterns), `testing.md` (`test/**`), `git-hygiene.md`, `roadmap.md`.
+- Workflow skills live in `.claude/skills/`: `dbp-add-audit-logging`, `dbp-unit-test`, `dbp-new-module`, `dbp-quality-review`, `dbp-login-session`, `dbp-database`, `dbp-alarm-notification`. Invoke via `/name` or automatic trigger.
+- Target implementation & gap analysis: `docs/PROJECT_REVIEW_AND_TODO.md` (some file paths in it are stale — trust the code).

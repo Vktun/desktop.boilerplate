@@ -55,7 +55,8 @@ prismModules/Vk.Dbp.YourModule/
   Services/
   Models/
   Converters/
-  Constants/
 ```
+
+View/region name constants go in `Vk.Dbp.Contracts` (`NavigationConstants`), not a module-local `Constants/` folder.
 
 Register the module in `PrismBootstrapper.ConfigureModuleCatalog` only after its project builds and its navigation registrations are in place.

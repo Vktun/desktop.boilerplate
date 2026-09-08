@@ -61,53 +61,36 @@ This ensures the database is ready before any DB-backed UI or service is accesse
 
 ### Entity Definitions
 
-Entities are defined in `src/Vk.Dbp.Infrastructure/Entities/` with SqlSugar attributes:
+Entities are defined in `src/Vk.Dbp.Infrastructure/Entities/` (namespace `Dabp.Infrastructure.Entities`) as plain POCOs combining SqlSugar attributes with DataAnnotations, with Chinese XML docs and ABP-style audit columns (`CreationTime`, `CreatorId`, `LastModificationTime`, `LastModifierId`, `IsDeleted`, ...):
 
 ```csharp
-[SugarTable("SysUsers")]
-public class SysUser
+public class User
 {
+    [Key]
     [SugarColumn(IsPrimaryKey = true, IsIdentity = true)]
     public int Id { get; set; }
 
-    [SugarColumn(Length = 50)]
-    public string Username { get; set; }
+    [SugarColumn(IsNullable = true, ColumnDataType = "nvarchar")]
+    [StringLength(50)]
+    public string? UserName { get; set; }
 
     // ...
 }
 ```
 
+Soft delete is manual — every query adds `.Where(u => !u.IsDeleted)`.
+
 ### Repository Pattern
 
-Repositories are in `src/Vk.Dbp.Infrastructure/Repositories/`:
+Repositories are in `src/Vk.Dbp.Infrastructure/Repositories/` (`IRepository<T>` + `SqlSugarRepository<T>`, `where T : class, new()`), an async wrapper including `GetByIdAsync`, `GetListAsync(expr)`, `InsertAsync`, and `GetPageListAsync` returning a `(List<T> list, int total)` tuple via `RefAsync<int>`.
+
+Registered in `PrismBootstrapper.RegisterTypes` as an open generic:
 
 ```csharp
-public class GenericRepository<T> where T : class, new()
-{
-    protected readonly ISqlSugarClient _db;
-
-    public GenericRepository(ISqlSugarClient db)
-    {
-        _db = db ?? throw new ArgumentNullException(nameof(db));
-    }
-
-    public T GetById(object id) => _db.Queryable<T>().InSingle(id);
-    public List<T> GetAll() => _db.Queryable<T>().ToList();
-    public int Insert(T entity) => _db.Insertable(entity).ExecuteCommand();
-    public int Update(T entity) => _db.Updateable(entity).ExecuteCommand();
-    public int Delete(object id) => _db.Deleteable<T>().In(id).ExecuteCommand();
-}
+containerRegistry.Register(typeof(IRepository<>), typeof(SqlSugarRepository<>));
 ```
 
-Registered in `PrismBootstrapper.RegisterTypes`:
-
-```csharp
-containerRegistry.Register(typeof(IGenericRepository<>), typeof(GenericRepository<>));
-```
-
-### Module-Specific Repositories
-
-Modules may define specialized repositories in their own `Services/` directory:
+In practice most services bypass the repository and inject `ISqlSugarClient` directly:
 
 ```csharp
 public class UserService : IUserService
@@ -119,11 +102,11 @@ public class UserService : IUserService
         _db = db ?? throw new ArgumentNullException(nameof(db));
     }
 
-    public User GetByUsername(string username)
+    public async Task<UserEntity?> GetByUsernameAsync(string username)
     {
-        return _db.Queryable<SysUser>()
-            .Where(u => u.Username == username)
-            .First();
+        return await _db.Queryable<UserEntity>()
+            .Where(u => !u.IsDeleted && u.UserName == username)
+            .FirstAsync();
     }
 }
 ```
@@ -138,8 +121,8 @@ public class UserService : IUserService
 
 ## Adding a New Repository
 
-1. For generic CRUD, use `IGenericRepository<T>` — already registered globally.
-2. For specialized queries, create a service that injects `ISqlSugarClient`.
+1. For generic CRUD, `IRepository<T>` is already registered globally — inject it directly.
+2. For specialized queries, create a service that injects `ISqlSugarClient` (the prevailing pattern in this repo).
 3. Do NOT inject `ISqlSugarClient` directly into ViewModels; always use a service boundary.
 
 ## Database Initialization Flow
@@ -165,11 +148,11 @@ Initial navigation (Login or Dashboard based on session)
 | Component | Location |
 |-----------|----------|
 | SqlSugar config | `src/Vk.Dbp.WpfWindow/PrismBootstrapper.cs` (ConfigureSqlSugarDb) |
-| IAppStartupService | `src/Vk.Dbp.Contracts/Services/IAppStartupService.cs` |
-| AppStartupService | `src/Vk.Dbp.Infrastructure/` |
+| IAppStartupService / AppStartupService | `src/Vk.Dbp.WpfWindow/Services/` |
+| DatabaseInitializer (CodeFirst + seeds) | `src/Vk.Dbp.Infrastructure/DatabaseInitializer.cs` |
 | Entities | `src/Vk.Dbp.Infrastructure/Entities/` |
-| Repositories | `src/Vk.Dbp.Infrastructure/Repositories/` |
-| ORM settings | `src/Vk.Dbp.Infrastructure/OrmSetting/` |
+| Repositories (`IRepository<T>` / `SqlSugarRepository<T>`) | `src/Vk.Dbp.Infrastructure/Repositories/` |
+| ORM settings (`SqlSugarFluentService`) | `src/Vk.Dbp.Infrastructure/OrmSetting/` |
 | Connection string | `src/Vk.Dbp.WpfWindow/appsettings.json` / `appsettings.local.json` |
 
 ## Common Issues
