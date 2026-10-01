@@ -1,8 +1,9 @@
 using FluentAssertions;
 using Moq;
 using SqlSugar;
-using Vk.Dbp.AccountModule.Models;
 using Vk.Dbp.AccountModule.Services;
+using Vk.Dbp.Contracts.Models;
+using Vk.Dbp.Contracts.Services;
 using Vk.Dbp.Services.Audit;
 using Vk.Dbp.Services.Session;
 using Vk.Dbp.Tests.Common;

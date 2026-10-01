@@ -42,6 +42,7 @@ namespace Vk.Dbp.AccountModule
             containerRegistry.RegisterSingleton<IPasswordHasher, PasswordHasher>();
 
             containerRegistry.RegisterSingleton<IUserService, UserService>();
+            containerRegistry.RegisterSingleton<IUserCredentialService, UserCredentialService>();
             containerRegistry.RegisterSingleton<IRoleService, RoleService>();
             containerRegistry.RegisterSingleton<IPermissionService, PermissionService>();
             containerRegistry.RegisterSingleton<INotificationService, NotificationService>();

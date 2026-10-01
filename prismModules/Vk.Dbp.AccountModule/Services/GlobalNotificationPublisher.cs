@@ -1,8 +1,8 @@
 using System;
 using System.Threading.Tasks;
 using Prism.Events;
-using Vk.Dbp.AccountModule.Models;
 using Vk.Dbp.Contracts.Events;
+using Vk.Dbp.Contracts.Models;
 using Vk.Dbp.Contracts.Services;
 using Vk.Dbp.Services.Session;
 

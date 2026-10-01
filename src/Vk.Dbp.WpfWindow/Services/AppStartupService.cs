@@ -2,7 +2,6 @@ using Dabp.Infrastructure;
 using Prism.Ioc;
 using Serilog;
 using Dabp.Utils.Exceptions;
-using Vk.Dbp.AccountModule.Services;
 using Vk.Dbp.Contracts.Services;
 
 namespace Dabp.WpfWindow.Services;

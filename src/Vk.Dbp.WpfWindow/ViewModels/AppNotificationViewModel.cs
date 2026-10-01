@@ -5,9 +5,9 @@ using System.Threading.Tasks;
 using Prism.Commands;
 using Prism.Events;
 using Prism.Mvvm;
-using Vk.Dbp.AccountModule.Models;
-using Vk.Dbp.AccountModule.Services;
 using Vk.Dbp.Contracts.Events;
+using Vk.Dbp.Contracts.Models;
+using Vk.Dbp.Contracts.Services;
 using Vk.Dbp.Services.Session;
 
 namespace Vk.Dbp.WpfWindow.ViewModels

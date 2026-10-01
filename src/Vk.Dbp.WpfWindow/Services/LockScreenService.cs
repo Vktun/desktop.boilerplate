@@ -1,13 +1,12 @@
 ﻿using System;
 using System.Threading.Tasks;
 using System.Windows;
-using Dabp.Utils.Security;
 using Dabp.Utils.Exceptions;
 using Dabp.WpfWindow.ViewModels;
 using Dabp.WpfWindow.Views;
 using HandyControl.Controls;
 using Prism.Ioc;
-using Vk.Dbp.AccountModule.Services;
+using Vk.Dbp.Contracts.Services;
 using Vk.Dbp.Services.Audit;
 using Vk.Dbp.Services.Session;
 
@@ -20,7 +19,6 @@ namespace Dabp.WpfWindow.Services
     {
         private readonly IContainerProvider _container;
         private readonly IUserSession _userSession;
-        private readonly IPasswordHasher _passwordHasher;
 
         private LockScreenWindow? _lockScreenWindow;
 
@@ -31,12 +29,10 @@ namespace Dabp.WpfWindow.Services
 
         public LockScreenService(
             IContainerProvider container,
-            IUserSession userSession,
-            IPasswordHasher passwordHasher)
+            IUserSession userSession)
         {
             _container = container ?? throw new ArgumentNullException(nameof(container));
             _userSession = userSession ?? throw new ArgumentNullException(nameof(userSession));
-            _passwordHasher = passwordHasher ?? throw new ArgumentNullException(nameof(passwordHasher));
         }
 
         /// <summary>
@@ -85,21 +81,16 @@ namespace Dabp.WpfWindow.Services
 
             try
             {
-                var userService = _container.Resolve<IUserService>();
-                var user = await userService.GetUserByIdAsync(_userSession.UserId);
+                var credentialService = _container.Resolve<IUserCredentialService>();
+                var result = await credentialService.VerifyUserPasswordAsync(_userSession.UserId, password);
 
-                if (user == null)
+                failureReason = result switch
                 {
-                    failureReason = "User not found";
-                }
-                else if (string.IsNullOrWhiteSpace(user.PasswordHash))
-                {
-                    failureReason = "Missing password hash";
-                }
-                else if (!_passwordHasher.VerifyPassword(password, user.PasswordHash))
-                {
-                    failureReason = "Invalid password";
-                }
+                    PasswordVerificationResult.UserNotFound => "User not found",
+                    PasswordVerificationResult.NoPasswordHash => "Missing password hash",
+                    PasswordVerificationResult.Mismatch => "Invalid password",
+                    _ => null
+                };
             }
             catch (Exception ex) when (ExpectedOperationExceptionFilter.IsExpectedUserOperationException(ex))
             {

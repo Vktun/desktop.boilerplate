@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Dabp.Utils.Exceptions;
 using SqlSugar;
 using Dabp.Infrastructure.Entities;
+using Vk.Dbp.Contracts.Services;
 using Vk.Dbp.Services.Audit;
 using Vk.Dbp.Services.Session;
 
@@ -142,12 +143,6 @@ namespace Vk.Dbp.AccountModule.Services
                 SystemConfigKeys.SessionTimeoutEnabled,
                 enabled.ToString(),
                 "是否启用会话超时");
-        }
-
-        public async Task<SystemConfig?> GetConfigByKeyAsync(string key)
-        {
-            return await _db.Queryable<SystemConfig>()
-                .FirstAsync(c => c.ConfigKey == key);
         }
 
         private async Task LogConfigOperationAsync(AuditActionType actionType, string key, string? description)
