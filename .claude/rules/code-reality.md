@@ -48,7 +48,8 @@
 | `IAuditLogService` | `src/Vk.Dbp.Services/Audit/` | **AccountModule** `Services/DbAuditLogService` | `DbpAccountModule.RegisterTypes` |
 | `IAlarmService`/`IAlarmConfigService` | `src/Vk.Dbp.Services/Alarm/` | 同目录实现 | `DbpAccountModule.RegisterTypes` |
 | `IRepository<>`（开放泛型） | `src/Vk.Dbp.Infrastructure/Repositories/` | `SqlSugarRepository<>` | `PrismBootstrapper.RegisterTypes` |
-| 账户域服务（User/Role/Permission/Org/Notification/SystemConfig） | 模块内 `Services/`（接口+实现同目录） | 同目录 | `DbpAccountModule.RegisterTypes` |
+| 账户域服务（User/Role/Permission/Org） | 模块内 `Services/`（接口+实现同目录） | 同目录 | `DbpAccountModule.RegisterTypes` |
+| `INotificationService`/`ISystemConfigService`/`IUserCredentialService` | `src/Vk.Dbp.Contracts/Services/`（跨模块契约，2026-10 从模块内提升） | **AccountModule** `Services/`（`Notification` DTO 在 `Vk.Dbp.Contracts.Models`） | `DbpAccountModule.RegisterTypes` |
 | `IAppStartupService` | `src/Vk.Dbp.WpfWindow/Services/`（接口在 shell 层） | 同目录 `AppStartupService`；建表种子在 `src/Vk.Dbp.Infrastructure/DatabaseInitializer.cs` | `PrismBootstrapper.RegisterTypes` |
 
 ## 既有现实约定（与理想约定的差异）
