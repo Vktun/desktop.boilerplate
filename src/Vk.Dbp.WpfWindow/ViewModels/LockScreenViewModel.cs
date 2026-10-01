@@ -132,9 +132,9 @@ namespace Dabp.WpfWindow.ViewModels
         }
 
         /// <summary>
-        /// 执行解锁
+        /// 执行解锁（异步等待数据库验证，期间 IsUnlocking 禁用命令）
         /// </summary>
-        private void ExecuteUnlock(PasswordBox? passwordBox)
+        private async void ExecuteUnlock(PasswordBox? passwordBox)
         {
             if (passwordBox == null || string.IsNullOrEmpty(passwordBox.Password))
                 return;
@@ -144,7 +144,10 @@ namespace Dabp.WpfWindow.ViewModels
 
             try
             {
-                bool success = _lockScreenService.Unlock(passwordBox.Password);
+                // 显式 ConfigureAwait(true) 压制 Fody 的 false 织入，保持续体在 UI 线程更新绑定状态
+                bool success = await _lockScreenService
+                    .UnlockAsync(passwordBox.Password)
+                    .ConfigureAwait(true);
                 if (!success)
                 {
                     ShowError = true;

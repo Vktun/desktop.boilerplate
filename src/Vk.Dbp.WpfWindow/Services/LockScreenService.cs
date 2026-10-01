@@ -70,9 +70,9 @@ namespace Dabp.WpfWindow.Services
         }
 
         /// <summary>
-        /// 瑙ｉ攣灞忓箷 - 楠岃瘉鍘熺敤鎴峰瘑鐮?
+        /// 解锁屏幕 - 验证原用户密码（异步，禁止 UI 线程同步等待数据库）
         /// </summary>
-        public bool Unlock(string password)
+        public async Task<bool> UnlockAsync(string password)
         {
             if (!_userSession.IsLocked)
                 return true;
@@ -80,50 +80,54 @@ namespace Dabp.WpfWindow.Services
             if (string.IsNullOrEmpty(password))
                 return false;
 
+            string? failureReason = null;
+            bool transientError = false;
+
             try
             {
                 var userService = _container.Resolve<IUserService>();
-                var user = userService.GetUserByIdAsync(_userSession.UserId).GetAwaiter().GetResult();
+                var user = await userService.GetUserByIdAsync(_userSession.UserId);
+
                 if (user == null)
                 {
-                    LogUnlockFailure("User not found");
-                    return false;
+                    failureReason = "User not found";
                 }
-
-                if (string.IsNullOrWhiteSpace(user.PasswordHash))
+                else if (string.IsNullOrWhiteSpace(user.PasswordHash))
                 {
-                    LogUnlockFailure("Missing password hash");
-                    return false;
+                    failureReason = "Missing password hash";
                 }
-
-                // 楠岃瘉瀵嗙爜
-                bool isValid = _passwordHasher.VerifyPassword(password, user.PasswordHash);
-                if (isValid)
+                else if (!_passwordHasher.VerifyPassword(password, user.PasswordHash))
                 {
-                    // 瑙ｉ攣浼氳瘽
-                    _userSession.Unlock();
-                    LogUnlockSuccess();
-
-                    // 鍏抽棴閿佸睆绐楀彛
-                    CloseLockScreenWindow();
-
-                    // 瑙﹀彂瑙ｉ攣浜嬩欢
-                    Unlocked?.Invoke(this, EventArgs.Empty);
-
-                    Growl.Success("瑙ｉ攣鎴愬姛");
-                    return true;
+                    failureReason = "Invalid password";
                 }
-
-                Growl.Error("瀵嗙爜閿欒锛岃閲嶆柊杈撳叆");
-                LogUnlockFailure("Invalid password");
-                return false;
             }
             catch (Exception ex) when (ExpectedOperationExceptionFilter.IsExpectedUserOperationException(ex))
             {
-                Growl.Error("瑙ｉ攣澶辫触锛岃绋嶅悗閲嶈瘯");
-                LogUnlockFailure(ex.Message);
-                return false;
+                failureReason = ex.Message;
+                transientError = true;
             }
+
+            // 本方法的 await 已被 ConfigureAwait.Fody 织入，续体可能在线程池线程；
+            // 会话状态、锁屏窗口、Growl 与事件的落地统一调度回 UI 线程。
+            return Application.Current.Dispatcher.Invoke(() =>
+            {
+                if (failureReason == null)
+                {
+                    _userSession.Unlock();
+                    LogUnlockSuccess();
+
+                    CloseLockScreenWindow();
+
+                    Unlocked?.Invoke(this, EventArgs.Empty);
+
+                    Growl.Success("解锁成功");
+                    return true;
+                }
+
+                Growl.Error(transientError ? "解锁失败，请稍后重试" : "密码错误，请重新输入");
+                LogUnlockFailure(failureReason);
+                return false;
+            });
         }
 
         private void LogUnlockSuccess()

@@ -14,6 +14,12 @@ namespace Vk.Dbp.WpfWindow.ViewModels
 {
     public class AppNotificationViewModel : BindableBase, IDisposable
     {
+        /// <summary>
+        /// Maximum number of notifications kept in the UI list. The list is fed by global
+        /// events with no natural bound; without a cap it grows for the whole app lifetime.
+        /// </summary>
+        public const int MaxDisplayedNotifications = 200;
+
         private readonly INotificationService _notificationService;
         private readonly IUserSession _userSession;
         private readonly IEventAggregator _eventAggregator;
@@ -118,6 +124,12 @@ namespace Vk.Dbp.WpfWindow.ViewModels
             // Insert at the top of the list
             Notifications.Insert(0, notification);
 
+            // Keep the in-memory list bounded (oldest entries beyond the cap are dropped)
+            if (Notifications.Count > MaxDisplayedNotifications)
+            {
+                Notifications.RemoveAt(Notifications.Count - 1);
+            }
+
             // Update unread count if this is a new notification
             if (!notification.IsRead)
             {
@@ -151,7 +163,9 @@ namespace Vk.Dbp.WpfWindow.ViewModels
                 }
 
                 var notifications = await _notificationService.GetNotificationsByUserIdAsync(_userSession.UserId);
-                Notifications = new ObservableCollection<Notification>(notifications);
+                // Display list is capped; the unread badge reflects the full result set
+                Notifications = new ObservableCollection<Notification>(
+                    notifications.Take(MaxDisplayedNotifications));
                 UnreadCount = notifications.Count(n => !n.IsRead);
             }
             finally

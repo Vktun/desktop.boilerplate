@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Threading;
 using Dabp.Infrastructure;
 using Dabp.Infrastructure.OrmSetting;
 using Dabp.Infrastructure.Repositories;
@@ -30,77 +31,116 @@ namespace Dabp.WpfWindow
 {
     internal class Bootstrapper : PrismBootstrapper
     {
+        private DependencyObject? _shell;
+        private Window? _splashScreen;
+        private ShutdownMode _originalShutdownMode = ShutdownMode.OnLastWindowClose;
+
         protected override DependencyObject CreateShell()
         {
             return Container.Resolve<MainWindow>();
         }
 
-        protected override async void InitializeShell(DependencyObject shell)
+        protected override void InitializeShell(DependencyObject shell)
         {
-            Window? splashScreen = null;
-            ShutdownMode originalShutdownMode = Application.Current?.ShutdownMode ?? ShutdownMode.OnLastWindowClose;
+            // Prism 不会 await InitializeShell：若在此直接初始化数据库，InitializeModules
+            // （注册 LoginView 等导航目标）会与它并发执行，首次导航存在竞态。
+            // 因此这里只做同步准备，数据库初始化与首次导航推迟到 OnInitialized（模块就绪后）。
+            _shell = shell;
+
+            if (Application.Current != null)
+            {
+                _originalShutdownMode = Application.Current.ShutdownMode;
+                Application.Current.ShutdownMode = ShutdownMode.OnExplicitShutdown;
+            }
+
+            _splashScreen = CreateSplashScreen();
+            _splashScreen.Show();
+
+            base.InitializeShell(shell);
+        }
+
+        protected override void OnInitialized()
+        {
+            base.OnInitialized();
+
+            // OnInitialized 在 InitializeModules 之后同步调用，导航目标已注册，
+            // 可以安全地初始化数据库并执行首次导航。
+            Dispatcher? dispatcher = Application.Current?.Dispatcher;
+            if (dispatcher == null)
+            {
+                return;
+            }
+
+            _ = CompleteStartupAsync(dispatcher);
+        }
+
+        private async Task CompleteStartupAsync(Dispatcher dispatcher)
+        {
+            Window? splashScreen = _splashScreen;
 
             try
             {
-                if (Application.Current != null)
-                {
-                    Application.Current.ShutdownMode = ShutdownMode.OnExplicitShutdown;
-                }
-
-                splashScreen = CreateSplashScreen();
-                splashScreen.Show();
-
                 var startupService = Container.Resolve<IAppStartupService>();
                 await startupService.InitializeDatabaseAsync();
 
-                base.InitializeShell(shell);
-                ShowShellWindow(shell);
-
-                if (Application.Current != null)
+                // 本方法的 await 已被 ConfigureAwait.Fody 织入，续体可能在线程池线程；
+                // Shell 显示、关闭模式与首次导航都是 UI 线程亲和操作，显式调度回 UI 线程。
+                dispatcher.Invoke(() =>
                 {
-                    Application.Current.ShutdownMode = ShutdownMode.OnMainWindowClose;
-                }
+                    ShowShellWindow(_shell ?? throw new InvalidOperationException("Shell was not created during startup."));
 
-                var navigationService = Container.Resolve<INavigationService>();
-                var userSession = Container.Resolve<IUserSession>();
+                    if (Application.Current != null)
+                    {
+                        Application.Current.ShutdownMode = ShutdownMode.OnMainWindowClose;
+                    }
 
-                string initialView = userSession.IsLoggedIn
-                    ? ViewNames.Dashboard
-                    : ViewNames.LoginView;
+                    var navigationService = Container.Resolve<INavigationService>();
+                    var userSession = Container.Resolve<IUserSession>();
 
-                navigationService.NavigateTo(initialView);
+                    string initialView = userSession.IsLoggedIn
+                        ? ViewNames.Dashboard
+                        : ViewNames.LoginView;
+
+                    navigationService.NavigateTo(initialView);
+                });
 
                 _ = startupService.StartSessionTimeoutMonitoringAsync();
             }
             catch (InvalidOperationException ex)
             {
-                Log.Error(ex, "Application startup failed");
-                MessageBox.Show(
-                    $"Application startup failed: {ex.Message}",
-                    "Startup Error",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Error);
-                Application.Current?.Shutdown();
+                HandleStartupFailure(dispatcher, ex);
             }
             catch (Exception ex) when (ExpectedOperationExceptionFilter.IsExpectedUserOperationException(ex))
             {
-                Log.Error(ex, "Application startup failed");
+                HandleStartupFailure(dispatcher, ex);
+            }
+            finally
+            {
+                dispatcher.Invoke(() =>
+                {
+                    splashScreen?.Close();
+
+                    if (Application.Current?.MainWindow == null && Application.Current != null)
+                    {
+                        Application.Current.ShutdownMode = _originalShutdownMode;
+                    }
+                });
+            }
+        }
+
+        private static void HandleStartupFailure(Dispatcher dispatcher, Exception ex)
+        {
+            Log.Error(ex, "Application startup failed");
+
+            dispatcher.Invoke(() =>
+            {
                 MessageBox.Show(
                     $"Application startup failed: {ex.Message}",
                     "Startup Error",
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
                 Application.Current?.Shutdown();
-            }
-            finally
-            {
-                splashScreen?.Close();
-
-                if (Application.Current?.MainWindow == null && Application.Current != null)
-                {
-                    Application.Current.ShutdownMode = originalShutdownMode;
-                }
-            }
+            });
         }
 
         private static void ShowShellWindow(DependencyObject shell)
@@ -150,6 +190,9 @@ namespace Dabp.WpfWindow
             containerRegistry.RegisterSingleton<INavigationService, PrismNavigationService>();
             containerRegistry.RegisterSingleton<LockScreenViewModel>();
             containerRegistry.RegisterSingleton<AppAlarmViewModel>();
+            // 通知中心 VM 必须单例：HeaderViewModel 每次铃铛点击 new 一个 View，
+            // 瞬态 VM 以 keepSubscriberReferenceAlive:true 订阅全局事件且 Dispose 无人调用，会持续泄漏。
+            containerRegistry.RegisterSingleton<AppNotificationViewModel>();
         }
 
         protected override void ConfigureViewModelLocator()

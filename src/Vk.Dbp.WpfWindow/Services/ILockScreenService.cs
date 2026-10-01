@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 
 namespace Dabp.WpfWindow.Services
 {
@@ -19,11 +20,11 @@ namespace Dabp.WpfWindow.Services
         void Lock(string reason);
 
         /// <summary>
-        /// 解锁屏幕 - 验证密码后解锁
+        /// 解锁屏幕 - 验证密码后解锁（异步，禁止在 UI 线程同步等待数据库）
         /// </summary>
         /// <param name="password">用户输入的密码</param>
         /// <returns>解锁是否成功</returns>
-        bool Unlock(string password);
+        Task<bool> UnlockAsync(string password);
 
         /// <summary>
         /// 锁屏事件
