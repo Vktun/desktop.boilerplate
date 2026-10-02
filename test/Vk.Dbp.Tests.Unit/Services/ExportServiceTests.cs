@@ -75,7 +75,42 @@ public sealed class ExportServiceTests
         }
     }
 
+    [Fact]
+    public async Task ExportToPdfAsync_WithChineseContent_ProducesPdfFile()
+    {
+        // 冒烟：中文字体修复（雅黑）后 PDF 应正常生成（%PDF 头）；字形渲染无头环境不可断言
+        var filePath = Path.Combine(Path.GetTempPath(), $"dbp-export-{Guid.NewGuid():N}.pdf");
+        var service = new TestExportService(filePath);
+
+        try
+        {
+            var result = await service.ExportToPdfAsync(
+                new[]
+                {
+                    new PdfSmokeRow { 名称 = "炉膛温度", 单位 = "℃", 数值 = 42.5 }
+                },
+                "告警日报");
+
+            result.Should().Be(filePath, "应返回保存路径");
+            File.Exists(filePath).Should().BeTrue("PDF 文件应已生成");
+            (await File.ReadAllTextAsync(filePath))[..4].Should().Be("%PDF", "产物应为 PDF 文件头");
+        }
+        finally
+        {
+            File.Delete(filePath);
+        }
+    }
+
     private sealed record CsvFormulaRow(string Value);
+
+    private sealed class PdfSmokeRow
+    {
+        public string 名称 { get; set; } = string.Empty;
+
+        public string 单位 { get; set; } = string.Empty;
+
+        public double 数值 { get; set; }
+    }
 
     private sealed class CsvImportRow
     {

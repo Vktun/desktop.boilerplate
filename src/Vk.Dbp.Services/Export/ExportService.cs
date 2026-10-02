@@ -20,6 +20,12 @@ namespace Dabp.Services.Export
     /// </summary>
     public class ExportService : IExportService
     {
+        /// <summary>
+        /// PDF 中文字体（Windows 目标机必装）。QuestPDF 默认 Lato 不含 CJK 字形，
+        /// 不显式指定时中文内容会渲染为方块。
+        /// </summary>
+        internal const string ChineseFontFamily = "Microsoft YaHei";
+
         private static readonly HashSet<string> SafeExportExtensions = new(StringComparer.OrdinalIgnoreCase)
         {
             ".csv",
@@ -157,32 +163,33 @@ namespace Dabp.Services.Export
         {
             if (data == null)
                 throw new ArgumentNullException(nameof(data));
-            
+
             var filePath = ShowSaveFileDialog(fileName, "PDF文件|*.pdf");
             if (string.IsNullOrEmpty(filePath))
                 throw new OperationCanceledException("用户取消了保存操作");
-            
+
             filePath = ValidateExportPath(filePath, ".pdf");
 
             var dataList = data.ToList();
             var properties = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance);
-            
+
             // 配置QuestPDF中文支持
             QuestPDF.Settings.License = LicenseType.Community;
-            
+
             Document.Create(container =>
                 {
                     container.Page(page =>
                     {
                         page.Size(PageSizes.A4.Landscape());
                         page.Margin(20);
-                        
+
                         page.Header()
                             .Text(title ?? "数据报表")
+                            .FontFamily(ChineseFontFamily)
                             .FontSize(16)
                             .Bold()
                             .AlignCenter();
-                        
+
                         page.Content()
                             .PaddingVertical(10)
                             .Table(table =>
@@ -195,7 +202,7 @@ namespace Dabp.Services.Export
                                         columns.RelativeColumn();
                                     }
                                 });
-                                
+
                                 // 表头
                                 table.Header(header =>
                                 {
@@ -205,11 +212,12 @@ namespace Dabp.Services.Export
                                             .Background(Colors.Grey.Lighten3)
                                             .Padding(5)
                                             .Text(property.Name)
+                                            .FontFamily(ChineseFontFamily)
                                             .Bold()
                                             .AlignCenter();
                                     }
                                 });
-                                
+
                                 // 数据行
                                 foreach (var item in dataList)
                                 {
@@ -219,16 +227,17 @@ namespace Dabp.Services.Export
                                             .Border(1)
                                             .BorderColor(Colors.Grey.Lighten2)
                                             .Padding(5)
-                                            .Text(displayValue);
+                                            .Text(displayValue)
+                                            .FontFamily(ChineseFontFamily);
                                     }
                                 }
                             });
-                        
+
                         page.Footer()
                             .AlignCenter()
                             .Text(x =>
                             {
-                                x.Span("页码: ");
+                                x.Span("页码: ").FontFamily(ChineseFontFamily);
                                 x.CurrentPageNumber();
                                 x.Span(" / ");
                                 x.TotalPages();
@@ -236,7 +245,7 @@ namespace Dabp.Services.Export
                     });
                 })
                 .GeneratePdf(filePath);
-            
+
             return await Task.FromResult(filePath);
         }
         
