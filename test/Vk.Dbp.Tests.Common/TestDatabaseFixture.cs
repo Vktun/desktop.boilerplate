@@ -41,7 +41,11 @@ namespace Vk.Dbp.Tests.Common
                 typeof(Dabp.Infrastructure.Entities.Notification),
                 typeof(Dabp.Infrastructure.Entities.SystemConfig),
                 typeof(Dabp.Infrastructure.Entities.AlarmRecord),
-                typeof(Dabp.Infrastructure.Entities.AlarmConfig));
+                typeof(Dabp.Infrastructure.Entities.AlarmConfig),
+                typeof(Dabp.Infrastructure.Entities.Device),
+                typeof(Dabp.Infrastructure.Entities.DevicePoint),
+                typeof(Dabp.Infrastructure.Entities.DeviceCommand),
+                typeof(Dabp.Infrastructure.Entities.PointHistory));
         }
 
         public void Dispose()

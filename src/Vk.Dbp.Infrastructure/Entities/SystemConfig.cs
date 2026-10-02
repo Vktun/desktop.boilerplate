@@ -64,5 +64,30 @@ namespace Dabp.Infrastructure.Entities
         /// 是否启用会话超时
         /// </summary>
         public const string SessionTimeoutEnabled = "Session.TimeoutEnabled";
+
+        /// <summary>
+        /// 是否启用工业采集引擎（默认 true）
+        /// </summary>
+        public const string IndustrialEngineEnabled = "Industrial.EngineEnabled";
+
+        /// <summary>
+        /// 采集轮询间隔（毫秒，默认 1000；设备连接配置可按台覆盖）
+        /// </summary>
+        public const string IndustrialPollIntervalMs = "Industrial.PollIntervalMs";
+
+        /// <summary>
+        /// 是否启用点位历史落盘（默认 true）
+        /// </summary>
+        public const string IndustrialHistoryEnabled = "Industrial.HistoryEnabled";
+
+        /// <summary>
+        /// 点位历史保留天数（默认 90，超期数据每日清理一次）
+        /// </summary>
+        public const string IndustrialHistoryRetentionDays = "Industrial.HistoryRetentionDays";
+
+        /// <summary>
+        /// 实时事件发布节流间隔（毫秒，默认 500）
+        /// </summary>
+        public const string IndustrialEventThrottleMs = "Industrial.EventThrottleMs";
     }
 }

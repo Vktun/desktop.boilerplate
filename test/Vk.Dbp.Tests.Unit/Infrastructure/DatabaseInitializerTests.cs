@@ -3,6 +3,7 @@ using Dabp.Infrastructure.Entities;
 using Dabp.Utils.Security;
 using FluentAssertions;
 using SqlSugar;
+using Vk.Dbp.Contracts.Industrial;
 using Vk.Dbp.Tests.Common;
 using Xunit;
 
@@ -18,6 +19,52 @@ public sealed class DatabaseInitializerTests : IClassFixture<TestDatabaseFixture
         _db = fixture.Database;
         _initializer = new DatabaseInitializer(_db, new PasswordHasher());
         ResetDatabase();
+    }
+
+    [Fact]
+    public async Task InitializeDataAsync_SeedsDemoDeviceAndIndustrialConfigsIdempotently()
+    {
+        SeedUser(id: 1, username: "admin");
+
+        await _initializer.InitializeDataAsync();
+        await _initializer.InitializeDataAsync();
+
+        var deviceCount = await _db.Queryable<Device>().CountAsync();
+        deviceCount.Should().Be(1, "演示设备种子应幂等，重复初始化不应重复创建");
+
+        var pointCount = await _db.Queryable<DevicePoint>().CountAsync();
+        pointCount.Should().Be(8, "演示设备应带 8 个点位");
+
+        var commandCount = await _db.Queryable<DeviceCommand>().CountAsync();
+        commandCount.Should().Be(2, "演示设备应带 2 条命令");
+
+        var deviceCode = await _db.Queryable<Device>().Select(entity => entity.Code).FirstAsync();
+        deviceCode.Should().Be("SIM-DEMO-01", "演示设备编码应为 SIM-DEMO-01");
+
+        var industrialConfigKeys = await _db.Queryable<SystemConfig>()
+            .Where(config => config.ConfigKey.StartsWith("Industrial."))
+            .Select(config => config.ConfigKey)
+            .ToListAsync();
+        industrialConfigKeys.Should().HaveCount(5, "工业引擎配置键应逐键补种且不重复");
+    }
+
+    [Fact]
+    public async Task InitializeDataAsync_DoesNotReseedDemoDeviceWhenUserDevicesExist()
+    {
+        SeedUser(id: 1, username: "admin");
+        _db.Insertable(new Device
+        {
+            Code = "USER-DEVICE-01",
+            Name = "用户自建设备",
+            ProtocolType = ProtocolTypes.Simulated,
+            IsEnabled = true,
+            CreatedAt = DateTime.Now
+        }).ExecuteCommand();
+
+        await _initializer.InitializeDataAsync();
+
+        var deviceCount = await _db.Queryable<Device>().CountAsync();
+        deviceCount.Should().Be(1, "库里已有设备时不应再种演示设备");
     }
 
     [Fact]
@@ -54,6 +101,11 @@ public sealed class DatabaseInitializerTests : IClassFixture<TestDatabaseFixture
 
     private void ResetDatabase()
     {
+        // 子表先删，避免外键语义下的删除顺序问题（DeviceCommand/DevicePoint → PointHistory → Device）
+        _db.Deleteable<DeviceCommand>().Where(_ => true).ExecuteCommand();
+        _db.Deleteable<DevicePoint>().Where(_ => true).ExecuteCommand();
+        _db.Deleteable<PointHistory>().Where(_ => true).ExecuteCommand();
+        _db.Deleteable<Device>().Where(_ => true).ExecuteCommand();
         _db.Deleteable<UserRole>().Where(_ => true).ExecuteCommand();
         _db.Deleteable<RolePermission>().Where(_ => true).ExecuteCommand();
         _db.Deleteable<RoleOrganizationUnit>().Where(_ => true).ExecuteCommand();

@@ -7,6 +7,7 @@ using Dabp.Infrastructure.Entities;
 using Dabp.Utils.Exceptions;
 using Dabp.Utils.Security;
 using Serilog;
+using Vk.Dbp.Contracts.Industrial;
 using Vk.Dbp.Contracts.Navigation;
 
 namespace Dabp.Infrastructure
@@ -55,7 +56,11 @@ namespace Dabp.Infrastructure
                 typeof(Notification),
                 typeof(SystemConfig),
                 typeof(AlarmRecord),
-                typeof(AlarmConfig));
+                typeof(AlarmConfig),
+                typeof(Device),
+                typeof(DevicePoint),
+                typeof(DeviceCommand),
+                typeof(PointHistory));
         }
 
         private async Task EnsureUnicodeTextColumnsAsync()
@@ -291,6 +296,160 @@ namespace Dabp.Infrastructure
                 };
                 await _db.Insertable(defaultAlarmConfigs).ExecuteCommandAsync();
             }
+
+            await EnsureIndustrialSystemConfigsAsync();
+            await EnsureDemoDeviceAsync();
+        }
+
+        private async Task EnsureIndustrialSystemConfigsAsync()
+        {
+            // 上方的 SystemConfig 种子是"整表为空才插入"，已有库永远拿不到新增键；
+            // 工业引擎配置必须逐键判存补种，读取端（GetBool/GetIntConfigAsync）自带默认值兜底。
+            var seedConfigs = new List<SystemConfig>
+            {
+                new SystemConfig
+                {
+                    ConfigKey = SystemConfigKeys.IndustrialEngineEnabled,
+                    ConfigValue = "True",
+                    Description = "是否启用工业采集引擎",
+                    ConfigType = "Boolean",
+                    CreatedAt = DateTime.Now
+                },
+                new SystemConfig
+                {
+                    ConfigKey = SystemConfigKeys.IndustrialPollIntervalMs,
+                    ConfigValue = "1000",
+                    Description = "采集轮询间隔（毫秒，设备连接配置可按台覆盖）",
+                    ConfigType = "Integer",
+                    CreatedAt = DateTime.Now
+                },
+                new SystemConfig
+                {
+                    ConfigKey = SystemConfigKeys.IndustrialHistoryEnabled,
+                    ConfigValue = "True",
+                    Description = "是否启用点位历史落盘",
+                    ConfigType = "Boolean",
+                    CreatedAt = DateTime.Now
+                },
+                new SystemConfig
+                {
+                    ConfigKey = SystemConfigKeys.IndustrialHistoryRetentionDays,
+                    ConfigValue = "90",
+                    Description = "点位历史保留天数（超期数据每日清理一次）",
+                    ConfigType = "Integer",
+                    CreatedAt = DateTime.Now
+                },
+                new SystemConfig
+                {
+                    ConfigKey = SystemConfigKeys.IndustrialEventThrottleMs,
+                    ConfigValue = "500",
+                    Description = "实时事件发布节流间隔（毫秒）",
+                    ConfigType = "Integer",
+                    CreatedAt = DateTime.Now
+                }
+            };
+
+            var seedKeys = seedConfigs.Select(config => config.ConfigKey).ToHashSet();
+            var existingKeys = (await _db.Queryable<SystemConfig>()
+                    .Where(config => seedKeys.Contains(config.ConfigKey))
+                    .Select(config => config.ConfigKey)
+                    .ToListAsync())
+                .ToHashSet();
+
+            var missingConfigs = seedConfigs
+                .Where(config => !existingKeys.Contains(config.ConfigKey))
+                .ToList();
+            if (missingConfigs.Count > 0)
+            {
+                await _db.Insertable(missingConfigs).ExecuteCommandAsync();
+            }
+        }
+
+        private async Task EnsureDemoDeviceAsync()
+        {
+            // 首启种入一台内置模拟设备，让实时监控页开箱即有数据。
+            // 幂等策略：库里已有任意设备即跳过（用户清空全部设备后下次启动会重新补种演示设备）。
+            if (await _db.Queryable<Device>().AnyAsync())
+            {
+                return;
+            }
+
+            var demoDevice = new Device
+            {
+                Code = "SIM-DEMO-01",
+                Name = "模拟演示设备",
+                ProtocolType = ProtocolTypes.Simulated,
+                ConnectionConfig = "{\"pollIntervalMs\":1000}",
+                Description = "内置模拟驱动的演示设备，首启自动创建，用于实时监控页开箱演示",
+                IsEnabled = true,
+                CreatedAt = DateTime.Now
+            };
+            demoDevice.Id = await _db.Insertable(demoDevice).ExecuteReturnIdentityAsync();
+
+            var demoPoints = new List<DevicePoint>
+            {
+                NewDemoPoint(demoDevice.Id, "TEMP-01", "炉膛温度", PointDataType.Double, "sine(20,80,60)", "℃", alarmHigh: 75m, alarmLow: 25m),
+                NewDemoPoint(demoDevice.Id, "PRESS-01", "系统压力", PointDataType.Double, "rand(0.4,1.2)", "MPa", alarmLow: 0.5m),
+                NewDemoPoint(demoDevice.Id, "SPEED-01", "电机转速", PointDataType.Double, "ramp(0,1500,120)", "rpm"),
+                NewDemoPoint(demoDevice.Id, "FLOW-01", "瞬时流量", PointDataType.Double, "pulse(30)", "m³/h"),
+                NewDemoPoint(demoDevice.Id, "VALVE-01", "进料阀", PointDataType.Boolean, "pulse(45)"),
+                NewDemoPoint(demoDevice.Id, "HUMID-01", "环境湿度", PointDataType.Double, "sine(35,65,90)", "%RH"),
+                NewDemoPoint(demoDevice.Id, "LEVEL-01", "料位", PointDataType.Double, "const(62.5)", "%"),
+                NewDemoPoint(demoDevice.Id, "POWER-01", "主电机功率", PointDataType.Double, "sine(1.5,4.5,75)", "kW")
+            };
+            await _db.Insertable(demoPoints).ExecuteCommandAsync();
+
+            var demoCommands = new List<DeviceCommand>
+            {
+                NewDemoCommand(demoDevice.Id, "CMD-VALVE-ON", "打开进料阀", "VALVE-01", "1"),
+                NewDemoCommand(demoDevice.Id, "CMD-VALVE-OFF", "关闭进料阀", "VALVE-01", "0")
+            };
+            await _db.Insertable(demoCommands).ExecuteCommandAsync();
+
+            Log.Information(
+                "Demo device {DeviceCode} seeded with {PointCount} points and {CommandCount} commands",
+                demoDevice.Code,
+                demoPoints.Count,
+                demoCommands.Count);
+        }
+
+        private static DevicePoint NewDemoPoint(
+            int deviceId,
+            string code,
+            string name,
+            PointDataType dataType,
+            string address,
+            string? unit = null,
+            decimal? alarmHigh = null,
+            decimal? alarmLow = null)
+        {
+            return new DevicePoint
+            {
+                DeviceId = deviceId,
+                Code = code,
+                Name = name,
+                DataType = dataType,
+                Unit = unit,
+                Address = address,
+                AlarmHigh = alarmHigh,
+                AlarmLow = alarmLow,
+                IsEnabled = true,
+                CreatedAt = DateTime.Now
+            };
+        }
+
+        private static DeviceCommand NewDemoCommand(int deviceId, string code, string name, string targetPointCode, string writeValue)
+        {
+            return new DeviceCommand
+            {
+                DeviceId = deviceId,
+                Code = code,
+                Name = name,
+                TargetPointCode = targetPointCode,
+                WriteValue = writeValue,
+                IsEnabled = true,
+                CreatedAt = DateTime.Now
+            };
         }
 
         private async Task<Role> EnsureDefaultRoleAsync(string roleName, bool isDefault, int roleLevel)
