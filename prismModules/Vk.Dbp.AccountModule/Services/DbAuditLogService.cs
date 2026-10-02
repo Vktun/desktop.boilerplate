@@ -159,9 +159,8 @@ public sealed class DbAuditLogService : IAuditLogService
 
     public async Task<byte[]> ExportLogsAsync(List<int> logIds)
     {
-        List<long> auditLogIds = logIds.Select(static id => (long)id).ToList();
         List<AuditLogEntity> entities = await _db.Queryable<AuditLogEntity>()
-            .Where(x => auditLogIds.Contains(x.Id))
+            .Where(x => logIds.Contains(x.Id))
             .OrderByDescending(x => x.ExecutionTime)
             .ToListAsync();
 
@@ -196,7 +195,8 @@ public sealed class DbAuditLogService : IAuditLogService
             UserName = log.Username ?? string.Empty,
             ExecutionTime = log.OperationTime,
             ExecutionDuration = log.ExecutionTime,
-            Exceptions = log.FailureReason
+            // 实体列为 NOT NULL，成功路径 FailureReason 为空时必须落空串（与 Module/Method/User 同理）
+            Exceptions = log.FailureReason ?? string.Empty
         };
     }
 
@@ -217,7 +217,7 @@ public sealed class DbAuditLogService : IAuditLogService
 
         return new AuditLog
         {
-            Id = (int)entity.Id,
+            Id = entity.Id,
             UserId = entity.UserId,
             Username = entity.UserName,
             ActionType = Enum.TryParse(entity.ServiceName, out AuditActionType actionType)

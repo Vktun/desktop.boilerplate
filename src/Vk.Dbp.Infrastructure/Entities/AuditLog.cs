@@ -1,6 +1,7 @@
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics.CodeAnalysis;
+using SqlSugar;
 
 namespace Dabp.Infrastructure.Entities
 {
@@ -9,9 +10,10 @@ namespace Dabp.Infrastructure.Entities
     /// </summary>
     public class AuditLog
     {
-        [Key]
-        
-        public long Id { get; set; }
+        // [Key] 无自增语义：CodeFirst 建出的 Id 列不带自增，所有行 Id=0，按 Id 的查询/导出全部失效。
+        // long 在 SQLite 下无法 AUTOINCREMENT（仅允许 INTEGER PRIMARY KEY），与 AlarmRecord 对齐用 int。
+        [SugarColumn(IsPrimaryKey = true, IsIdentity = true)]
+        public int Id { get; set; }
         /// <summary>
         /// 模块名称
         /// </summary>
