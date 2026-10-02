@@ -1,5 +1,6 @@
 using Prism.Ioc;
 using Prism.Modularity;
+using Vk.Dbp.Contracts.Extensions;
 using Vk.Dbp.Contracts.Industrial;
 using Vk.Dbp.DeviceModule.Services;
 using Vk.Dbp.DeviceModule.Views;
@@ -38,6 +39,15 @@ namespace Vk.Dbp.DeviceModule
             containerRegistry.RegisterSingleton<IDeviceCatalogService, DeviceCatalogService>();
             containerRegistry.RegisterSingleton<IDeviceRuntimeService, DeviceRuntimeService>();
             containerRegistry.RegisterSingleton<IDeviceAdminService, DeviceAdminService>();
+
+            // 报表生成器：具体类型供报表中心页直注；同时按 ReportType 命名注册 IReportGenerator 扩展点
+            // （Unity 同接口无名注册会相互覆盖，故接口注册必须带名）
+            containerRegistry.RegisterSingleton<AlarmSummaryReportGenerator>();
+            containerRegistry.RegisterSingleton<ShiftReportGenerator>();
+            containerRegistry.RegisterSingleton<AuditLogReportGenerator>();
+            containerRegistry.RegisterSingleton<IReportGenerator, AlarmSummaryReportGenerator>(AlarmSummaryReportGenerator.ReportTypeValue);
+            containerRegistry.RegisterSingleton<IReportGenerator, ShiftReportGenerator>(ShiftReportGenerator.ReportTypeValue);
+            containerRegistry.RegisterSingleton<IReportGenerator, AuditLogReportGenerator>(AuditLogReportGenerator.ReportTypeValue);
         }
     }
 }
