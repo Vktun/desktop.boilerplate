@@ -12,7 +12,7 @@
 
 ## 当前主要差距（做改动时的方向约束）
 
-**P0（工业核心）阶段一+二已落地（2026-10）**：工业运行时内核以独立模块 `prismModules/Vk.Dbp.DeviceModule`（AccountModule 同款形态）落地——设备/点位/命令/历史四表领域模型、轮询采集引擎（故障退避重连 + 告警边沿联动 + 节流事件 + 配置变更 reconcile 热生效）、内置模拟驱动 + vktun.iot.connector（Vktun.IoT.Connector）Modbus TCP/RTU 真实驱动、主库 PointHistory 历史表（保留策略清理）、"实时监控"页（ScottPlot 趋势）、"设备管理"工程配置页（设备/点位/命令增删改 + 命令回写执行按钮，写侧服务带审计与级联删除）。**仍缺**：OPC UA/MQTT 驱动、报表中心、趋势历史查询页。
+**P0（工业核心）阶段一~三已落地（2026-10）**：工业运行时内核以独立模块 `prismModules/Vk.Dbp.DeviceModule`（AccountModule 同款形态）落地——设备/点位/命令/历史四表领域模型、轮询采集引擎（故障退避重连 + 告警边沿联动 + 节流事件 + 配置变更 reconcile 热生效）、内置模拟驱动 + vktun.iot.connector（Vktun.IoT.Connector）Modbus TCP/RTU 真实驱动、主库 PointHistory 历史表（保留策略清理）、"实时监控"页（ScottPlot 趋势）、"设备管理"工程配置页（设备/点位/命令增删改 + 命令回写执行按钮，写侧服务带审计与级联删除）、"趋势查询"页（时间范围 + 降采样图表 + 统计 + Excel 导出）。**仍缺**：OPC UA/MQTT 驱动、报表中心。
 
 - 新增此类工业域抽象时：**契约放 `Vk.Dbp.Contracts`，通用实现放 `Vk.Dbp.Services` 或独立新模块，绝不放进 shell（WpfWindow）**。引擎内部契约（驱动/实时仓/历史/目录）留在 DeviceModule，跨模块消费出现时再提升 Contracts（AccountModule 契约提升同款演进）。
 - 协议适配：Modbus TCP/RTU 已接（vktun.iot.connector，点位地址语法 `HR/IR/C/DI:地址[:类型]`）；规划中的 OPC UA、MQTT 在 DeviceModule 驱动工厂加分支。
