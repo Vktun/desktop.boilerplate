@@ -39,6 +39,7 @@
     <ProjectReference Include="..\..\src\Vk.Dbp.AdminWindow\Vk.Dbp.AdminWindow.csproj" />
     <ProjectReference Include="..\..\src\Vk.Dbp.WpfWindow\Vk.Dbp.WpfWindow.csproj" />
     <ProjectReference Include="..\..\prismModules\Vk.Dbp.AccountModule\Vk.Dbp.AccountModule.csproj" />
+    <ProjectReference Include="..\..\prismModules\Vk.Dbp.DeviceModule\Vk.Dbp.DeviceModule.csproj" />
     <ProjectReference Include="..\Vk.Dbp.Tests.Common\Vk.Dbp.Tests.Common.csproj" />
   </ItemGroup>
 

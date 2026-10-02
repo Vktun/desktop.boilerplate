@@ -9,6 +9,7 @@
   </Folder>
   <Folder Name="/prismModules/">
     <Project Path="prismModules/Vk.Dbp.AccountModule/Vk.Dbp.AccountModule.csproj" />
+    <Project Path="prismModules/Vk.Dbp.DeviceModule/Vk.Dbp.DeviceModule.csproj" />
     <Project Path="prismModules/Vk.Dbp.WorkshopModule/Vk.Dbp.WorkshopModule.csproj" />
   </Folder>
   <Folder Name="/src/">
