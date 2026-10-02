@@ -144,6 +144,13 @@ namespace Vk.Dbp.WpfWindow.ViewModels
             set { SetProperty(ref _isDeviceManagementVisible, value); }
         }
 
+        private bool _isHistoryQueryVisible;
+        public bool IsHistoryQueryVisible
+        {
+            get { return _isHistoryQueryVisible; }
+            set { SetProperty(ref _isHistoryQueryVisible, value); }
+        }
+
         private bool _isAuditRecordVisible;
         public bool IsAuditRecordVisible
         {
@@ -311,6 +318,7 @@ namespace Vk.Dbp.WpfWindow.ViewModels
             IsProductionVisible = _menuPermissionFilter.IsMenuVisible(ViewNames.Production);
             IsProductionRecordVisible = _menuPermissionFilter.IsMenuVisible(ViewNames.ProductionRecord);
             IsDeviceMonitorVisible = _menuPermissionFilter.IsMenuVisible(ViewNames.DeviceMonitorView);
+            IsHistoryQueryVisible = _menuPermissionFilter.IsMenuVisible(ViewNames.HistoryQueryView);
             IsDeviceManagementVisible = _menuPermissionFilter.IsMenuVisible(ViewNames.DeviceManagementView);
             IsAlarmRecordVisible = _menuPermissionFilter.IsMenuVisible(ViewNames.AlarmRecord);
             IsAuditRecordVisible = _menuPermissionFilter.IsMenuVisible(ViewNames.AuditRecord);
