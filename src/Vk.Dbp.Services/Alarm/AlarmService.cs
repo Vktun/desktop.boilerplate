@@ -87,7 +87,19 @@ namespace Vk.Dbp.Services.Alarm
             record.AlarmStatus = AlarmStatus.Active;
 
             var result = await _alarmRecordRepository.InsertAsync(record);
-            return result > 0;
+            if (result <= 0)
+            {
+                return false;
+            }
+
+            // SqlSugar 不会把自增主键回填到实体，按唯一 AlarmCode 回查，
+            // 让调用方（事件载荷、后续确认/解决流程）能拿到新告警 Id
+            record.Id = await _db.Queryable<AlarmRecord>()
+                .Where(a => a.AlarmCode == record.AlarmCode)
+                .Select(a => a.Id)
+                .FirstAsync();
+
+            return true;
         }
 
         public async Task<bool> AcknowledgeAlarmAsync(int id, int userId)
