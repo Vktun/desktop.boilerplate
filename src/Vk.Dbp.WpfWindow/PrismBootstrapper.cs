@@ -105,6 +105,7 @@ namespace Dabp.WpfWindow
                 });
 
                 _ = startupService.StartSessionTimeoutMonitoringAsync();
+                _ = startupService.StartIndustrialEngineAsync();
             }
             catch (InvalidOperationException ex)
             {
@@ -205,6 +206,7 @@ namespace Dabp.WpfWindow
         {
             moduleCatalog.AddModule<Vk.Dbp.WorkshopModule.DbpWorkshopModule>();
             moduleCatalog.AddModule<Vk.Dbp.AccountModule.DbpAccountModule>();
+            moduleCatalog.AddModule<Vk.Dbp.DeviceModule.DbpDeviceModule>();
         }
 
         private IConfigurationRoot BuildConfiguration()

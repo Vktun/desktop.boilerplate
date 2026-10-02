@@ -1,5 +1,6 @@
 using Prism.Ioc;
 using Prism.Modularity;
+using Vk.Dbp.Contracts.Industrial;
 using Vk.Dbp.DeviceModule.Services;
 
 namespace Vk.Dbp.DeviceModule
@@ -27,6 +28,7 @@ namespace Vk.Dbp.DeviceModule
             containerRegistry.RegisterSingleton<IHistoryDataService, HistoryDataService>();
             containerRegistry.RegisterSingleton<IProtocolDriverFactory, ProtocolDriverFactory>();
             containerRegistry.RegisterSingleton<IDeviceCatalogService, DeviceCatalogService>();
+            containerRegistry.RegisterSingleton<IDeviceRuntimeService, DeviceRuntimeService>();
         }
     }
 }

@@ -7,4 +7,6 @@ public interface IAppStartupService
     Task InitializeDatabaseAsync();
 
     Task StartSessionTimeoutMonitoringAsync();
+
+    Task StartIndustrialEngineAsync();
 }
