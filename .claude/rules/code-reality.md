@@ -51,6 +51,7 @@
 | 账户域服务（User/Role/Permission/Org） | 模块内 `Services/`（接口+实现同目录） | 同目录 | `DbpAccountModule.RegisterTypes` |
 | `INotificationService`/`ISystemConfigService`/`IUserCredentialService` | `src/Vk.Dbp.Contracts/Services/`（跨模块契约，2026-10 从模块内提升） | **AccountModule** `Services/`（`Notification` DTO 在 `Vk.Dbp.Contracts.Models`） | `DbpAccountModule.RegisterTypes` |
 | `IAppStartupService` | `src/Vk.Dbp.WpfWindow/Services/`（接口在 shell 层） | 同目录 `AppStartupService`；建表种子在 `src/Vk.Dbp.Infrastructure/DatabaseInitializer.cs` | `PrismBootstrapper.RegisterTypes` |
+| 工业运行时（采集引擎全家桶） | `IDeviceRuntimeService` 在 `src/Vk.Dbp.Contracts/Industrial/`（shell 启动接线的最小公共面）；其余契约（IProtocolDriver/IRealtimeDataService/IHistoryDataService/IDeviceCatalogService）在 **DeviceModule** `Services/`（模块内契约，跨模块消费出现时再提升） | **DeviceModule** `Services/`（模拟驱动 + vktun.iot.connector 的 `IotConnectorDriver` Modbus TCP/RTU）；实体四表在 Infrastructure，引擎配置走 SystemConfig 键 `Industrial.*` | **DbpDeviceModule.RegisterTypes**；引擎启动在 `AppStartupService.StartIndustrialEngineAsync`（Bootstrapper.CompleteStartupAsync 调用） |
 
 ## 既有现实约定（与理想约定的差异）
 
