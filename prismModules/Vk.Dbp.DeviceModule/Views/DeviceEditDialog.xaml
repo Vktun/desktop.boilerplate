@@ -1,0 +1,113 @@
+<hc:Window
+    x:Class="Vk.Dbp.DeviceModule.Views.DeviceEditDialog"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:hc="https://handyorg.github.io/handycontrol"
+    xmlns:prism="http://prismlibrary.com/"
+    prism:ViewModelLocator.AutoWireViewModel="True"
+    Title="{Binding DialogTitle}"
+    Width="540"
+    Height="560"
+    WindowStartupLocation="CenterOwner"
+    ResizeMode="NoResize"
+    ShowInTaskbar="False">
+    <hc:Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+    </hc:Window.Resources>
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0" Margin="0,0,0,15">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="100"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Text="设备编码:" VerticalAlignment="Center"
+                       Foreground="{DynamicResource PrimaryTextBrush}"/>
+            <hc:TextBox Grid.Column="1" Text="{Binding Model.Code, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                        hc:InfoElement.Placeholder="如 SIM-DEMO-01"
+                        IsEnabled="{Binding IsAddMode}"/>
+        </Grid>
+
+        <Grid Grid.Row="1" Margin="0,0,0,15">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="100"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Text="设备名称:" VerticalAlignment="Center"
+                       Foreground="{DynamicResource PrimaryTextBrush}"/>
+            <hc:TextBox Grid.Column="1" Text="{Binding Model.Name, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                        hc:InfoElement.Placeholder="请输入设备名称"/>
+        </Grid>
+
+        <Grid Grid.Row="2" Margin="0,0,0,15">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="100"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Text="协议类型:" VerticalAlignment="Center"
+                       Foreground="{DynamicResource PrimaryTextBrush}"/>
+            <ComboBox Grid.Column="1" ItemsSource="{Binding ProtocolOptions}"
+                      SelectedItem="{Binding Model.ProtocolType, Mode=TwoWay}"
+                      SelectionChanged="Protocol_SelectionChanged"/>
+        </Grid>
+
+        <Grid Grid.Row="3" Margin="0,0,0,15">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="100"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Text="连接配置:" VerticalAlignment="Top" Margin="0,6,0,0"
+                       Foreground="{DynamicResource PrimaryTextBrush}"/>
+            <hc:TextBox Grid.Column="1" Text="{Binding Model.ConnectionConfig, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                        hc:InfoElement.Placeholder="{Binding ConnectionConfigPlaceholder}"
+                        AcceptsReturn="True"
+                        TextWrapping="Wrap"
+                        Height="90"
+                        VerticalScrollBarVisibility="Auto"
+                        VerticalContentAlignment="Top"/>
+        </Grid>
+
+        <Grid Grid.Row="4" Margin="0,0,0,15">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="100"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Text="描述:" VerticalAlignment="Top" Margin="0,6,0,0"
+                       Foreground="{DynamicResource PrimaryTextBrush}"/>
+            <hc:TextBox Grid.Column="1" Text="{Binding Model.Description, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                        hc:InfoElement.Placeholder="选填"
+                        TextWrapping="Wrap"
+                        Height="56"
+                        VerticalScrollBarVisibility="Auto"
+                        VerticalContentAlignment="Top"/>
+        </Grid>
+
+        <StackPanel Grid.Row="6" Orientation="Horizontal" Margin="0,0,0,10">
+            <CheckBox IsChecked="{Binding Model.IsEnabled, Mode=TwoWay}"
+                      Content="启用（禁用的设备不参与引擎采集）" VerticalAlignment="Center"/>
+        </StackPanel>
+
+        <TextBlock Grid.Row="7" Text="{Binding ErrorMessage}" Foreground="Red" TextWrapping="Wrap" Margin="0,0,0,10"
+                   Visibility="{Binding ShowError, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+
+        <StackPanel Grid.Row="8" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Content="确定" Command="{Binding ConfirmCommand}"
+                    Style="{StaticResource ButtonPrimary}"
+                    Width="80" Margin="0,0,10,0"/>
+            <Button Content="取消" Command="{Binding CancelCommand}"
+                    Style="{StaticResource ButtonDefault}"
+                    Width="80"/>
+        </StackPanel>
+    </Grid>
+</hc:Window>

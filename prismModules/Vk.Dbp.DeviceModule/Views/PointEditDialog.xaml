@@ -1,0 +1,143 @@
+<hc:Window
+    x:Class="Vk.Dbp.DeviceModule.Views.PointEditDialog"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:hc="https://handyorg.github.io/handycontrol"
+    xmlns:prism="http://prismlibrary.com/"
+    prism:ViewModelLocator.AutoWireViewModel="True"
+    Title="{Binding DialogTitle}"
+    Width="540"
+    Height="640"
+    WindowStartupLocation="CenterOwner"
+    ResizeMode="NoResize"
+    ShowInTaskbar="False">
+    <hc:Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+    </hc:Window.Resources>
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0" Margin="0,0,0,15">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="100"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Text="点位编码:" VerticalAlignment="Center"
+                       Foreground="{DynamicResource PrimaryTextBrush}"/>
+            <hc:TextBox Grid.Column="1" Text="{Binding Model.Code, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                        hc:InfoElement.Placeholder="全局唯一，如 TEMP-01"
+                        IsEnabled="{Binding IsAddMode}"/>
+        </Grid>
+
+        <Grid Grid.Row="1" Margin="0,0,0,15">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="100"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Text="点位名称:" VerticalAlignment="Center"
+                       Foreground="{DynamicResource PrimaryTextBrush}"/>
+            <hc:TextBox Grid.Column="1" Text="{Binding Model.Name, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                        hc:InfoElement.Placeholder="请输入点位名称"/>
+        </Grid>
+
+        <Grid Grid.Row="2" Margin="0,0,0,15">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="100"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Text="数据类型:" VerticalAlignment="Center"
+                       Foreground="{DynamicResource PrimaryTextBrush}"/>
+            <ComboBox Grid.Column="1" ItemsSource="{Binding DataTypeOptions}"
+                      SelectedItem="{Binding Model.DataType, Mode=TwoWay}"/>
+        </Grid>
+
+        <Grid Grid.Row="3" Margin="0,0,0,15">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="100"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Text="工程单位:" VerticalAlignment="Center"
+                       Foreground="{DynamicResource PrimaryTextBrush}"/>
+            <hc:TextBox Grid.Column="1" Text="{Binding Model.Unit, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                        hc:InfoElement.Placeholder="选填，如 ℃ / MPa / rpm"/>
+        </Grid>
+
+        <Grid Grid.Row="4" Margin="0,0,0,15">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="100"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Text="驱动地址:" VerticalAlignment="Center"
+                       Foreground="{DynamicResource PrimaryTextBrush}"/>
+            <hc:TextBox Grid.Column="1" Text="{Binding Model.Address, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                        hc:InfoElement.Placeholder="模拟: sine(20,80,60) / Modbus: HR:100:Float"/>
+        </Grid>
+
+        <Grid Grid.Row="5" Margin="0,0,0,15">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="100"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Text="高限阈值:" VerticalAlignment="Center"
+                       Foreground="{DynamicResource PrimaryTextBrush}"/>
+            <hc:NumericUpDown Grid.Column="1" Value="{Binding Model.AlarmHigh, Mode=TwoWay}"
+                              hc:InfoElement.Placeholder="留空不检测"/>
+        </Grid>
+
+        <Grid Grid.Row="6" Margin="0,0,0,15">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="100"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Text="低限阈值:" VerticalAlignment="Center"
+                       Foreground="{DynamicResource PrimaryTextBrush}"/>
+            <hc:NumericUpDown Grid.Column="1" Value="{Binding Model.AlarmLow, Mode=TwoWay}"
+                              hc:InfoElement.Placeholder="留空不检测"/>
+        </Grid>
+
+        <Grid Grid.Row="7" Margin="0,0,0,15">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="100"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Text="描述:" VerticalAlignment="Top" Margin="0,6,0,0"
+                       Foreground="{DynamicResource PrimaryTextBrush}"/>
+            <hc:TextBox Grid.Column="1" Text="{Binding Model.Description, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                        hc:InfoElement.Placeholder="选填"
+                        TextWrapping="Wrap"
+                        Height="56"
+                        VerticalScrollBarVisibility="Auto"
+                        VerticalContentAlignment="Top"/>
+        </Grid>
+
+        <StackPanel Grid.Row="8" Orientation="Horizontal" Margin="0,0,0,10">
+            <CheckBox IsChecked="{Binding Model.IsEnabled, Mode=TwoWay}"
+                      Content="启用（禁用的点位不参与采集）" VerticalAlignment="Center"/>
+        </StackPanel>
+
+        <TextBlock Grid.Row="10" Text="{Binding ErrorMessage}" Foreground="Red" TextWrapping="Wrap" Margin="0,0,0,10"
+                   Visibility="{Binding ShowError, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+
+        <StackPanel Grid.Row="11" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Content="确定" Command="{Binding ConfirmCommand}"
+                    Style="{StaticResource ButtonPrimary}"
+                    Width="80" Margin="0,0,10,0"/>
+            <Button Content="取消" Command="{Binding CancelCommand}"
+                    Style="{StaticResource ButtonDefault}"
+                    Width="80"/>
+        </StackPanel>
+    </Grid>
+</hc:Window>

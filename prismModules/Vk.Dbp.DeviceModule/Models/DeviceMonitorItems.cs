@@ -33,6 +33,11 @@ public sealed class DeviceListItemViewModel : BindableBase
     public required string ProtocolTypeText { get; init; }
 
     /// <summary>
+    /// 是否启用（设备管理页显示与启停开关用；监控页构造时不填默认 false 仅供展示）
+    /// </summary>
+    public bool IsEnabled { get; init; }
+
+    /// <summary>
     /// 运行状态文本
     /// </summary>
     public string StatusText

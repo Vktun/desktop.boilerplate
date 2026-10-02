@@ -1,0 +1,209 @@
+<UserControl x:Class="Vk.Dbp.DeviceModule.Views.DeviceManagementView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:hc="https://handyorg.github.io/handycontrol"
+             xmlns:prism="http://prismlibrary.com/"
+             prism:ViewModelLocator.AutoWireViewModel="True"
+             mc:Ignorable="d"
+             d:DesignHeight="760" d:DesignWidth="1180">
+
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+    </UserControl.Resources>
+
+    <Grid Background="{DynamicResource PrimaryBackgroundBrush}" Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="10"/>
+            <RowDefinition Height="1.2*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Row0 标题栏 -->
+        <Border Grid.Row="0" Background="{DynamicResource SecondaryBackgroundBrush}" Padding="15,10" CornerRadius="4" Margin="0,0,0,10">
+            <Grid>
+                <TextBlock Text="设备管理" FontSize="20" FontWeight="Bold"
+                           Foreground="{DynamicResource PrimaryTextBrush}" VerticalAlignment="Center"/>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <hc:LoadingCircle Visibility="{Binding IsLoading, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                      Width="18" Height="18" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                    <Button Content="新增设备" Command="{Binding AddDeviceCommand}"
+                            Style="{StaticResource ButtonPrimary}" Height="28" Padding="12,0" Margin="0,0,8,0"/>
+                    <Button Content="刷新" Command="{Binding RefreshCommand}"
+                            Style="{StaticResource ButtonDefault}" Height="28" Padding="12,0"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Row1 设备表 -->
+        <Border Grid.Row="1" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4">
+            <Grid>
+                <DataGrid ItemsSource="{Binding Devices}" SelectedItem="{Binding SelectedDevice}"
+                          AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False"
+                          GridLinesVisibility="Horizontal" HeadersVisibility="Column"
+                          Background="Transparent" BorderThickness="0"
+                          RowBackground="Transparent"
+                          AlternatingRowBackground="{DynamicResource SecondaryBackgroundBrush}">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="50"/>
+                        <DataGridTextColumn Header="设备编码" Binding="{Binding Code}" Width="150"/>
+                        <DataGridTextColumn Header="设备名称" Binding="{Binding Name}" Width="*"/>
+                        <DataGridTextColumn Header="协议" Binding="{Binding ProtocolTypeText}" Width="110"/>
+                        <DataGridCheckBoxColumn Header="启用" Binding="{Binding IsEnabled}" Width="55"/>
+                        <DataGridTemplateColumn Header="运行状态" Width="110">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="6,0">
+                                        <Ellipse Width="10" Height="10" Fill="{Binding StatusBrush}"/>
+                                        <TextBlock Text="{Binding StatusText}" FontSize="12" Margin="6,0,0,0"
+                                                   Foreground="{Binding StatusBrush}"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Header="操作" Width="240">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <Button Content="编辑" Padding="10,2" Margin="4,0"
+                                                Style="{StaticResource ButtonPrimary}"
+                                                Command="{Binding DataContext.EditDeviceCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                CommandParameter="{Binding}"/>
+                                        <ToggleButton Padding="8,2" Margin="4,0"
+                                                      Style="{StaticResource ToggleButtonSwitch}"
+                                                      IsChecked="{Binding IsEnabled, Mode=OneWay}"
+                                                      Command="{Binding DataContext.ToggleDeviceEnabledCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                      CommandParameter="{Binding}"/>
+                                        <Button Content="删除" Padding="10,2" Margin="4,0"
+                                                Style="{StaticResource ButtonDanger}"
+                                                Command="{Binding DataContext.DeleteDeviceCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                CommandParameter="{Binding}"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
+
+                <hc:LoadingCircle Width="36" Height="36" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                  Visibility="{Binding IsLoading, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"
+                            Visibility="{Binding HasSelectedDevice, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter=Hidden}">
+                    <StackPanel.Style>
+                        <Style TargetType="StackPanel">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Devices.Count}" Value="0">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </StackPanel.Style>
+                    <TextBlock Text="暂无设备，点击右上角新增" FontSize="14"
+                               Foreground="{DynamicResource SecondaryTextBrush}"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Row3 点位/命令子表 -->
+        <TabControl Grid.Row="3" Margin="0"
+                    Background="Transparent"
+                    IsEnabled="{Binding HasSelectedDevice}">
+            <TabItem Header="点位定义">
+                <Grid Margin="0,8,0,0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <Grid Grid.Row="0" Margin="0,0,0,8">
+                        <TextBlock VerticalAlignment="Center" FontSize="13"
+                                   Foreground="{DynamicResource SecondaryTextBrush}">
+                            <Run Text="{Binding SelectedDevice.Code, Mode=OneWay, TargetNullValue=''}"/>
+                            <Run Text=" 的点位（编码全局唯一）"/>
+                        </TextBlock>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                            <Button Content="新增点位" Command="{Binding AddPointCommand}"
+                                    Style="{StaticResource ButtonPrimary}" Height="26" Padding="10,0" Margin="0,0,8,0"/>
+                            <Button Content="编辑" Command="{Binding EditPointCommand}" CommandParameter="{Binding SelectedPoint}"
+                                    Style="{StaticResource ButtonDefault}" Height="26" Padding="10,0" Margin="0,0,8,0"/>
+                            <Button Content="删除" Command="{Binding DeletePointCommand}" CommandParameter="{Binding SelectedPoint}"
+                                    Style="{StaticResource ButtonDanger}" Height="26" Padding="10,0"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <DataGrid Grid.Row="1" ItemsSource="{Binding Points}" SelectedItem="{Binding SelectedPoint}"
+                              AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False"
+                              GridLinesVisibility="Horizontal" HeadersVisibility="Column"
+                              Background="Transparent" BorderThickness="0"
+                              RowBackground="Transparent"
+                              AlternatingRowBackground="{DynamicResource SecondaryBackgroundBrush}">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="50"/>
+                            <DataGridTextColumn Header="点位编码" Binding="{Binding Code}" Width="150"/>
+                            <DataGridTextColumn Header="名称" Binding="{Binding Name}" Width="*"/>
+                            <DataGridTextColumn Header="数据类型" Binding="{Binding DataType}" Width="80"/>
+                            <DataGridTextColumn Header="单位" Binding="{Binding Unit}" Width="70"/>
+                            <DataGridTextColumn Header="驱动地址" Binding="{Binding Address}" Width="180"/>
+                            <DataGridTextColumn Header="高限" Binding="{Binding AlarmHigh, StringFormat={}{0:0.##}}" Width="70"/>
+                            <DataGridTextColumn Header="低限" Binding="{Binding AlarmLow, StringFormat={}{0:0.##}}" Width="70"/>
+                            <DataGridCheckBoxColumn Header="启用" Binding="{Binding IsEnabled}" Width="55"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+            </TabItem>
+
+            <TabItem Header="命令定义">
+                <Grid Margin="0,8,0,0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <Grid Grid.Row="0" Margin="0,0,0,8">
+                        <TextBlock VerticalAlignment="Center" FontSize="13"
+                                   Foreground="{DynamicResource SecondaryTextBrush}"
+                                   Text="命令回写（执行需设备处于运行状态）"/>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                            <Button Content="新增命令" Command="{Binding AddCommandCommand}"
+                                    Style="{StaticResource ButtonPrimary}" Height="26" Padding="10,0" Margin="0,0,8,0"/>
+                            <Button Content="编辑" Command="{Binding EditCommandCommand}" CommandParameter="{Binding SelectedCommand}"
+                                    Style="{StaticResource ButtonDefault}" Height="26" Padding="10,0" Margin="0,0,8,0"/>
+                            <Button Content="删除" Command="{Binding DeleteCommandCommand}" CommandParameter="{Binding SelectedCommand}"
+                                    Style="{StaticResource ButtonDanger}" Height="26" Padding="10,0"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <DataGrid Grid.Row="1" ItemsSource="{Binding Commands}" SelectedItem="{Binding SelectedCommand}"
+                              AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False"
+                              GridLinesVisibility="Horizontal" HeadersVisibility="Column"
+                              Background="Transparent" BorderThickness="0"
+                              RowBackground="Transparent"
+                              AlternatingRowBackground="{DynamicResource SecondaryBackgroundBrush}">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="50"/>
+                            <DataGridTextColumn Header="命令编码" Binding="{Binding Code}" Width="150"/>
+                            <DataGridTextColumn Header="名称" Binding="{Binding Name}" Width="*"/>
+                            <DataGridTextColumn Header="目标点位" Binding="{Binding TargetPointCode}" Width="140"/>
+                            <DataGridTextColumn Header="写入值" Binding="{Binding WriteValue}" Width="100"/>
+                            <DataGridCheckBoxColumn Header="启用" Binding="{Binding IsEnabled}" Width="55"/>
+                            <DataGridTemplateColumn Header="操作" Width="100">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Button Content="执行" Padding="12,2"
+                                                Style="{StaticResource ButtonSuccess}"
+                                                Command="{Binding DataContext.ExecuteCommandCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                CommandParameter="{Binding}"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+            </TabItem>
+        </TabControl>
+    </Grid>
+</UserControl>

@@ -137,6 +137,13 @@ namespace Vk.Dbp.WpfWindow.ViewModels
             set { SetProperty(ref _isDeviceMonitorVisible, value); }
         }
 
+        private bool _isDeviceManagementVisible;
+        public bool IsDeviceManagementVisible
+        {
+            get { return _isDeviceManagementVisible; }
+            set { SetProperty(ref _isDeviceManagementVisible, value); }
+        }
+
         private bool _isAuditRecordVisible;
         public bool IsAuditRecordVisible
         {
@@ -304,6 +311,7 @@ namespace Vk.Dbp.WpfWindow.ViewModels
             IsProductionVisible = _menuPermissionFilter.IsMenuVisible(ViewNames.Production);
             IsProductionRecordVisible = _menuPermissionFilter.IsMenuVisible(ViewNames.ProductionRecord);
             IsDeviceMonitorVisible = _menuPermissionFilter.IsMenuVisible(ViewNames.DeviceMonitorView);
+            IsDeviceManagementVisible = _menuPermissionFilter.IsMenuVisible(ViewNames.DeviceManagementView);
             IsAlarmRecordVisible = _menuPermissionFilter.IsMenuVisible(ViewNames.AlarmRecord);
             IsAuditRecordVisible = _menuPermissionFilter.IsMenuVisible(ViewNames.AuditRecord);
             IsAdminSettingVisible = _menuPermissionFilter.IsMenuVisible(ViewNames.AdminSettingView);

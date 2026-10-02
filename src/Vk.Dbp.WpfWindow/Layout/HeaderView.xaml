@@ -168,6 +168,9 @@
                          CommandParameter="DeviceMonitorView" Margin="5"
                          Visibility="{Binding IsDeviceMonitorVisible, Converter={StaticResource BooleanToVisibilityConverter}}">实时监控</ToggleButton>
             <ToggleButton Style="{StaticResource ToggleButtonSuccess}" Command="{Binding NavigateCommand}"
+                         CommandParameter="DeviceManagementView" Margin="5"
+                         Visibility="{Binding IsDeviceManagementVisible, Converter={StaticResource BooleanToVisibilityConverter}}">设备管理</ToggleButton>
+            <ToggleButton Style="{StaticResource ToggleButtonSuccess}" Command="{Binding NavigateCommand}"
                          CommandParameter="AlarmRecord" Margin="5"
                          Visibility="{Binding IsAlarmRecordVisible, Converter={StaticResource BooleanToVisibilityConverter}}">报警记录</ToggleButton>
             <ToggleButton Style="{StaticResource ToggleButtonSuccess}" Command="{Binding NavigateCommand}" 

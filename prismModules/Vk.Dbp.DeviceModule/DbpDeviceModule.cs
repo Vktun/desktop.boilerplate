@@ -19,6 +19,7 @@ namespace Vk.Dbp.DeviceModule
         public void RegisterTypes(IContainerRegistry containerRegistry)
         {
             containerRegistry.RegisterForNavigation<DeviceMonitorView>();
+            containerRegistry.RegisterForNavigation<DeviceManagementView>();
 
             // 时间源抽象：引擎/驱动/历史刷盘统一走 TimeProvider，测试注入 FakeTimeProvider
             containerRegistry.RegisterSingleton<TimeProvider>(_ => TimeProvider.System);
@@ -35,6 +36,7 @@ namespace Vk.Dbp.DeviceModule
             containerRegistry.RegisterSingleton<IProtocolDriverFactory, ProtocolDriverFactory>();
             containerRegistry.RegisterSingleton<IDeviceCatalogService, DeviceCatalogService>();
             containerRegistry.RegisterSingleton<IDeviceRuntimeService, DeviceRuntimeService>();
+            containerRegistry.RegisterSingleton<IDeviceAdminService, DeviceAdminService>();
         }
     }
 }

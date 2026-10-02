@@ -20,6 +20,7 @@ namespace Vk.Dbp.Contracts.Constants
         public const string Production = "Production";
         public const string ProductionRecord = "ProductionRecord";
         public const string DeviceMonitorView = "DeviceMonitorView";
+        public const string DeviceManagementView = "DeviceManagementView";
         public const string AlarmRecord = "AlarmRecord";
         public const string AlarmConfigView = "AlarmConfigView";
         public const string AuditRecord = "AuditRecord";
