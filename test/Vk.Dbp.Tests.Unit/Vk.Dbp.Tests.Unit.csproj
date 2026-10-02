@@ -7,11 +7,16 @@
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
     
-    <!-- 代码覆盖率配置 -->
+    <!-- 代码覆盖率配置（coverlet.msbuild：collector 包不读 MSBuild 属性，旧 MinimumRequiredCoverage 是无效假配置）。
+         门禁口径：排除 UI 壳工程（WpfWindow/WorkshopModule，以 Views/XAML 为主）与测试基建，
+         对业务代码（AccountModule/Contracts/Infrastructure/Services/Utils/AdminWindow 等）设行覆盖回归底线。 -->
     <CollectCoverage>true</CollectCoverage>
     <CoverletOutputFormat>cobertura,json</CoverletOutputFormat>
     <ExcludeByFile>**/*.g.cs,**/*.Designer.cs</ExcludeByFile>
-    <MinimumRequiredCoverage>40</MinimumRequiredCoverage>
+    <Exclude>[Vk.Dbp.WpfWindow]*,[Vk.Dbp.WorkshopModule]*,[Vk.Dbp.Tests.Common]*</Exclude>
+    <Threshold>32</Threshold>
+    <ThresholdType>line</ThresholdType>
+    <ThresholdStat>total</ThresholdStat>
   </PropertyGroup>
 
   <ItemGroup>
@@ -24,7 +29,7 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
     <PackageReference Include="Moq" Version="4.20.72" />
     <PackageReference Include="FluentAssertions" Version="6.12.0" />
-    <PackageReference Include="coverlet.collector" Version="6.0.0">
+    <PackageReference Include="coverlet.msbuild" Version="10.1.0">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>

@@ -37,3 +37,7 @@ appsettings.*.local.json
 .agents/skills/*
 .lingma
 /.github
+
+# coverlet coverage outputs
+coverage.cobertura.xml
+coverage.json

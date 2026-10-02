@@ -5,7 +5,7 @@ paths:
 
 # 测试约定（Vk.Dbp.Tests.*）
 
-技术栈：xUnit 2.6 + Moq 4.20 + FluentAssertions 6.12 + coverlet（行覆盖率门禁 40% 已配置）。测试目录结构镜像被测项目（`Services/`、`ViewModels/`、`Models/`、`Infrastructure/`、`Configuration/`）。
+技术栈：xUnit 2.6 + Moq 4.20 + FluentAssertions 6.12 + coverlet.msbuild（**行覆盖门禁真实生效**：排除 UI 壳工程 WpfWindow/WorkshopModule 与测试基建后，业务代码总行覆盖 ≥32%，低于即 `dotnet test` 失败；40% 为目标值）。测试目录结构镜像被测项目（`Services/`、`ViewModels/`、`Models/`、`Infrastructure/`、`Configuration/`）。
 
 ## 命名
 
