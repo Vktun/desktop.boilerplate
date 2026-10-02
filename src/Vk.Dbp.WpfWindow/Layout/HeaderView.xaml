@@ -161,10 +161,13 @@
             <ToggleButton Style="{StaticResource ToggleButtonSuccess}" Command="{Binding NavigateCommand}" 
                          CommandParameter="Production" Margin="5"
                          Visibility="{Binding IsProductionVisible, Converter={StaticResource BooleanToVisibilityConverter}}">生产信息</ToggleButton>
-            <ToggleButton Style="{StaticResource ToggleButtonSuccess}" Command="{Binding NavigateCommand}" 
+            <ToggleButton Style="{StaticResource ToggleButtonSuccess}" Command="{Binding NavigateCommand}"
                          CommandParameter="ProductionRecord" Margin="5"
                          Visibility="{Binding IsProductionRecordVisible, Converter={StaticResource BooleanToVisibilityConverter}}">生产记录</ToggleButton>
-            <ToggleButton Style="{StaticResource ToggleButtonSuccess}" Command="{Binding NavigateCommand}" 
+            <ToggleButton Style="{StaticResource ToggleButtonSuccess}" Command="{Binding NavigateCommand}"
+                         CommandParameter="DeviceMonitorView" Margin="5"
+                         Visibility="{Binding IsDeviceMonitorVisible, Converter={StaticResource BooleanToVisibilityConverter}}">实时监控</ToggleButton>
+            <ToggleButton Style="{StaticResource ToggleButtonSuccess}" Command="{Binding NavigateCommand}"
                          CommandParameter="AlarmRecord" Margin="5"
                          Visibility="{Binding IsAlarmRecordVisible, Converter={StaticResource BooleanToVisibilityConverter}}">报警记录</ToggleButton>
             <ToggleButton Style="{StaticResource ToggleButtonSuccess}" Command="{Binding NavigateCommand}" 

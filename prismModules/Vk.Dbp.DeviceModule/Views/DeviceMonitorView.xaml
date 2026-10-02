@@ -1,0 +1,147 @@
+<UserControl x:Class="Vk.Dbp.DeviceModule.Views.DeviceMonitorView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:hc="https://handyorg.github.io/handycontrol"
+             xmlns:prism="http://prismlibrary.com/"
+             xmlns:sp="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF"
+             prism:ViewModelLocator.AutoWireViewModel="True"
+             mc:Ignorable="d"
+             d:DesignHeight="720" d:DesignWidth="1180">
+
+    <Grid Background="{DynamicResource PrimaryBackgroundBrush}" Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- 标题栏：页面名 + 引擎状态摘要 + 刷新/暂停 -->
+        <Grid Grid.Row="0" Margin="0,0,0,10">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="实时监控" FontSize="20" FontWeight="Bold"
+                           Foreground="{DynamicResource PrimaryTextBrush}" VerticalAlignment="Center"/>
+                <Border Background="{DynamicResource SecondaryBackgroundBrush}" CornerRadius="3"
+                        Padding="8,2" Margin="12,0,0,0" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding EngineStatusText}" FontSize="12"
+                               Foreground="{DynamicResource SecondaryTextBrush}"/>
+                </Border>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <hc:LoadingCircle Visibility="{Binding IsLoading, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                  Width="18" Height="18" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                <Button Content="刷新" Command="{Binding RefreshCommand}"
+                        Style="{StaticResource ButtonDefault}" Padding="15,5" Margin="0,0,8,0"/>
+                <ToggleButton Command="{Binding TogglePauseCommand}" Style="{StaticResource ToggleButtonInfo}" Padding="15,5">
+                    <ToggleButton.Content>
+                        <TextBlock>
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Text" Value="暂停刷新"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsPaused}" Value="True">
+                                            <Setter Property="Text" Value="继续刷新"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </ToggleButton.Content>
+                </ToggleButton>
+            </StackPanel>
+        </Grid>
+
+        <!-- 主体：左设备列表 + 右（点位表格 / 趋势图） -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="240"/>
+                <ColumnDefinition Width="10"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- 设备列表 -->
+            <Border Grid.Column="0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4">
+                <ListBox ItemsSource="{Binding Devices}" SelectedItem="{Binding SelectedDevice}"
+                         Background="Transparent" BorderThickness="0"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal" Margin="8,6">
+                                <Ellipse Width="10" Height="10" Fill="{Binding StatusBrush}" VerticalAlignment="Center"/>
+                                <StackPanel Margin="8,0,0,0" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding Code}" FontWeight="Bold" FontSize="13"
+                                               Foreground="{DynamicResource PrimaryTextBrush}"/>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="{Binding Name}" FontSize="11"
+                                                   Foreground="{DynamicResource SecondaryTextBrush}"/>
+                                        <TextBlock Text="{Binding StatusText, StringFormat=' · {0}'}" FontSize="11"
+                                                   Foreground="{Binding StatusBrush}" Margin="6,0,0,0"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </Border>
+
+            <Grid Grid.Column="2">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="10"/>
+                    <RowDefinition Height="320"/>
+                </Grid.RowDefinitions>
+
+                <!-- 点位实时表格（DataGrid 默认虚拟化保留） -->
+                <Border Grid.Row="0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4">
+                    <DataGrid ItemsSource="{Binding Points}" SelectedItem="{Binding SelectedPoint}"
+                              AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False"
+                              GridLinesVisibility="Horizontal" HeadersVisibility="Column"
+                              Background="Transparent" BorderThickness="0"
+                              RowBackground="Transparent" AlternatingRowBackground="{DynamicResource SecondaryBackgroundBrush}">
+                        <DataGrid.RowStyle>
+                            <Style TargetType="DataGridRow">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsHighAlarm}" Value="True">
+                                        <Setter Property="Background" Value="#33EF4444"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding IsLowAlarm}" Value="True">
+                                        <Setter Property="Background" Value="#33F59E0B"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding IsBadQuality}" Value="True">
+                                        <Setter Property="Foreground" Value="#F97316"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </DataGrid.RowStyle>
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="点位编码" Binding="{Binding Code}" Width="140"/>
+                            <DataGridTextColumn Header="名称" Binding="{Binding Name}" Width="*"/>
+                            <DataGridTextColumn Header="实时值" Binding="{Binding DisplayValue}" Width="140"/>
+                            <DataGridTextColumn Header="质量" Binding="{Binding QualityText}" Width="70"/>
+                            <DataGridTextColumn Header="时间" Binding="{Binding TimestampText}" Width="90"/>
+                            <DataGridTextColumn Header="高限" Binding="{Binding AlarmHighText}" Width="80"/>
+                            <DataGridTextColumn Header="低限" Binding="{Binding AlarmLowText}" Width="80"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Border>
+
+                <!-- 选中点位滚动趋势（ScottPlot；数据由 VM 的 TrendDataChanged 事件驱动重绘） -->
+                <Border Grid.Row="2" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4">
+                    <Grid Margin="6">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <TextBlock Grid.Row="0" FontSize="13" Margin="4,2,0,6"
+                                   Foreground="{DynamicResource SecondaryTextBrush}">
+                            <Run Text="趋势："/>
+                            <Run Text="{Binding SelectedPoint.Code, Mode=OneWay, FallbackValue=未选点位}" FontWeight="Bold"/>
+                            <Run Text="{Binding SelectedPoint.Name, Mode=OneWay}"/>
+                        </TextBlock>
+                        <sp:WpfPlot x:Name="TrendPlot" Grid.Row="1"/>
+                    </Grid>
+                </Border>
+            </Grid>
+        </Grid>
+    </Grid>
+</UserControl>
