@@ -70,14 +70,14 @@ dotnet build
 
 运行应用后，SqlSugar CodeFirst 会自动创建数据库表并初始化种子数据。
 
-### 默认账户
+### 初始管理员账户
+
+系统**没有默认密码**。首次运行建库时必须通过环境变量 `DBP_INITIAL_ADMIN_PASSWORD`（或 `.\scripts\start-wpf-local.ps1 -FirstRun -AdminPassword "<你的密码>"`）设置 admin 初始密码，缺失时启动直接报错。
 
 ```text
 用户名: admin
-密码: 123456
+密码: 首次运行时由你指定（无默认值）
 ```
-
-> 首次登录后请立即修改默认密码。
 
 📖 详细的配置说明请参阅 [快速开始指南](docs/wiki/Getting-Started.md)
 

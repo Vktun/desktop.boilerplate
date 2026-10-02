@@ -28,8 +28,13 @@
 - 适用于需要国密合规的场景（如加密数据库连接字符串）
 
 ```csharp
-// 加密
-var sm4Key = configuration["Encryption:SM4Key"] ?? "DabpSm4DefaultKey";
+// 加密（密钥缺失时直接失败，禁止回退到任何内置默认密钥）
+string? sm4Key = configuration["Encryption:SM4Key"];
+if (string.IsNullOrWhiteSpace(sm4Key))
+{
+    throw new InvalidOperationException("缺少 SM4 密钥，请配置 appsettings.local.json 或环境变量 Encryption__SM4Key");
+}
+
 string encrypted = SM4.Encrypt(connectionString, sm4Key);
 
 // 解密

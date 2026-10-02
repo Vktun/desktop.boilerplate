@@ -35,7 +35,7 @@ description: 代码评审/质量检查/风险排查/平台就绪度评估的优�
    - 业务模块互相依赖；shell 长出客户业务逻辑。
    - ViewModel 绕过服务边界接触 `ISqlSugarClient`/仓储类型。
    - 跨模块通信用了直接引用而非 `IEventAggregator`（`PubSubEvent<T>` 定义在 `Vk.Dbp.Contracts`）。
-   - ViewModel 直接用 `IRegionManager.RequestNavigate` 而非 `INavigationService.NavigateTo`（存量违例：`AlarmRecordViewModel`，改造相邻代码时顺手迁移，但不强制大改）。
+   - ViewModel 直接用 `IRegionManager.RequestNavigate` 而非 `INavigationService.NavigateTo`（当前无违例；历史违例 `AlarmRecordViewModel` 已修复，仅残留死注入可顺手清理）。
 
 5. **WPF 可靠性与性能**
    - UI 线程阻塞（同步等待异步、构造器重数据加载）。
