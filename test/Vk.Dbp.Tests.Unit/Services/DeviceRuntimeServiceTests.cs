@@ -296,6 +296,108 @@ public sealed class DeviceRuntimeServiceTests : IClassFixture<TestDatabaseFixtur
         await engine.StopAsync();
     }
 
+    [Fact]
+    public async Task RestartDeviceAsync_NewEnabledDevice_StartsPollingWhileEngineRunning()
+    {
+        int deviceA = await SeedDeviceAsync("SIM-R1");
+        await SeedPointAsync(deviceA, "TEMP-R1", "const(11)");
+
+        var engine = CreateEngine();
+        try
+        {
+            await engine.StartAsync();
+            await TimingTestHelper.WaitUntilAsync(
+                () => _store.GetSnapshot("TEMP-R1") is not null,
+                diagnostics: "先确认引擎已在运行");
+
+            // 运行中新增设备 B：引擎只按启动时快照加载，B 需经 reconcile 热启动
+            int deviceB = await SeedDeviceAsync("SIM-R2");
+            await SeedPointAsync(deviceB, "TEMP-R2", "const(42)");
+
+            await engine.RestartDeviceAsync(deviceB);
+
+            await TimingTestHelper.WaitUntilAsync(
+                () => _store.GetSnapshot("TEMP-R2") is not null,
+                diagnostics: "reconcile 后新增设备应开始采集");
+            _store.GetSnapshot("TEMP-R2")!.Value.Should().Be(42, "新设备点位应采到设定值");
+            engine.GetDeviceStatus(deviceB).Should().Be(DeviceRuntimeStatus.Running, "新增设备应处于运行状态");
+        }
+        finally
+        {
+            await engine.StopAsync();
+        }
+    }
+
+    [Fact]
+    public async Task RestartDeviceAsync_DisabledDevice_StopsPollingAndMarksDisabled()
+    {
+        int deviceA = await SeedDeviceAsync("SIM-D1");
+        await SeedPointAsync(deviceA, "TEMP-D1", "const(1)");
+        int deviceB = await SeedDeviceAsync("SIM-D2");
+        await SeedPointAsync(deviceB, "TEMP-D2", "const(2)");
+
+        var engine = CreateEngine();
+        try
+        {
+            await engine.StartAsync();
+            await TimingTestHelper.WaitUntilAsync(
+                () => _store.GetSnapshot("TEMP-D1") is not null && _store.GetSnapshot("TEMP-D2") is not null,
+                diagnostics: "两台设备都进入采集后再禁用其一");
+
+            await _db.Updateable<Device>()
+                .SetColumns(device => device.IsEnabled == false)
+                .Where(device => device.Id == deviceA)
+                .ExecuteCommandAsync();
+            await engine.RestartDeviceAsync(deviceA);
+
+            await TimingTestHelper.WaitUntilAsync(
+                () => engine.GetAllDeviceStatuses().TryGetValue(deviceA, out var status) && status == DeviceRuntimeStatus.Disabled,
+                diagnostics: "禁用设备在状态总览中应显示 Disabled");
+
+            // 双 API 既有语义：GetDeviceStatus 读 worker 表（已移除 → Stopped），GetAllDeviceStatuses 保留 Disabled
+            engine.GetDeviceStatus(deviceA).Should().Be(DeviceRuntimeStatus.Stopped, "worker 移除后单查应返回 Stopped");
+            engine.GetDeviceStatus(deviceB).Should().Be(DeviceRuntimeStatus.Running, "其余设备不受影响");
+        }
+        finally
+        {
+            await engine.StopAsync();
+        }
+    }
+
+    [Fact]
+    public async Task RestartDeviceAsync_DeletedDevice_RemovesWorkerAndKeepsOthersRunning()
+    {
+        int deviceA = await SeedDeviceAsync("SIM-X1");
+        await SeedPointAsync(deviceA, "TEMP-X1", "const(1)");
+        int deviceB = await SeedDeviceAsync("SIM-X2");
+        await SeedPointAsync(deviceB, "TEMP-X2", "const(2)");
+
+        var engine = CreateEngine();
+        try
+        {
+            await engine.StartAsync();
+            await TimingTestHelper.WaitUntilAsync(
+                () => _store.GetTrendWindow("TEMP-X2", 100).Count >= 2,
+                diagnostics: "存活设备先积累若干样本便于事后比较");
+
+            await _db.Deleteable<DevicePoint>().Where(point => point.DeviceId == deviceA).ExecuteCommandAsync();
+            await _db.Deleteable<Device>().Where(device => device.Id == deviceA).ExecuteCommandAsync();
+            await engine.RestartDeviceAsync(deviceA);
+
+            engine.GetDeviceStatus(deviceA).Should().Be(DeviceRuntimeStatus.Stopped, "删除设备的 worker 应被移除");
+            engine.GetDeviceStatus(deviceB).Should().Be(DeviceRuntimeStatus.Running, "存活设备不应受影响");
+
+            var samplesBefore = _store.GetTrendWindow("TEMP-X2", 1000).Count;
+            await TimingTestHelper.WaitUntilAsync(
+                () => _store.GetTrendWindow("TEMP-X2", 1000).Count > samplesBefore,
+                diagnostics: "存活设备删除同伴后应继续采集");
+        }
+        finally
+        {
+            await engine.StopAsync();
+        }
+    }
+
     private sealed class DelegateDriverFactory(Func<DeviceConnectionInfo, IProtocolDriver> create) : IProtocolDriverFactory
     {
         public bool CanCreate(string protocolType)

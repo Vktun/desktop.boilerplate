@@ -189,46 +189,71 @@ public sealed class DeviceRuntimeService : IDeviceRuntimeService
     /// <inheritdoc />
     public async Task RestartDeviceAsync(int deviceId)
     {
-        if (!_workers.TryGetValue(deviceId, out var worker) || worker.Task is null)
-        {
-            return;
-        }
-
-        worker.Cancel();
-
+        // reconcile 语义：让单台设备的运行时状态与数据库对齐（配置变更/启停/新增/删除后由管理页调用）。
+        // 持启停闸：与 StartAsync/StopAsync 串行化，避免 _workerTasks.Add 与整表替换的竞态；
+        // 闸内不重入 Start/Stop（无死锁），持闸最坏等旧 worker ≤5s（管理操作低频，可接受）。
+        await _startStopGate.WaitAsync();
         try
         {
-            await worker.Task.WaitAsync(StopTimeout);
-        }
-        catch (TimeoutException)
-        {
-            Log.Warning("设备 {DeviceId} 重启等待旧任务超时", deviceId);
-        }
-        catch (Exception ex)
-        {
-            // 旧任务异常退出不阻断重启
-            Log.Warning(ex, "设备 {DeviceId} 重启时旧任务异常退出", deviceId);
-        }
+            if (!_running || _cts is null)
+            {
+                // 引擎未运行：无 worker 可管，下次 StartAsync 会按库全量加载
+                return;
+            }
 
-        _workers.TryRemove(deviceId, out _);
+            var token = _cts.Token;
+            DeviceWorker? worker = null;
+            if (_workers.TryGetValue(deviceId, out worker) && worker.Task is not null)
+            {
+                worker.Cancel();
 
-        if (!_running || _cts is null)
-        {
-            return;
+                try
+                {
+                    await worker.Task.WaitAsync(StopTimeout);
+                }
+                catch (TimeoutException)
+                {
+                    Log.Warning("设备 {DeviceId} 重启等待旧任务超时", deviceId);
+                }
+                catch (Exception ex)
+                {
+                    // 旧任务异常退出不阻断重启
+                    Log.Warning(ex, "设备 {DeviceId} 重启时旧任务异常退出", deviceId);
+                }
+
+                _workers.TryRemove(deviceId, out _);
+            }
+
+            var device = await _db.Queryable<Device>().FirstAsync(entity => entity.Id == deviceId);
+            if (device is null)
+            {
+                // 已删除：仅当本方法见过它（曾有 worker）才需要发收尾状态事件
+                if (worker is not null)
+                {
+                    SetStatus(deviceId, worker.Device.Code, DeviceRuntimeStatus.Stopped, "设备已删除");
+                }
+
+                return;
+            }
+
+            if (device is not { IsEnabled: true })
+            {
+                // 必须在停 worker 之后置 Disabled——worker 的 finally 会置 Stopped，先置会被覆盖
+                SetStatus(deviceId, device.Code, DeviceRuntimeStatus.Disabled, "设备已停用");
+                return;
+            }
+
+            // 启用设备：重建 worker（运行中新增的设备也走这里热启动）
+            var newWorker = await CreateWorkerAsync(device, token);
+            if (newWorker is not null)
+            {
+                _workers[deviceId] = newWorker;
+                _workerTasks.Add(StartWorker(newWorker));
+            }
         }
-
-        var device = await _db.Queryable<Device>().FirstAsync(entity => entity.Id == deviceId);
-        if (device is not { IsEnabled: true })
+        finally
         {
-            SetStatus(deviceId, worker.Device.Code, DeviceRuntimeStatus.Disabled, "设备已停用");
-            return;
-        }
-
-        var newWorker = await CreateWorkerAsync(device, _cts.Token);
-        if (newWorker is not null)
-        {
-            _workers[deviceId] = newWorker;
-            _workerTasks.Add(StartWorker(newWorker));
+            _startStopGate.Release();
         }
     }
 
@@ -272,7 +297,18 @@ public sealed class DeviceRuntimeService : IDeviceRuntimeService
             Value = command.WriteValue ?? string.Empty
         };
 
-        var snapshot = await worker.Driver.WritePointAsync(writeRequest, worker.CancellationToken);
+        PointValueSnapshot snapshot;
+        try
+        {
+            snapshot = await worker.Driver.WritePointAsync(writeRequest, worker.CancellationToken);
+        }
+        catch (Exception ex) when (ex is OperationCanceledException
+                                    || ExpectedOperationExceptionFilter.IsExpectedDataOperationException(ex))
+        {
+            // reconcile 热重启使"命令执行撞上设备重启/断连"成为常规路径：收敛为失败结果，不上抛
+            return new CommandResult(false, $"命令执行失败（设备通讯中断或正在重启）: {ex.Message}");
+        }
+
         _store.Update(snapshot);
 
         var success = snapshot.Quality == DataQuality.Good;
