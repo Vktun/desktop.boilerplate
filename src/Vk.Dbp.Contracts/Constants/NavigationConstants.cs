@@ -22,6 +22,7 @@ namespace Vk.Dbp.Contracts.Constants
         public const string DeviceMonitorView = "DeviceMonitorView";
         public const string DeviceManagementView = "DeviceManagementView";
         public const string HistoryQueryView = "HistoryQueryView";
+        public const string ReportCenterView = "ReportCenterView";
         public const string AlarmRecord = "AlarmRecord";
         public const string AlarmConfigView = "AlarmConfigView";
         public const string AuditRecord = "AuditRecord";

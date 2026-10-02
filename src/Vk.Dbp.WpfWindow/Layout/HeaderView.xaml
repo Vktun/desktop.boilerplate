@@ -171,6 +171,9 @@
                          CommandParameter="HistoryQueryView" Margin="5"
                          Visibility="{Binding IsHistoryQueryVisible, Converter={StaticResource BooleanToVisibilityConverter}}">趋势查询</ToggleButton>
             <ToggleButton Style="{StaticResource ToggleButtonSuccess}" Command="{Binding NavigateCommand}"
+                         CommandParameter="ReportCenterView" Margin="5"
+                         Visibility="{Binding IsReportCenterVisible, Converter={StaticResource BooleanToVisibilityConverter}}">报表中心</ToggleButton>
+            <ToggleButton Style="{StaticResource ToggleButtonSuccess}" Command="{Binding NavigateCommand}"
                          CommandParameter="DeviceManagementView" Margin="5"
                          Visibility="{Binding IsDeviceManagementVisible, Converter={StaticResource BooleanToVisibilityConverter}}">设备管理</ToggleButton>
             <ToggleButton Style="{StaticResource ToggleButtonSuccess}" Command="{Binding NavigateCommand}"
