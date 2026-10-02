@@ -63,7 +63,7 @@ public sealed class DeviceRuntimeServiceTests : IClassFixture<TestDatabaseFixtur
 
         return new DeviceRuntimeService(
             _db,
-            driverFactory ?? new ProtocolDriverFactory(TimeProvider.System),
+            driverFactory ?? new ProtocolDriverFactory(TimeProvider.System, new IotCollectorHost()),
             _store,
             history,
             publisher,
