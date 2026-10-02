@@ -26,6 +26,9 @@ namespace Vk.Dbp.DeviceModule
             containerRegistry.Register<IRealtimeDataService>(provider => provider.Resolve<RealtimeDataStore>());
 
             containerRegistry.RegisterSingleton<IHistoryDataService, HistoryDataService>();
+
+            // vktun.iot.connector 采集运行时宿主（多设备共享一个 IIoTDataCollector，引用计数管理启停）
+            containerRegistry.RegisterSingleton<IotCollectorHost>();
             containerRegistry.RegisterSingleton<IProtocolDriverFactory, ProtocolDriverFactory>();
             containerRegistry.RegisterSingleton<IDeviceCatalogService, DeviceCatalogService>();
             containerRegistry.RegisterSingleton<IDeviceRuntimeService, DeviceRuntimeService>();

@@ -119,6 +119,11 @@ public sealed record DeviceConnectionInfo
     /// 连接配置 JSON（协议相关）
     /// </summary>
     public string? ConnectionConfig { get; init; }
+
+    /// <summary>
+    /// 设备点位定义（真实协议驱动按此生成点表模板，如 Modbus 采集模板）
+    /// </summary>
+    public IReadOnlyList<PointDefinition> Points { get; init; } = [];
 }
 
 /// <summary>

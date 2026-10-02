@@ -351,6 +351,7 @@ public sealed class DeviceRuntimeService : IDeviceRuntimeService
             requests,
             ResolvePollInterval(device.ConnectionConfig));
 
+
         _store.RegisterPoints(device.Id, requests.Select(request => request.PointCode));
         SetStatus(device.Id, device.Code, DeviceRuntimeStatus.Stopped);
         return worker;
@@ -574,14 +575,6 @@ public sealed class DeviceRuntimeService : IDeviceRuntimeService
         });
     }
 
-    private static bool IsRecoverable(Exception ex)
-    {
-        return ExpectedOperationExceptionFilter.IsExpectedDataOperationException(ex)
-               || ex is TimeoutException
-               || ex is IOException
-               || ex is NotSupportedException;
-    }
-
     /// <summary>
     /// 单设备轮询工作单元（引擎私有协作对象）
     /// </summary>
@@ -606,16 +599,20 @@ public sealed class DeviceRuntimeService : IDeviceRuntimeService
             RequestsByCode = requests.ToDictionary(request => request.PointCode, StringComparer.OrdinalIgnoreCase);
             Requests = requests;
             PollIntervalMs = pollIntervalMs;
-            Driver = engine._driverFactory.Create(new DeviceConnectionInfo
+            ConnectionInfo = new DeviceConnectionInfo
             {
                 DeviceId = device.Id,
                 Code = device.Code,
                 ProtocolType = device.ProtocolType,
-                ConnectionConfig = device.ConnectionConfig
-            });
+                ConnectionConfig = device.ConnectionConfig,
+                Points = definitions
+            };
+            Driver = engine._driverFactory.Create(ConnectionInfo);
         }
 
         public Device Device { get; }
+
+        public DeviceConnectionInfo ConnectionInfo { get; }
 
         public IProtocolDriver Driver { get; private set; }
 
@@ -660,8 +657,10 @@ public sealed class DeviceRuntimeService : IDeviceRuntimeService
                     {
                         break;
                     }
-                    catch (Exception ex) when (IsRecoverable(ex))
+                    catch (Exception ex)
                     {
+                        // 兜底面宽于 ExpectedOperationExceptionFilter：第三方驱动（如 vktun.iot.connector）
+                        // 可能抛出自有异常类型；设备级任何未预期异常都收敛为 Faulted + 退避重连，不让 worker 静默死亡
                         _consecutiveFailures++;
                         SetWorkerStatus(DeviceRuntimeStatus.Faulted, ex.Message);
                         Log.Warning(ex, "设备 {DeviceCode} 轮询失败（连续 {Failures} 次），退避后重连",
@@ -684,13 +683,7 @@ public sealed class DeviceRuntimeService : IDeviceRuntimeService
                         }
 
                         await DisposeDriverSafely();
-                        Driver = _engine._driverFactory.Create(new DeviceConnectionInfo
-                        {
-                            DeviceId = Device.Id,
-                            Code = Device.Code,
-                            ProtocolType = Device.ProtocolType,
-                            ConnectionConfig = Device.ConnectionConfig
-                        });
+                        Driver = _engine._driverFactory.Create(ConnectionInfo);
                     }
                 }
             }
