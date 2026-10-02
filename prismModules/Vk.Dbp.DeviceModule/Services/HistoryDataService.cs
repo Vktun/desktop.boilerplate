@@ -196,6 +196,44 @@ public sealed class HistoryDataService : IHistoryDataService
     }
 
     /// <inheritdoc />
+    public async Task<PointAggregate?> GetAggregateAsync(string pointCode, DateTime startTime, DateTime endTime)
+    {
+        // 服务端聚合（仓库首次使用 SqlFunc.Aggregate*）：班报统计不能走降采样数据，
+        // 也不把单点至多十万行的明细拉回内存
+        var count = await _db.Queryable<PointHistory>()
+            .Where(history => history.PointCode == pointCode
+                              && history.Timestamp >= startTime
+                              && history.Timestamp <= endTime)
+            .CountAsync();
+        if (count == 0)
+        {
+            return null;
+        }
+
+        var aggregate = await _db.Queryable<PointHistory>()
+            .Where(history => history.PointCode == pointCode
+                              && history.Timestamp >= startTime
+                              && history.Timestamp <= endTime
+                              && history.Value != null)
+            .Select(history => new
+            {
+                Min = SqlFunc.AggregateMin(history.Value),
+                Max = SqlFunc.AggregateMax(history.Value),
+                Avg = SqlFunc.AggregateAvg(history.Value)
+            })
+            .FirstAsync();
+
+        return new PointAggregate
+        {
+            PointCode = pointCode,
+            Min = aggregate?.Min,
+            Max = aggregate?.Max,
+            Avg = aggregate?.Avg,
+            Count = count
+        };
+    }
+
+    /// <inheritdoc />
     public async Task<int> PurgeExpiredAsync(int retentionDays)
     {
         if (retentionDays <= 0)

@@ -269,3 +269,34 @@ public sealed record HistoryPoint
     /// </summary>
     public double? Value { get; init; }
 }
+
+/// <summary>
+/// 点位历史聚合（班报统计；数值列在窗口内无数值样本时为 null）
+/// </summary>
+public sealed record PointAggregate
+{
+    /// <summary>
+    /// 点位编码
+    /// </summary>
+    public required string PointCode { get; init; }
+
+    /// <summary>
+    /// 最小值
+    /// </summary>
+    public double? Min { get; init; }
+
+    /// <summary>
+    /// 最大值
+    /// </summary>
+    public double? Max { get; init; }
+
+    /// <summary>
+    /// 平均值
+    /// </summary>
+    public double? Avg { get; init; }
+
+    /// <summary>
+    /// 样本总数（含非数值样本）
+    /// </summary>
+    public int Count { get; init; }
+}

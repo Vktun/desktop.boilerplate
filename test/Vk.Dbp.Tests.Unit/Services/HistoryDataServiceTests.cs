@@ -172,4 +172,49 @@ public sealed class HistoryDataServiceTests : IClassFixture<TestDatabaseFixture>
 
         written.Should().Be(0, "空缓冲刷盘应返回 0");
     }
+
+    [Fact]
+    public async Task GetAggregateAsync_WithSamples_ComputesAccurateStatistics()
+    {
+        var baseTime = FixedNow.LocalDateTime;
+        var rows = new List<PointHistory>
+        {
+            new() { PointId = 1, PointCode = "AGG-01", Value = 10, Quality = DataQuality.Good, Timestamp = baseTime.AddMinutes(1) },
+            new() { PointId = 1, PointCode = "AGG-01", Value = 30, Quality = DataQuality.Good, Timestamp = baseTime.AddMinutes(2) },
+            new() { PointId = 1, PointCode = "AGG-01", Value = 20, Quality = DataQuality.Good, Timestamp = baseTime.AddMinutes(3) }
+        };
+        await _db.Insertable(rows).ExecuteCommandAsync();
+
+        var aggregate = await CreateService().GetAggregateAsync("AGG-01", baseTime, baseTime.AddMinutes(10));
+
+        aggregate.Should().NotBeNull("窗口内有样本时应返回聚合结果");
+        aggregate!.Min.Should().Be(10, "最小值应为窗口内最小样本");
+        aggregate.Max.Should().Be(30, "最大值应为窗口内最大样本");
+        aggregate.Avg.Should().BeApproximately(20, 0.0001, "平均值应为窗口内样本均值");
+        aggregate.Count.Should().Be(3, "样本数应为窗口内全部样本");
+    }
+
+    [Fact]
+    public async Task GetAggregateAsync_NarrowWindow_ExcludesOutsideSamples()
+    {
+        var baseTime = FixedNow.LocalDateTime;
+        await _db.Insertable(new[]
+        {
+            new PointHistory { PointId = 1, PointCode = "AGG-02", Value = 100, Quality = DataQuality.Good, Timestamp = baseTime.AddDays(-5) },
+            new PointHistory { PointId = 1, PointCode = "AGG-02", Value = 5, Quality = DataQuality.Good, Timestamp = baseTime.AddMinutes(1) }
+        }).ExecuteCommandAsync();
+
+        var aggregate = await CreateService().GetAggregateAsync("AGG-02", baseTime, baseTime.AddMinutes(10));
+
+        aggregate!.Count.Should().Be(1, "窗口外的样本不应计入");
+        aggregate.Max.Should().Be(5, "聚合只应覆盖窗口内样本");
+    }
+
+    [Fact]
+    public async Task GetAggregateAsync_EmptyWindow_ReturnsNull()
+    {
+        var aggregate = await CreateService().GetAggregateAsync("NO-SUCH-POINT", FixedNow.LocalDateTime, FixedNow.LocalDateTime.AddHours(1));
+
+        aggregate.Should().BeNull("窗口内无样本时应返回 null");
+    }
 }

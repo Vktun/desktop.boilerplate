@@ -28,6 +28,11 @@ public interface IHistoryDataService
     Task<List<HistoryPoint>> QueryAsync(string pointCode, DateTime startTime, DateTime endTime, int maxPoints);
 
     /// <summary>
+    /// 服务端聚合指定时间窗内的 min/max/avg/count（班报统计用；窗口无样本返回 null，统计跳过非数值样本）
+    /// </summary>
+    Task<PointAggregate?> GetAggregateAsync(string pointCode, DateTime startTime, DateTime endTime);
+
+    /// <summary>
     /// 清理超过保留天数的历史数据；返回删除行数
     /// </summary>
     Task<int> PurgeExpiredAsync(int retentionDays);
