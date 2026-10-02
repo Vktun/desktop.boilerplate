@@ -49,9 +49,23 @@
             </Grid>
         </Border>
 
-        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
-            <ItemsControl ItemsSource="{Binding ActiveAlarms}">
-                <ItemsControl.ItemTemplate>
+        <!-- 虚拟化列表：ItemsControl 自管滚动（外置 ScrollViewer 会使面板拿到无限高度、虚拟化失效） -->
+        <ItemsControl Grid.Row="2" ItemsSource="{Binding ActiveAlarms}"
+                      VirtualizingPanel.IsVirtualizing="True"
+                      ScrollViewer.CanContentScroll="True">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <VirtualizingStackPanel />
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.Template>
+                <ControlTemplate TargetType="ItemsControl">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <ItemsPresenter />
+                    </ScrollViewer>
+                </ControlTemplate>
+            </ItemsControl.Template>
+            <ItemsControl.ItemTemplate>
                     <DataTemplate>
                         <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1">
                             <Grid Margin="15,12">
@@ -99,9 +113,8 @@
                             </Grid>
                         </Border>
                     </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-        </ScrollViewer>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
 
         <StackPanel Grid.Row="2" VerticalAlignment="Center" HorizontalAlignment="Center"
                     Visibility="{Binding ActiveAlarms.Count, Converter={StaticResource CountToVisibilityConverter}}">
